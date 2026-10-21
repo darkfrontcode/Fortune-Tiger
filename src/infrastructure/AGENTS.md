@@ -4,7 +4,7 @@ Postgres, SQS, workers, clock, logger, and metrics. It does not decide a wager r
 
 There is no `shared` folder here. Plug-in contracts live in `application/protocols`, not in this layer. This layer does not import `presentation`.
 
-Each folder has an English `spec.md`. The code follows that spec. One adapter, one spec. Inbox and outbox stay inside `messaging`, not in their own folders. Small files.
+Each folder has an English `spec.md`. The code follows that spec. One adapter, one spec. Inbox and outbox stay inside `messaging/messages`, not in folders of their own. Small files.
 
 All project text is English, including the root `README.md`.
 

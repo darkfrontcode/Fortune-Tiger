@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:unit": "bun test src/domain src/application",
+    "test:unit": "bun test src/domain src/application src/infrastructure/messaging",
     "test:int": "bun test src/infrastructure/persistence/__tests__",
     "migration:up": "bunx mikro-orm migration:up",
     "migration:down": "bunx mikro-orm migration:down",

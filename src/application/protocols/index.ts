@@ -1,4 +1,5 @@
 export * from './logger.protocol'
+export * from './mapper.protocol'
 export * from './metric.protocol'
 export * from './pattern.protocol'
 export * from './reconciliation.gateway.protocol'
