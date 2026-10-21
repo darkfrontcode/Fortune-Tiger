@@ -10,7 +10,7 @@ import {
 } from '../../../../../domain/wager/enums'
 import { WagerType } from '../../../../../domain/wager/types'
 import { WagerTransaction } from '../../../../../domain/wager/wager'
-import { TransactionsType } from '../../../types'
+import { TransactionsType } from '../../types'
 import { WagerMediator } from '../wager.mediator'
 
 interface MediatorTheory<TParams> extends TheoryProtocol<TParams> {

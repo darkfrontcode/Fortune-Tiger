@@ -8,4 +8,4 @@ Application error text for a missing strategy lives in `data/messages.data.ts`.
 
 Unit tests live in `__tests__/` next to the module they cover. `mediators/__tests__/wager.mediator.spec.ts` covers `WagerMediator`.
 
-`TransactionsType` lives in the parent folder (`../types.ts`). The Nest entry `wager.service.ts` will live there too.
+`types.ts` defines `TransactionsType`. `wager.service.ts` is the Nest entry for this use case.

@@ -1,6 +1,6 @@
 import type { Ledger } from '../../domain/ledger'
 import type { WagerTransaction, WagerTransactionKind } from '../../domain/wager'
-import type { TransactionsType } from '../transactions/types'
+import type { TransactionsType } from '../transactions/wager'
 
 type Mediation = TransactionsType.Mediation
 type Output = Ledger | undefined

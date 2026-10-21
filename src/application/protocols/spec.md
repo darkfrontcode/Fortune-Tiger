@@ -8,6 +8,8 @@ A plug-in contract. The folder is `protocols`, inside `application`. The file ro
 
 `WagerStrategyProtocol` mediates one `WagerTransactionKind` against a wallet and an optional reference. Strategies live in `transactions/wager/strategies/`.
 
-The files are `theory.protocol.ts`, `pattern.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
+`WagerGatewayProtocol` persists one wager inside the SQL transaction. The MikroORM adapter is `WagerSubmitWriter` in `src/infrastructure/persistence/wager`.
+
+The files are `theory.protocol.ts`, `pattern.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
 
 All project text is English, including the root `README.md`.

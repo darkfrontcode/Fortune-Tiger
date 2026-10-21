@@ -30,7 +30,11 @@ export class WagerTransactionMapper {
     return WagerTransaction.rehydrate(schema)
   }
 
-  toEntity(wager: WagerTransaction, wallet: WalletEntity): WagerTransactionEntity {
+  toEntity(
+    wager: WagerTransaction,
+    wallet: WalletEntity,
+    observedBalance?: string,
+  ): WagerTransactionEntity {
     const entity = new WagerTransactionEntity()
 
     entity.id = wager.id
@@ -51,11 +55,17 @@ export class WagerTransactionMapper {
     entity.failureCode = wager.failureCode
     entity.createdAt = wager.createdAt
     entity.processedAt = wager.processedAt
+    entity.observedBalance = observedBalance
 
     return entity
   }
 
-  write(entity: WagerTransactionEntity, wager: WagerTransaction, wallet: WalletEntity): void {
+  write(
+    entity: WagerTransactionEntity,
+    wager: WagerTransaction,
+    wallet: WalletEntity,
+    observedBalance?: string,
+  ): void {
     entity.providerId = wager.providerId
     entity.externalTransactionId = wager.externalTransactionId
     entity.idempotencyKey = wager.idempotencyKey
@@ -73,5 +83,7 @@ export class WagerTransactionMapper {
     entity.failureCode = wager.failureCode
     entity.createdAt = wager.createdAt
     entity.processedAt = wager.processedAt
+
+    if (observedBalance !== undefined) { entity.observedBalance = observedBalance }
   }
 }
