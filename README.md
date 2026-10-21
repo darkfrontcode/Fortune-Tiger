@@ -20,7 +20,7 @@ A provider sends a bet, a win, a loss, a refund, and a rollback. The wallet stay
 - 🗄️ **infrastructure** — database, queue, and log
 - 🌐 **presentation** — HTTP
 
-`src/main.ts` boots Nest. `src/app.module.ts` wires the four.
+`src` has these four folders. `src/main.ts` boots Nest. `src/app.module.ts` wires them. A plug-in contract lives in `protocols`, inside application or infrastructure.
 
 This file follows each phase as it lands.
 
@@ -28,6 +28,8 @@ This file follows each phase as it lands.
 <summary>🎯 Domain</summary>
 
 `money`, `wallet`, `ledger`, and `wager`.
+
+`money` is in place. The amount is a decimal string with scale 2. `from` and `zero` build it. `decimal.js` does the math. A different currency throws.
 
 An entity has an `id`. A value object has no `id` and is compared by value. The folder is the concept, and the file is the concept: `ledger/ledger.ts`. `entities/` and `values/` appear inside a concept only when that concept needs both.
 
@@ -52,6 +54,7 @@ One word, plural, no hyphen in the middle of the name.
 - `persistence` — MikroORM, schema, and the wallet lock
 - `messaging` — queue, consumer, inbox, outbox, and the event envelope
 - `observability` — `SimpleLogger`, `ClockProtocol`, and metrics
+- `protocols` — `TheoryProtocol`, the contract a unit theory plugs in
 
 PostgreSQL 16 stores `numeric(20, 2)`. The queue runs on LocalStack.
 
@@ -80,7 +83,7 @@ interface MapperProtocol<Input, Output> {
 }
 ```
 
-`Mapper` is the naming example. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`.
+`Mapper` is the naming example. The file lives in `application/protocols` or `infrastructure/protocols`. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` is in `infrastructure/protocols`.
 
 </details>
 

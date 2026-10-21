@@ -30,7 +30,11 @@ Nest names, Angular style. The file is `kebab-case` with the role as a suffix. T
 | `logger.service.ts` | `LoggerService.ts` |
 | `simple.logger.ts` | `SimpleLogger.ts` |
 
-Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. There is no `src/main` folder and no `src/modules` folder.
+Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. Those two files sit beside the layers. They are not folders.
+
+`src` has four folders, and only these: `domain`, `application`, `infrastructure`, `presentation`. There is no `src/modules` folder and no `src/main` folder.
+
+There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application` or `infrastructure`. Domain does not have that folder. Presentation does not have that folder. `TheoryProtocol` lives in `infrastructure/protocols`.
 
 ## Simplicity
 
@@ -52,7 +56,7 @@ interface MapperProtocol<Input, Output> {
 }
 ```
 
-`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`.
+`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The file lives in `application/protocols` or `infrastructure/protocols`. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` is the test contract, in `infrastructure/protocols`.
 
 The delivery target is the full score of section 14. A load test is not part of that score.
 

@@ -20,6 +20,10 @@ Clean code: one responsibility per class. A name says what the thing is. No `Bas
 
 A design pattern is used only when it solves a problem in this challenge. The statement already asks for factories (`create`, `from`, `rehydrate`, `open`). No protocol per class. A section that fits in the parent spec does not become a new folder.
 
+`src` has four folders: `domain`, `application`, `infrastructure`, and `presentation`. `src/main.ts` and `src/app.module.ts` are files beside them. There is no `src/modules` folder.
+
+There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application` or `infrastructure`. Domain does not have that folder. Presentation does not have that folder.
+
 ## Protocols
 
 A plug-in contract is a protocol. The type name ends with `Protocol`, as in Swift. The file role is `protocol`: `mapper.protocol.ts`. The TypeScript interface inside takes an input and returns an output.
@@ -30,7 +34,7 @@ interface MapperProtocol<Input, Output> {
 }
 ```
 
-`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`.
+`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The file lives in `application/protocols` or `infrastructure/protocols`. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` is the test contract, in `infrastructure/protocols`.
 
 The domain is only `money`, `wallet`, `ledger`, and `wager`. Inbox, outbox, and the event envelope are sections of `messaging/spec.md`.
 
@@ -80,13 +84,14 @@ src/
     persistence/spec.md
     messaging/spec.md
     observability/spec.md
+    protocols/spec.md
   presentation/
     AGENTS.md
     http/spec.md
     health/spec.md
 ```
 
-`main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` wires the layers. There is no `src/modules` folder.
+`main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` wires the layers. There is no `src/modules` folder. There is no `shared` folder.
 
 Files follow the Nest name (`health.controller.ts`). Classes stay PascalCase (`HealthController`).
 

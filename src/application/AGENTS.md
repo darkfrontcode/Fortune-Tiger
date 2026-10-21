@@ -4,6 +4,8 @@ Use cases. It joins the domain and the SQL transaction boundary. No SQL and no H
 
 A folder is plural, one word, no hyphen. The evaluator reads the folder name and knows what is inside.
 
+There is no `shared` folder here. A port that a use case plugs in lives in `protocols`. `TheoryProtocol` is not a use case. It lives in `infrastructure/protocols`. This layer does not import `presentation`.
+
 Each folder has an English `spec.md`. The code follows that spec. When the code arrives, one file per folder: a short singular name plus the Nest role. No hyphen in the middle of the concept.
 
 All project text is English, including the root `README.md`.
