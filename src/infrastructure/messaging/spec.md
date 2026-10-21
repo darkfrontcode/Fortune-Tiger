@@ -23,7 +23,7 @@ The row is inserted in the same SQL transaction as the business change. Publishi
 
 ## Integration event
 
-`IntegrationEvent` is an abstract class. One subclass per event. `eventType` and `version` live on the type. `toJSON` stores this envelope: `eventId`, `eventType`, `aggregateId`, `correlationId`, optional `causationId`, `occurredAt` as ISO-8601, `version`, and `data`. `data` uses `MoneyProps` (decimal string), never the `Money` instance.
+`IntegrationEvent` is an abstract class. One subclass per event. `eventType` and `version` live on the type. `toJSON` stores this envelope: `eventId`, `eventType`, `aggregateId`, `correlationId`, optional `causationId`, `occurredAt` as ISO-8601, `version`, and `data`. `data` uses `MoneyType.Output` (decimal string), never the `Money` instance.
 
 | Event | When |
 | --- | --- |

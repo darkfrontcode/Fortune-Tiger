@@ -30,17 +30,23 @@ Nest names, Angular style. The file is `kebab-case` with the role as a suffix. T
 | `logger.service.ts` | `LoggerService.ts` |
 | `simple.logger.ts` | `SimpleLogger.ts` |
 
-Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. There is no `src/main` folder and no `src/modules` folder.
+Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. Those two files sit beside the layers. They are not folders.
+
+`src` has four folders, and only these: `domain`, `application`, `infrastructure`, `presentation`. There is no `src/modules` folder and no `src/main` folder.
+
+There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application` or `infrastructure`. Domain does not have that folder. Presentation does not have that folder. `TheoryProtocol` and `PatternProtocol` live in `infrastructure/protocols`.
+
+A folder that exposes its files reexports them from `index.ts`. Callers import the folder, not the file.
 
 ## Simplicity
 
-Simple code. Clean Architecture lets an outsider see what each folder is. Simple names. Few files. Small files.
+Simple code. Clean Architecture lets an outsider see what each folder is. Simple names. A name is one English word and says what is being checked. A message constant is the exception: `UPPER_SNAKE_CASE` ending with `_MESSAGE`. A class name may join the concept and the role, as in `MoneyGuard` and `MoneyAmountPattern`. Few files. Small files.
 
 A use-case folder is plural, one word, no hyphen: `transactions`, `reconciliations`, `idempotencies`. Open the folder and the file is the singular subject: `wager.service.ts`, `reconciliation.service.ts`, `idempotency.service.ts`. The Nest role keeps its hyphen (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain names stay the business word: `money`, `wallet`, `ledger`, `wager`.
 
 Clean code: one responsibility per class. No `BaseManager`, `CommonService`, or `GenericHelper`.
 
-A design pattern needs a real problem. The factories the statement asks for are `create`, `from`, `rehydrate`, and `open`. No protocol per class. A section that fits in the parent spec does not become a new folder.
+A design pattern needs a real problem. The factories the statement asks for are `create`, `from`, `rehydrate`, and `open`. No protocol per class. A section that fits in the parent spec does not become a new folder. Two exceptions live inside the concept: `data` for error text, and `patterns` when two rules share one protocol. Error text is one constant per phrase in `data/messages.ts`, inside the concept that throws. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports it. Callers import the folder. The domain does not import `application` to read it.
 
 ## Protocol
 
@@ -52,13 +58,15 @@ interface MapperProtocol<Input, Output> {
 }
 ```
 
-`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`.
+`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The file lives in `application/protocols` or `infrastructure/protocols`. A concept folder does not hold a protocol. The classes that implement it may live in the concept, in `patterns`. The class name ends with `Pattern`, as in `MoneyAmountPattern`. `patterns/index.ts` reexports the classes. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` and `PatternProtocol` live in `infrastructure/protocols`.
 
 The delivery target is the full score of section 14. A load test is not part of that score.
 
 ## Entity state
 
-The skeleton underscore (`_balance`) stays out of the code. Section 6 allows a different signature. State is a `schema`, received by the private constructor, as in the format skill. A getter reads the schema. A rule method writes the schema. `Money` and the ledger return another instance. Type names, kind, status, and `failureCode` follow the statement.
+The skeleton underscore (`_balance`) stays out of the code. Section 6 allows a different signature. State is a `schema`, received by the private constructor, as in the format skill. A getter reads the schema. A rule method writes the schema. `Money` and the ledger return another instance. Type names, kind, status, and `failureCode` follow the statement. The word `props` is not a type name and not a parameter name.
+
+Types of one concept live in that concept's `types.ts`, in one `export namespace` named `{Concept}Type`. Inside it, `Schema` comes first, then `Input`, then `Output`. The file that uses them aliases each name at the top and does not repeat `{Concept}Type.Schema` in the body. `MoneyType` is the money namespace.
 
 ## Inside the file
 

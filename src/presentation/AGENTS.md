@@ -2,6 +2,8 @@
 
 Controllers, input validation, and HTTP status. It does not debit a balance.
 
+There is no `shared` folder and no `protocols` folder here. A plug-in contract lives in `application/protocols` or `infrastructure/protocols`. The balance rule does not move into this layer.
+
 Each folder has an English `spec.md`. The code follows that spec. A thin controller. The balance rule does not enter here. Small files.
 
 All project text is English, including the root `README.md`.
