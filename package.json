@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test:unit": "bun test src/domain src/application",
-    "test:int": "bun test src/infrastructure/persistence/__tests__/wallet.repository.spec.ts",
+    "test:int": "bun test src/infrastructure/persistence/__tests__",
     "migration:up": "bunx mikro-orm migration:up",
     "migration:down": "bunx mikro-orm migration:down",
     "migration:pending": "bunx mikro-orm migration:pending"
