@@ -48,7 +48,7 @@ The private constructor receives a `schema`. A getter reads it. A rule method wr
 
 - `transactions` — `WagerMediator` joins the wager, the wallet, and the ledger. Strategies apply each `kind`. HTTP and the queue will call `wager.service.ts` later.
 - `reconciliations` — `reconciliation.service.ts` compares the wallet with the ledger.
-- `idempotencies` — `idempotency.service.ts` holds the key, the hash, and the replay.
+- `idempotencies` — `idempotency.service.ts` hashes the canonical business payload. `outcome` replays with `observedBalance`, or returns `IDEMPOTENCY_PAYLOAD_CONFLICT` when the key repeats with a different body.
 
 One word, plural, no hyphen in the middle of the name.
 
