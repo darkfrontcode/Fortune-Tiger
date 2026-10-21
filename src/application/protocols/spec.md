@@ -10,6 +10,10 @@ A plug-in contract. The folder is `protocols`, inside `application`. The file ro
 
 `WagerGatewayProtocol` persists one wager inside the SQL transaction. The MikroORM adapter is `WagerSubmitWriter` in `src/infrastructure/persistence/wager`.
 
-The files are `theory.protocol.ts`, `pattern.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
+`ReconciliationGatewayProtocol` loads the wallet balance and ledger entries for one wallet. The MikroORM adapter is `ReconciliationReader` in `src/infrastructure/persistence/reconciliation`.
+
+`LoggerProtocol` and `MetricProtocol` are observability hooks. `SimpleLogger` and the metric adapter land in `src/infrastructure/observability`.
+
+The files are `theory.protocol.ts`, `pattern.protocol.ts`, `logger.protocol.ts`, `metric.protocol.ts`, `reconciliation.gateway.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
 
 All project text is English, including the root `README.md`.

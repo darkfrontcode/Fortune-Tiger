@@ -1,4 +1,7 @@
+export * from './logger.protocol'
+export * from './metric.protocol'
 export * from './pattern.protocol'
+export * from './reconciliation.gateway.protocol'
 export * from './theory.protocol'
 export * from './wager.gateway.protocol'
 export * from './wager.strategy.protocol'
