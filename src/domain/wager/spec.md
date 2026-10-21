@@ -1,6 +1,6 @@
 # Wager
 
-The challenge names this type `WagerTransaction`. The folder is `wager`. The class keeps that name.
+The challenge names this type `WagerTransaction`. The folder is `wager`. The class keeps that name. Enums live in `enums/`: `wager-transaction-kind.enum.ts`, `wager-transaction-status.enum.ts`, and `failure-code.enum.ts`. `enums/index.ts` reexports them with `export *`. Error text is `data/messages.data.ts`. The status table is `maps/transition.map.ts`, a class that extends `Map`. The guard is `wager.guard.ts`.
 
 The private constructor receives a `schema`. Getters read the schema. `markProcessed`, `reject`, and the other transitions write the schema. There is no `_status`.
 

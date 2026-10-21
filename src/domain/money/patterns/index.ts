@@ -1,2 +1,2 @@
-export { MoneyAmountPattern } from './amount.pattern'
-export { MoneyCurrencyPattern } from './currency.pattern'
+export * from './amount.pattern'
+export * from './currency.pattern'

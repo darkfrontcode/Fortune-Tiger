@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { TheoryProtocol } from '../../infrastructure/protocols/theory.protocol'
+import { TheoryProtocol } from '../../infrastructure/protocols'
 import { Money } from './money'
 
 interface MoneyTheory<TParams> extends TheoryProtocol<TParams> {

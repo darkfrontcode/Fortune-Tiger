@@ -1,5 +1,1 @@
-export {
-  CURRENCY_CONFLICT_MESSAGE,
-  INSUFFICIENT_FUNDS_MESSAGE,
-  NEGATIVE_AMOUNT_MESSAGE,
-} from './messages'
+export * from './messages.data'

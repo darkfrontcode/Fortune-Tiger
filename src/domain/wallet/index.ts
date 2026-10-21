@@ -1,2 +1,2 @@
-export { Wallet } from './wallet'
-export { WalletType } from './types'
+export * from './types'
+export * from './wallet'

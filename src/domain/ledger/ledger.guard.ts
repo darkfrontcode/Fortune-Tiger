@@ -1,6 +1,6 @@
 import type { Money } from '../money/money'
 import { BALANCE_EQUATION_MESSAGE, CURRENCY_CONFLICT_MESSAGE } from './data'
-import { LedgerDirection } from './types'
+import { LedgerDirection } from './enums'
 
 export class LedgerGuard {
   static currency(before: Money, money: Money, after: Money): void {

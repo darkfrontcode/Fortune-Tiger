@@ -21,14 +21,21 @@ Each layer explains itself in its own `AGENTS.md`:
 
 ## File
 
-Nest names, Angular style. The file is `kebab-case` with the role as a suffix. The class stays PascalCase.
+Nest names, Angular style. The file is `kebab-case` with the role as a suffix. The class stays PascalCase. The folder stays lowercase.
 
 | Right | Wrong |
 | --- | --- |
-| `app.module.ts` | `AppModule.ts` |
-| `health.controller.ts` | `HealthController.ts` |
-| `logger.service.ts` | `LoggerService.ts` |
-| `simple.logger.ts` | `SimpleLogger.ts` |
+| `messages.data.ts` | `Messages.Data.ts` |
+| `failure-code.enum.ts` | `FailureCode.Enum.ts` |
+| `money.guard.ts` | `Money.Guard.ts` |
+| `amount.pattern.ts` | `MoneyAmount.Pattern.ts` |
+| `transition.map.ts` | `Transition.Map.ts` |
+| `theory.protocol.ts` | `Theory.Protocol.ts` |
+| `health.controller.ts` | `Health.Controller.ts` |
+| `wager.service.ts` | `Wager.Service.ts` |
+| `app.module.ts` | `App.Module.ts` |
+
+The concept file stays the business word: `money.ts`, `wallet.ts`, `ledger.ts`, `wager.ts`. Types stay in `types.ts`. A test stays `{concept}.spec.ts` so the runner finds it.
 
 Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. Those two files sit beside the layers. They are not folders.
 
@@ -36,17 +43,17 @@ Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. Those two f
 
 There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application` or `infrastructure`. Domain does not have that folder. Presentation does not have that folder. `TheoryProtocol` and `PatternProtocol` live in `infrastructure/protocols`.
 
-A folder that exposes its files reexports them from `index.ts`. Callers import the folder, not the file.
+A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder, not the file. `src/domain/index.ts` reexports `money`, `wallet`, `ledger`, and `wager`. A folder with code and no barrel is incomplete.
 
 ## Simplicity
 
 Simple code. Clean Architecture lets an outsider see what each folder is. Simple names. A name is one English word and says what is being checked. A message constant is the exception: `UPPER_SNAKE_CASE` ending with `_MESSAGE`. A class name may join the concept and the role, as in `MoneyGuard` and `MoneyAmountPattern`. Few files. Small files.
 
-A use-case folder is plural, one word, no hyphen: `transactions`, `reconciliations`, `idempotencies`. Open the folder and the file is the singular subject: `wager.service.ts`, `reconciliation.service.ts`, `idempotency.service.ts`. The Nest role keeps its hyphen (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain names stay the business word: `money`, `wallet`, `ledger`, `wager`.
+A use-case folder is plural, one word, no hyphen: `transactions`, `reconciliations`, `idempotencies`. Open the folder and the file is the singular subject: `wager.service.ts`, `reconciliation.service.ts`, `idempotency.service.ts`. The Nest role keeps its suffix (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain names stay the business word: `money`, `wallet`, `ledger`, `wager`.
 
 Clean code: one responsibility per class. No `BaseManager`, `CommonService`, or `GenericHelper`.
 
-A design pattern needs a real problem. The factories the statement asks for are `create`, `from`, `rehydrate`, and `open`. No protocol per class. A section that fits in the parent spec does not become a new folder. Two exceptions live inside the concept: `data` for error text, and `patterns` when two rules share one protocol. Error text is one constant per phrase in `data/messages.ts`, inside the concept that throws. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports it. Callers import the folder. The domain does not import `application` to read it.
+A design pattern needs a real problem. The factories the statement asks for are `create`, `from`, `rehydrate`, and `open`. No protocol per class. A section that fits in the parent spec does not become a new folder. Two exceptions live inside the concept: `data` for error text, and `patterns` when two rules share one protocol. Error text is one constant per phrase in `data/messages.data.ts`, inside the concept that throws. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports it with `export *`. Callers import the folder. The domain does not import `application` to read it. An enum lives in `enums/`, one enum per file: `failure-code.enum.ts`. A map lives in `maps/`, a class that extends `Map`: `transition.map.ts`.
 
 ## Protocol
 

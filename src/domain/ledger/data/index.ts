@@ -1,4 +1,1 @@
-export {
-  BALANCE_EQUATION_MESSAGE,
-  CURRENCY_CONFLICT_MESSAGE,
-} from './messages'
+export * from './messages.data'

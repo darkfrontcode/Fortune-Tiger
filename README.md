@@ -35,6 +35,8 @@ This file follows each phase as it lands.
 
 `ledger` is in place. `create` keeps a debit or a credit only when `balanceBefore` and `money` produce `balanceAfter`. A debit subtracts. A credit adds. `rehydrate` rebuilds and does not recheck. The entry does not update or delete.
 
+`wager` is in place. `WagerTransaction` is born `PENDING`. It can move to `PENDING_REFERENCE`, `PROCESSED`, `REJECTED`, or `FAILED`. `PENDING_REFERENCE` can move to `PROCESSED`, `REJECTED`, or `FAILED`. A terminal status does not change. `reject` and `fail` store a `failureCode`. `create` requires a reference for `REFUND` and `ROLLBACK`. `rehydrate` rebuilds and does not recheck.
+
 An entity has an `id`. A value object has no `id` and is compared by value. The folder is the concept, and the file is the concept: `ledger/ledger.ts`. `entities/` and `values/` appear inside a concept only when that concept needs both.
 
 The private constructor receives a `schema`. A getter reads it. A rule method writes it. Types of a concept live in `types.ts`, in a namespace `{Concept}Type`.
