@@ -53,9 +53,9 @@ const failed = (read: () => void) => {
 }
 
 const open = (value: string, code: string) => {
-  const props = { amount: value, currency: code }
+  const input = { amount: value, currency: code }
 
-  return () => Money.from(props)
+  return () => Money.from(input)
 }
 
 const openZero = (code: string) => {

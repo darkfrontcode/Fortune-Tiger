@@ -62,7 +62,9 @@ The delivery target is the full score of section 14. A load test is not part of 
 
 ## Entity state
 
-The skeleton underscore (`_balance`) stays out of the code. Section 6 allows a different signature. State is a `schema`, received by the private constructor, as in the format skill. A getter reads the schema. A rule method writes the schema. `Money` and the ledger return another instance. Type names, kind, status, and `failureCode` follow the statement.
+The skeleton underscore (`_balance`) stays out of the code. Section 6 allows a different signature. State is a `schema`, received by the private constructor, as in the format skill. A getter reads the schema. A rule method writes the schema. `Money` and the ledger return another instance. Type names, kind, status, and `failureCode` follow the statement. The word `props` is not a type name and not a parameter name.
+
+Types of one concept live in that concept's `types.ts`, in one `export namespace` named `{Concept}Type`. Inside it, `Schema` comes first, then `Input`, then `Output`. The file that uses them aliases each name at the top and does not repeat `{Concept}Type.Schema` in the body. `MoneyType` is the money namespace.
 
 ## Inside the file
 

@@ -1,14 +1,9 @@
 import Decimal from 'decimal.js'
+import { MoneyType } from './types'
 
-export interface MoneyProps {
-  amount: string
-  currency: string
-}
-
-type Schema = {
-  amount: Decimal
-  currency: string
-}
+type Schema = MoneyType.Schema
+type Input = MoneyType.Input
+type Output = MoneyType.Output
 
 const scale = {
   places: 2,
@@ -38,8 +33,8 @@ const ZERO = new DecimalMoney(ZERO_AMOUNT)
 export class Money {
   private constructor(private readonly schema: Schema) {}
 
-  static from(props: MoneyProps): Money {
-    const schema = Money.read(props.amount, props.currency)
+  static from(input: Input): Money {
+    const schema = Money.read(input.amount, input.currency)
 
     return new Money(schema)
   }
@@ -110,7 +105,7 @@ export class Money {
     return this.schema.amount.equals(other.schema.amount)
   }
 
-  toJSON(): MoneyProps {
+  toJSON(): Output {
     const amount = this.amount
     const currency = this.currency
 

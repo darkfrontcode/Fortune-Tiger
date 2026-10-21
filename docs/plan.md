@@ -6,7 +6,7 @@ Each phase closes with a green test of what it introduced. Do not postpone the t
 
 No phase starts in code while its `spec.md` is missing.
 
-Use-case folders are one plural word, with no hyphen: `transactions`, `reconciliations`, `idempotencies`. The file inside is the singular subject (`wager.service.ts`). Domain folders stay `money`, `wallet`, `ledger`, and `wager`.
+Use-case folders are one plural word, with no hyphen: `transactions`, `reconciliations`, `idempotencies`. The file inside is the singular subject (`wager.service.ts`). Domain folders stay `money`, `wallet`, `ledger`, and `wager`. Types of one concept live in `types.ts`, in one namespace `{Concept}Type`. The word `props` is not used.
 
 `src` has only `domain`, `application`, `infrastructure`, and `presentation`. There is no folder named `shared`, `common`, or `utils`. That name is a junk drawer.
 

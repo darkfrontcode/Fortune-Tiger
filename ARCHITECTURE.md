@@ -44,6 +44,8 @@ An entity has an `id`. A value object has no `id` and is compared by value.
 
 The domain folder is the concept, and the file is the concept: `ledger/ledger.ts`. Do not label each concept as an entity or a value object ahead of time. `entities/` and `values/` appear inside a concept only when that concept needs both.
 
+Types of one concept live in `types.ts` beside that concept, in one `export namespace` named `{Concept}Type`. `Schema` is the state. `Input` and `Output` are the other shapes. The word `props` is not a type name and not a parameter name. The file that uses the namespace aliases each name at the top.
+
 ## Score
 
 The delivery target is the full score in section 14 of the statement: 100 points. A load test is optional and is not part of that score.
