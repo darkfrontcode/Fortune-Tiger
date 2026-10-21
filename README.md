@@ -31,6 +31,8 @@ This file follows each phase as it lands.
 
 `money` is in place. The amount is a decimal string with scale 2. `from` and `zero` build it. `decimal.js` does the math. A different currency throws.
 
+`wallet` is in place. `open` starts `version` at 1. `debit` and `credit` write the balance. A debit that would pass below zero throws. `version` increases only when the balance changes. `rehydrate` rebuilds and does not revalidate.
+
 An entity has an `id`. A value object has no `id` and is compared by value. The folder is the concept, and the file is the concept: `ledger/ledger.ts`. `entities/` and `values/` appear inside a concept only when that concept needs both.
 
 The private constructor receives a `schema`. A getter reads it. A rule method writes it. Types of a concept live in `types.ts`, in a namespace `{Concept}Type`.
