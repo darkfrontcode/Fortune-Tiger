@@ -3,13 +3,29 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:unit": "bun test src"
+    "test:unit": "bun test src/domain src/application",
+    "test:int": "bun test src/infrastructure/persistence/__tests__/wallet.repository.spec.ts",
+    "migration:up": "bunx mikro-orm migration:up",
+    "migration:down": "bunx mikro-orm migration:down",
+    "migration:pending": "bunx mikro-orm migration:pending"
   },
   "dependencies": {
-    "decimal.js": "^10.6.0"
+    "@mikro-orm/core": "^7.2.5",
+    "@mikro-orm/migrations": "^7.2.5",
+    "@mikro-orm/postgresql": "^7.2.5",
+    "decimal.js": "^10.6.0",
+    "pg": "^8.23.1",
+    "reflect-metadata": "^0.2.2",
+    "uuidv7": "^1.2.1"
+  },
+  "mikro-orm": {
+    "configPaths": [
+      "./mikro-orm.config.ts"
+    ]
   },
   "devDependencies": {
     "@types/bun": "^1.4.3",
+    "@types/pg": "^8.23.1",
     "typescript": "^5.9.0"
   }
 }

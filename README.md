@@ -62,6 +62,8 @@ One word, plural, no hyphen in the middle of the name.
 - `observability` — `SimpleLogger`, `ClockProtocol`, and metrics
 - `protocols` — `TheoryProtocol`, the contract a unit theory plugs in
 
+`persistence` is in place for `wallets` and `wallet_ledger_entries`. Migrations are versioned and reversible. Money columns are `numeric(20, 2)` with `currency char(3)`. Copy `.env.example` to `.env`, run `docker compose up -d postgres`, then `test:int` and `migration:*` read `DATABASE_URL`.
+
 PostgreSQL 16 stores `numeric(20, 2)`. The queue runs on LocalStack.
 
 </details>
