@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import { TheoryProtocol } from '../../application/protocols'
-import { Money } from '../money/money'
+import { TheoryProtocol } from '../../../application/protocols'
+import { Money } from '../../money/money'
 import {
   REFERENCE_REQUIRED_MESSAGE,
   STATUS_TRANSITION_MESSAGE,
   TERMINAL_STATUS_MESSAGE,
-} from './data'
-import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from './enums'
-import { WagerType } from './types'
-import { WagerTransaction } from './wager'
+} from '../data'
+import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '../enums'
+import { WagerType } from '../types'
+import { WagerTransaction } from '../wager'
 
 interface WagerTheory<TParams> extends TheoryProtocol<TParams> {
   title: string

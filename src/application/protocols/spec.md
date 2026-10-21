@@ -6,7 +6,7 @@ A plug-in contract. The folder is `protocols`, inside `application`. The file ro
 
 `PatternProtocol` has an input and an output. `test` receives the input and returns the output. `MoneyAmountPattern` and `MoneyCurrencyPattern` implement it. The money expression stays a `private readonly` property on those classes. It is not a method and not a `const` above the class. The protocol does not live in `domain`.
 
-`WagerStrategyProtocol` mediates one `WagerTransactionKind` against a wallet and an optional reference. Strategies live in `transactions/strategies/`.
+`WagerStrategyProtocol` mediates one `WagerTransactionKind` against a wallet and an optional reference. Strategies live in `transactions/wager/strategies/`.
 
 The files are `theory.protocol.ts`, `pattern.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
 

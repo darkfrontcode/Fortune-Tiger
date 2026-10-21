@@ -99,7 +99,7 @@ src/
 
 `main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` wires the layers. There is no `src/modules` folder. There is no `shared` folder.
 
-Files follow the Nest name (`health.controller.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, and `patterns/` holds the rule classes. A protocol stays in `application/protocols`.
+Files follow the Nest name (`health.controller.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, and `patterns/` holds the rule classes. A protocol stays in `application/protocols`. Unit tests live in `__tests__/` next to the module they cover. The file is `{subject}.spec.ts`. Production barrels do not reexport tests.
 
 ## Stack
 

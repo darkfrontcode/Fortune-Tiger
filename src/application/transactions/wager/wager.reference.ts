@@ -1,13 +1,13 @@
-import type { Wallet } from '../../domain/wallet'
+import type { Wallet } from '../../../domain/wallet'
 import {
   FailureCode,
   WagerTransactionKind,
   WagerTransactionStatus,
-} from '../../domain/wager/enums'
-import { ReferenceMap } from '../../domain/wager/maps'
-import type { WagerTransaction } from '../../domain/wager/wager'
-import { WagerGuard } from '../../domain/wager/wager.guard'
-import { TransactionsType } from './types'
+} from '../../../domain/wager/enums'
+import { ReferenceMap } from '../../../domain/wager/maps'
+import type { WagerTransaction } from '../../../domain/wager/wager'
+import { WagerGuard } from '../../../domain/wager/wager.guard'
+import { TransactionsType } from '../types'
 
 type Hold = TransactionsType.Hold
 

@@ -12,16 +12,16 @@ A terminal wager is not applied again.
 
 This use case decides which fact is recorded. `LOSS` records `WagerTransactionProcessed` and does not record `WalletBalanceChanged`. `WalletBalanceChanged` is recorded only when the balance changes. The envelope and the outbox row are in `src/infrastructure/messaging`.
 
-## Wager mediation
+## Wager
 
-`mediators/wager.mediator.ts` defines `WagerMediator.mediate`, which joins one `WagerTransaction`, one `Wallet`, and an optional reference. The caller passes whether this kind already reversed that reference, the ledger id, and the instant. The mediator does not search history.
+Wager mediation, strategies, and moves live in `wager/`. See `wager/spec.md`.
 
-`WagerStrategyProtocol` lives in `src/application/protocols`. One strategy per `WagerTransactionKind` sits in `strategies/`. `WagerContext.from` picks the strategy.
+`WagerStrategyProtocol` lives in `src/application/protocols`.
 
-`WagerMove` credits or debits the wallet and creates a `Ledger` row. `WagerReference` checks owner, currency, and reference rules before a strategy runs.
+A business failure rejects the wager. The balance, the version, and the ledger stay as they were. `WagerMediator.mediate` does not throw for a business failure.
 
-A business failure rejects the wager. The balance, the version, and the ledger stay as they were. `mediate` does not throw for a business failure.
+`wager.service.ts` arrives later. It will call `WagerMediator` inside the SQL transaction. Until then, unit tests call the mediator directly. Unit tests live in `__tests__/` next to the file they cover, as `{subject}.spec.ts`.
 
-`wager.service.ts` arrives later. It will call `WagerMediator` inside the SQL transaction. Until then, unit tests call the mediator directly.
+`types.ts` defines `TransactionsType` for mediation and reference holds.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

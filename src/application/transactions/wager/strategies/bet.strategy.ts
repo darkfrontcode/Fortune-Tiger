@@ -1,8 +1,8 @@
-import type { Ledger } from '../../../domain/ledger'
-import { FailureCode, WagerTransactionKind } from '../../../domain/wager'
-import type { WagerTransaction } from '../../../domain/wager'
-import type { WagerStrategyProtocol } from '../../protocols'
-import type { TransactionsType } from '../types'
+import type { Ledger } from '../../../../domain/ledger'
+import { FailureCode, WagerTransactionKind } from '../../../../domain/wager'
+import type { WagerTransaction } from '../../../../domain/wager'
+import type { WagerStrategyProtocol } from '../../../protocols'
+import type { TransactionsType } from '../../types'
 import { WagerMove } from '../wager.move'
 
 type Mediation = TransactionsType.Mediation

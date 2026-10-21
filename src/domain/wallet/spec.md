@@ -10,4 +10,6 @@ Aggregate root. At most one wallet per `playerId` + `currency`. Balance is never
 
 No lost update. The lock lives in `src/infrastructure/persistence/spec.md`. The unit of concurrency is `walletId`.
 
+Unit tests live in `__tests__/wallet.spec.ts`.
+
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

@@ -4,6 +4,8 @@ A test proves the property. It does not replace Postgres or SQS with a mock when
 
 ## Unit
 
+Unit tests sit in `__tests__/` beside the module they cover. The file name is `{subject}.spec.ts`.
+
 `Money`: scale, invalid input, currency conflict. `Wallet`: balance and version. `BET`, `WIN`, `LOSS`, `REFUND`, `ROLLBACK`. Same key with a different payload. Factories `create` and `rehydrate`.
 
 A unit case is a theory. `TheoryProtocol` lives in `src/application/protocols`. The case carries `params`, `expected`, and a description `WHEN` … `SHOULD`. The test compares the actual boolean with `expected`. The domain file under test does not import it.

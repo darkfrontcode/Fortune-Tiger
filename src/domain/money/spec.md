@@ -14,4 +14,6 @@ The happy path uses `BRL`. The model accepts another currency, and the currency 
 
 The domain uses `decimal.js`. No ORM money type. No Nest decorator. Factories: `from`, `zero`.
 
+Unit tests live in `__tests__/money.spec.ts`.
+
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

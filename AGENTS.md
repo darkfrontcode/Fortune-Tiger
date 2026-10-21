@@ -35,7 +35,7 @@ Nest names, Angular style. The file is `kebab-case` with the role as a suffix. T
 | `wager.service.ts` | `Wager.Service.ts` |
 | `app.module.ts` | `App.Module.ts` |
 
-The concept file stays the business word: `money.ts`, `wallet.ts`, `ledger.ts`, `wager.ts`. Types stay in `types.ts`. A test stays `{concept}.spec.ts` so the runner finds it.
+The concept file stays the business word: `money.ts`, `wallet.ts`, `ledger.ts`, `wager.ts`. Types stay in `types.ts`. A unit test stays in `__tests__/`, named `{subject}.spec.ts`, beside the code it covers.
 
 Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. Those two files sit beside the layers. They are not folders.
 

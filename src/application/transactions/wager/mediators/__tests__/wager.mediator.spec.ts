@@ -1,17 +1,17 @@
 import { describe, expect, test } from 'bun:test'
-import { LedgerDirection } from '../../../domain/ledger/enums'
-import { TheoryProtocol } from '../../protocols'
-import { Money } from '../../../domain/money/money'
-import { Wallet } from '../../../domain/wallet/wallet'
+import { LedgerDirection } from '../../../../../domain/ledger/enums'
+import { TheoryProtocol } from '../../../../protocols'
+import { Money } from '../../../../../domain/money/money'
+import { Wallet } from '../../../../../domain/wallet/wallet'
 import {
   FailureCode,
   WagerTransactionKind,
   WagerTransactionStatus,
-} from '../../../domain/wager/enums'
-import { WagerType } from '../../../domain/wager/types'
-import { WagerTransaction } from '../../../domain/wager/wager'
-import { TransactionsType } from '../types'
-import { WagerMediator } from './wager.mediator'
+} from '../../../../../domain/wager/enums'
+import { WagerType } from '../../../../../domain/wager/types'
+import { WagerTransaction } from '../../../../../domain/wager/wager'
+import { TransactionsType } from '../../../types'
+import { WagerMediator } from '../wager.mediator'
 
 interface MediatorTheory<TParams> extends TheoryProtocol<TParams> {
   title: string

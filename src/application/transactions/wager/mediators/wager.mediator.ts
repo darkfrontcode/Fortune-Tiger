@@ -1,9 +1,9 @@
-import type { Ledger } from '../../../domain/ledger'
-import { FailureCode } from '../../../domain/wager/enums'
-import type { WagerTransaction } from '../../../domain/wager/wager'
-import { WagerContext } from '../strategies/wager.context'
-import { TransactionsType } from '../types'
+import type { Ledger } from '../../../../domain/ledger'
+import { FailureCode } from '../../../../domain/wager/enums'
+import type { WagerTransaction } from '../../../../domain/wager/wager'
+import { TransactionsType } from '../../types'
 import { WagerReference } from '../wager.reference'
+import { WagerStrategy } from '../strategies'
 
 type Mediation = TransactionsType.Mediation
 
@@ -41,7 +41,7 @@ export class WagerMediator {
       return undefined
     }
 
-    const strategy = WagerContext.from(wager.kind)
+    const strategy = WagerStrategy.from(wager.kind)
 
     return strategy.execute(wager, mediation)
   }
