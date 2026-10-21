@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { TheoryProtocol } from '../../infrastructure/protocols'
+import { TheoryProtocol } from '../../application/protocols'
 import { Money } from '../money/money'
 import { Ledger } from './ledger'
 import { LedgerDirection } from './enums'

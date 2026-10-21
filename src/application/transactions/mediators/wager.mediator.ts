@@ -1,0 +1,48 @@
+import type { Ledger } from '../../../domain/ledger'
+import { FailureCode } from '../../../domain/wager/enums'
+import type { WagerTransaction } from '../../../domain/wager/wager'
+import { WagerContext } from '../strategies/wager.context'
+import { TransactionsType } from '../types'
+import { WagerReference } from '../wager.reference'
+
+type Mediation = TransactionsType.Mediation
+
+export class WagerMediator {
+  static mediate(wager: WagerTransaction, mediation: Mediation): Ledger | undefined {
+    const owned = WagerReference.owner(wager, mediation.wallet)
+
+    if (!owned) {
+      wager.reject(FailureCode.PLAYER_WALLET_MISMATCH)
+
+      return undefined
+    }
+
+    const aligned = WagerReference.currency(wager, mediation.wallet)
+
+    if (!aligned) {
+      wager.reject(FailureCode.CURRENCY_MISMATCH)
+
+      return undefined
+    }
+
+    const hold = WagerReference.hold(wager, mediation.reference, mediation.reversed)
+
+    if (hold.waiting) {
+      wager.markPendingReference()
+
+      return undefined
+    }
+
+    const code = hold.code
+
+    if (code !== undefined) {
+      wager.reject(code)
+
+      return undefined
+    }
+
+    const strategy = WagerContext.from(wager.kind)
+
+    return strategy.execute(wager, mediation)
+  }
+}

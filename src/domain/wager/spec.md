@@ -37,6 +37,8 @@ Replay returns the balance observed at that processing (`observedBalance` on the
 
 `create` starts at `PENDING` and checks whether the kind requires a reference. `rehydrate` does not revalidate transitions.
 
+Applying a kind to a wallet and a ledger lives in `src/application/transactions/spec.md` (`WagerMediator` and strategies). This folder keeps the entity, the guard, and the maps.
+
 ## failureCode
 
 The wager carries a stable machine-readable `failureCode`. The provider uses it to decide whether to resend, fix the payload, or stop.
