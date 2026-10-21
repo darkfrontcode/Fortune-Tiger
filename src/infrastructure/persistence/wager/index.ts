@@ -1,3 +1,6 @@
+export * from './reference.reader'
+export * from './reference.retry.writer'
+export * from './reference.worker'
 export * from './wager-bet.writer'
 export * from './wager-submit.writer'
 export * from './wager-transaction.entity'

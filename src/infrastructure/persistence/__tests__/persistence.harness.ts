@@ -11,7 +11,7 @@ const tables = [
 
 export class PersistenceHarness {
   static async open(): Promise<MikroORM> {
-    const orm = await createOrm()
+    const orm = await createOrm(undefined, true)
     const migrator = orm.getMigrator()
 
     await migrator.up()

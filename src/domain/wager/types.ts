@@ -20,6 +20,8 @@ export namespace WagerType {
     referenceTransactionId: string | undefined
     failureCode: FailureCode | undefined
     processedAt: Date | undefined
+    attempts: number
+    nextAttemptAt: Date | undefined
   }
 
   export type Input = {

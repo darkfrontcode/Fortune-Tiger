@@ -43,6 +43,14 @@ const identity = {
 const instant = {
   created: new Date('2026-01-01T00:00:00.000Z'),
   processed: new Date('2026-01-01T00:00:01.000Z'),
+  retry: new Date('2026-01-01T00:00:02.000Z'),
+}
+
+const retry = {
+  firstDelayMs: 1_000,
+  secondDelayMs: 2_000,
+  capMs: 60_000,
+  attempts: 12,
 }
 
 const blank = String()
@@ -132,9 +140,28 @@ class WagerProbe {
       referenceTransactionId: undefined,
       failureCode,
       processedAt,
+      attempts: 0,
+      nextAttemptAt: undefined,
     }
 
     return WagerTransaction.rehydrate(schema)
+  }
+
+  static retrying(attempts: number): WagerTransaction {
+    const wager = WagerProbe.stored(
+      WagerTransactionKind.REFUND,
+      WagerTransactionStatus.PENDING_REFERENCE,
+      identity.reference,
+      undefined,
+    )
+    const advance = (current: WagerTransaction) => {
+      current.scheduleRetry(instant.retry)
+
+      return current
+    }
+    const steps = new Array(attempts).fill(undefined)
+
+    return steps.reduce(advance, wager)
   }
 }
 
@@ -324,12 +351,65 @@ describe('WagerTransaction', () => {
       const terminal = wager.isTerminal()
       const coded = wager.failureCode === undefined
       const stamped = wager.processedAt === undefined
-      const kept = waiting && !terminal && coded && stamped
+      const reset = wager.attempts === 0
+      const absent = wager.nextAttemptAt === undefined
+      const kept = waiting && !terminal && coded && stamped && reset && absent
 
       expect(kept).toBe(expected)
     }
 
     test.each(theories)('$title - $description', prove)
+  })
+
+  describe('schedule retry', () => {
+    type Params = { attempts: number; exhausted: boolean; delayMs: number }
+
+    const theories: WagerTheory<Params>[] = [
+      {
+        title: 'first retry',
+        description: 'WHEN the first retry is scheduled SHOULD wait one second',
+        params: { attempts: 1, exhausted: false, delayMs: retry.firstDelayMs },
+        expected: true,
+      },
+      {
+        title: 'second retry',
+        description: 'WHEN the second retry is scheduled SHOULD wait two seconds',
+        params: { attempts: 2, exhausted: false, delayMs: retry.secondDelayMs },
+        expected: true,
+      },
+      {
+        title: 'capped retry',
+        description: 'WHEN the delay passes the cap SHOULD wait sixty seconds',
+        params: { attempts: 11, exhausted: false, delayMs: retry.capMs },
+        expected: true,
+      },
+      {
+        title: 'last retry',
+        description: 'WHEN the twelfth retry is scheduled SHOULD be exhausted',
+        params: { attempts: 12, exhausted: true, delayMs: retry.capMs },
+        expected: true,
+      },
+    ]
+
+    const prove = ({ params, expected }: WagerTheory<Params>) => {
+      const wager = WagerProbe.retrying(params.attempts)
+      const counted = wager.attempts === params.attempts
+      const scheduled = wager.nextAttemptAt?.getTime() === instant.retry.getTime() + params.delayMs
+      const exhausted = wager.exhausted() === params.exhausted
+      const kept = counted && scheduled && exhausted
+
+      expect(kept).toBe(expected)
+    }
+
+    test.each(theories)('$title - $description', prove)
+
+    test('not waiting', () => {
+      const wager = WagerProbe.open(WagerTransactionKind.BET, undefined)
+      const read = () => wager.scheduleRetry(instant.retry)
+      const message = WagerProbe.message(read)
+
+      expect(message).toBe(STATUS_TRANSITION_MESSAGE)
+    })
   })
 
   describe('pending reference moves forward', () => {
@@ -381,7 +461,8 @@ describe('WagerTransaction', () => {
       const moved = wager.status === params.status
       const terminal = wager.isTerminal()
       const coded = processed ? wager.failureCode === undefined : wager.failureCode === params.code
-      const kept = moved && terminal && coded
+      const cleared = wager.nextAttemptAt === undefined
+      const kept = moved && terminal && coded && cleared
 
       expect(kept).toBe(expected)
     }

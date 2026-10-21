@@ -3,7 +3,7 @@ import { MikroORM } from '@mikro-orm/postgresql'
 import config from '../../../mikro-orm.config'
 import { DATABASE_URL_REQUIRED_MESSAGE } from './data'
 
-export const createOrm = async (databaseUrl?: string) => {
+export const createOrm = async (databaseUrl?: string, allowGlobalContext = false) => {
   const fromParam = databaseUrl
   const fromEnv = process.env.DATABASE_URL
   const clientUrl = fromParam ?? fromEnv
@@ -12,7 +12,7 @@ export const createOrm = async (databaseUrl?: string) => {
     throw new Error(DATABASE_URL_REQUIRED_MESSAGE)
   }
 
-  const orm = await MikroORM.init({ ...config, clientUrl })
+  const orm = await MikroORM.init({ ...config, clientUrl, allowGlobalContext })
 
   return orm
 }

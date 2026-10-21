@@ -22,6 +22,7 @@ const amount = {
 const instant = {
   open: new Date('2026-01-01T00:00:00.000Z'),
   move: new Date('2026-01-01T00:00:01.000Z'),
+  later: new Date('2026-01-01T00:00:02.000Z'),
 }
 
 const revision = {
@@ -179,7 +180,7 @@ describe('WalletLedgerRepository', () => {
       money: secondMoney,
       balanceBefore: secondBefore,
       balanceAfter: secondAfter,
-      createdAt: instant.open,
+      createdAt: instant.later,
     })
 
     await Suite.ledger.save(second)

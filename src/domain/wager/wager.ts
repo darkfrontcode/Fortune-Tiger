@@ -1,10 +1,17 @@
 import type { Money } from '../money/money'
+import { STATUS_TRANSITION_MESSAGE } from './data'
 import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from './enums'
 import { WagerType } from './types'
 import { WagerGuard } from './wager.guard'
 
 type Schema = WagerType.Schema
 type Input = WagerType.Input
+
+const none = 0
+const retryFactor = 2
+const retryBaseMs = 1_000
+const retryCapMs = 60_000
+const maxAttempts = 12
 
 export class WagerTransaction {
   private constructor(private readonly schema: Schema) {}
@@ -30,6 +37,8 @@ export class WagerTransaction {
       referenceTransactionId: undefined,
       failureCode: undefined,
       processedAt: undefined,
+      attempts: none,
+      nextAttemptAt: undefined,
     }
 
     return new WagerTransaction(schema)
@@ -107,6 +116,14 @@ export class WagerTransaction {
     return this.schema.processedAt
   }
 
+  get attempts(): number {
+    return this.schema.attempts
+  }
+
+  get nextAttemptAt(): Date | undefined {
+    return this.schema.nextAttemptAt
+  }
+
   markProcessed(referenceTransactionId: string | undefined, at: Date): void {
     WagerGuard.move(this.schema.status, WagerTransactionStatus.PROCESSED)
 
@@ -114,12 +131,36 @@ export class WagerTransaction {
     this.schema.referenceTransactionId = referenceTransactionId
     this.schema.failureCode = undefined
     this.schema.processedAt = at
+    this.schema.nextAttemptAt = undefined
   }
 
   markPendingReference(): void {
     WagerGuard.move(this.schema.status, WagerTransactionStatus.PENDING_REFERENCE)
 
     this.schema.status = WagerTransactionStatus.PENDING_REFERENCE
+    this.schema.attempts = none
+    this.schema.nextAttemptAt = undefined
+  }
+
+  scheduleRetry(at: Date): void {
+    const waiting = this.schema.status === WagerTransactionStatus.PENDING_REFERENCE
+
+    if (!waiting) {
+      const message = STATUS_TRANSITION_MESSAGE
+
+      throw new Error(message)
+    }
+
+    const attempts = this.schema.attempts + 1
+    const factor = retryFactor ** (attempts - 1)
+    const delay = Math.min(retryBaseMs * factor, retryCapMs)
+
+    this.schema.attempts = attempts
+    this.schema.nextAttemptAt = new Date(at.getTime() + delay)
+  }
+
+  exhausted(): boolean {
+    return this.schema.attempts >= maxAttempts
   }
 
   reject(code: FailureCode): void {
@@ -127,6 +168,7 @@ export class WagerTransaction {
 
     this.schema.status = WagerTransactionStatus.REJECTED
     this.schema.failureCode = code
+    this.schema.nextAttemptAt = undefined
   }
 
   fail(code: FailureCode): void {
@@ -134,6 +176,7 @@ export class WagerTransaction {
 
     this.schema.status = WagerTransactionStatus.FAILED
     this.schema.failureCode = code
+    this.schema.nextAttemptAt = undefined
   }
 
   isTerminal(): boolean {

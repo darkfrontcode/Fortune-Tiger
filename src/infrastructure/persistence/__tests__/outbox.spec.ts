@@ -132,7 +132,7 @@ describe('Outbox persistence', () => {
 
     const rows = await Suite.orm.em.find(OutboxMessageEntity, {})
     const types = rows.map(byEventType).sort()
-    const expected = [events.changed, events.processed]
+    const expected = [events.processed, events.changed]
     const byChanged = (row: OutboxMessageEntity) => row.eventType === events.changed
     const changed = rows.find(byChanged)
     const pending = rows.every(byPending)

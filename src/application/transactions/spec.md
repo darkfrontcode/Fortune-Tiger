@@ -6,7 +6,7 @@ One SQL transaction commits the wager, the wallet, the ledger, and the outbox. W
 
 The use case locks the wallet inside that transaction. See `src/infrastructure/persistence/spec.md`.
 
-`OPENING` is not accepted here. A missing reference persists `PENDING_REFERENCE` and is retried by the scheduled worker described in `src/domain/wager/spec.md`.
+`OPENING` is not accepted here. A missing reference persists `PENDING_REFERENCE` and is retried by `ReferenceService` in `src/application/references`. The retry state and the backoff are in `src/domain/wager/spec.md`.
 
 A terminal wager is not applied again.
 
