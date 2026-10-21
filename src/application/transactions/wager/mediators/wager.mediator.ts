@@ -1,7 +1,7 @@
 import type { Ledger } from '../../../../domain/ledger'
 import { FailureCode } from '../../../../domain/wager/enums'
 import type { WagerTransaction } from '../../../../domain/wager/wager'
-import { TransactionsType } from '../../types'
+import { TransactionsType } from '../types'
 import { WagerReference } from '../wager.reference'
 import { WagerStrategy } from '../strategies'
 

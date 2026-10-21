@@ -12,6 +12,6 @@ All project text is English, including the root `README.md`.
 
 History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this folder starts doing something.
 
-- `transactions` — the wager. `wager.service.ts` lives here. HTTP and the queue call the same use case.
+- `transactions` — the wager. `wager/wager.service.ts` is the entry. HTTP and the queue call the same use case.
 - `reconciliations` — `reconciliation.service.ts`. Compares the balance with the ledger. Does not repair it.
 - `idempotencies` — `idempotency.service.ts`. Key, hash, and replay.
