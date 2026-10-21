@@ -1,8 +1,10 @@
 # Observability
 
-`ClockProtocol` is the injectable clock. The file is `clock.protocol.ts`. A plug-in contract ends with `Protocol`.
+`ClockProtocol` is the injectable clock. The file is `clock.protocol.ts`. A plug-in contract ends with `Protocol`. `SystemClock` implements it with the system time.
 
-`SimpleLogger` is the application log API. Nest gets a thin adapter that delegates to `SimpleLogger`. Pretty output when `LOG_PRETTY=true`. JSON when the variable is missing or false. `child` attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. `amount`, `money`, and the wager body never enter the log. No full financial payload.
+`SimpleLogger` is the application log API. It implements `LoggerProtocol`. `open` receives the clock and `pretty`. The Nest adapter reads `LOG_PRETTY` and passes `pretty`; the adapter arrives with the boot. Pretty output when the value is true. JSON when the variable is missing or false. `child` attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. `warn` writes one line to the standard output. `amount`, `money`, and the wager body never enter the log. No full financial payload.
+
+A line carries `time`, `level`, `message`, and the context of the child. JSON is one object per line. Pretty is one text line with `key=value` pairs. An absent field is not written. `child` returns another logger and does not change the parent.
 
 Metrics cover transactions by status, duplicates, retries, DLQ messages, lock conflicts, outbox lag, and processing latency.
 
