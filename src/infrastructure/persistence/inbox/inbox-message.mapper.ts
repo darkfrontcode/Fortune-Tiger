@@ -1,4 +1,4 @@
-import { InboxMessage } from '../../messaging/inbox-message'
+import { InboxMessage } from '../../messaging/messages'
 import { InboxMessageEntity } from './inbox-message.entity'
 
 export class InboxMessageMapper {

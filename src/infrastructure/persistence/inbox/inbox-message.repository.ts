@@ -1,5 +1,5 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
-import { InboxMessage } from '../../messaging/inbox-message'
+import { InboxMessage } from '../../messaging/messages'
 import { InboxMessageEntity } from './inbox-message.entity'
 import { InboxMessageMapper } from './inbox-message.mapper'
 

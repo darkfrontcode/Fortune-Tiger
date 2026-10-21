@@ -9,9 +9,10 @@ import type { Ledger } from '../../../domain/ledger/ledger'
 import type { Wallet } from '../../../domain/wallet/wallet'
 import { FailureCode } from '../../../domain/wager/enums'
 import type { WagerTransaction } from '../../../domain/wager/wager'
-import { InboxMessage } from '../../messaging/inbox-message'
+import { InboxMessage, WagerEventsMapper } from '../../messaging'
 import { InboxMessageRepository } from '../inbox/inbox-message.repository'
 import { WalletLedgerRepository } from '../ledger/wallet-ledger.repository'
+import { OutboxMessageRepository } from '../outbox/outbox-message.repository'
 import { WalletRepository } from '../wallet/wallet.repository'
 import { WagerTransactionRepository } from './wager-transaction.repository'
 
@@ -20,6 +21,8 @@ type QueueInbox = TransactionsType.QueueInbox
 
 export class WagerSubmitWriter implements WagerGatewayProtocol {
   private readonly idempotency = new IdempotencyService()
+
+  private readonly events = new WagerEventsMapper()
 
   constructor(private readonly orm: MikroORM) {}
 
@@ -30,6 +33,7 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
         const wagers = new WagerTransactionRepository(manager)
         const ledger = new WalletLedgerRepository(manager)
         const inboxRepo = new InboxMessageRepository(manager)
+        const outbox = new OutboxMessageRepository(manager)
         const queue = inbox !== undefined
         const deduped = queue
           ? await WagerSubmitWriter.inbox(inboxRepo, wagers, this.idempotency, wager, inbox)
@@ -72,6 +76,7 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
         const observed = locked.balance.amount
 
         await WagerSubmitWriter.persist(wallets, wagers, ledger, locked, wager, row, observed)
+        this.record(outbox, wager, locked, row, inbox, at)
         await WagerSubmitWriter.finishInbox(inboxRepo, inbox, at)
 
         return WagerSubmitWriter.fromWager(wager, observed, false)
@@ -218,5 +223,22 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
     if (row === undefined) { return }
 
     await ledger.save(row)
+  }
+
+  private record(
+    outbox: OutboxMessageRepository,
+    wager: WagerTransaction,
+    wallet: Wallet,
+    ledger: Ledger | undefined,
+    inbox: QueueInbox | undefined,
+    at: Date,
+  ): void {
+    const correlationId = wager.idempotencyKey
+    const causationId = inbox === undefined ? undefined : inbox.messageId
+    const context = { correlationId, causationId, occurredAt: at }
+    const input = { wager, wallet, ledger, context }
+    const messages = this.events.map(input)
+
+    outbox.saveMany(messages)
   }
 }

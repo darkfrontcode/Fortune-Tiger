@@ -14,3 +14,16 @@ export namespace InboxMessageType {
     receivedAt: Date
   }
 }
+
+export namespace OutboxMessageType {
+  export type Schema = {
+    id: string
+    aggregateId: string
+    eventType: string
+    payload: Readonly<Record<string, unknown>>
+    occurredAt: Date
+    attempts: number
+    nextAttemptAt: Date | undefined
+    publishedAt: Date | undefined
+  }
+}
