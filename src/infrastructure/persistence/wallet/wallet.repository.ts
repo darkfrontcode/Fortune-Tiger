@@ -1,3 +1,4 @@
+import { LockMode } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { Wallet } from '../../../domain/wallet/wallet'
 import { WalletEntity } from './wallet.entity'
@@ -23,6 +24,18 @@ export class WalletRepository {
 
   async findById(id: string): Promise<Wallet | undefined> {
     const entity = await this.manager.findOne(WalletEntity, { id })
+
+    if (entity === null) { return undefined }
+
+    return this.mapper.toDomain(entity)
+  }
+
+  async findByIdForUpdate(id: string): Promise<Wallet | undefined> {
+    const entity = await this.manager.findOne(
+      WalletEntity,
+      { id },
+      { lockMode: LockMode.PESSIMISTIC_WRITE },
+    )
 
     if (entity === null) { return undefined }
 
