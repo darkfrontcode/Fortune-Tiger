@@ -1,4 +1,4 @@
-import type { PatternProtocol } from '../../../infrastructure/protocols'
+import type { PatternProtocol } from '../../../application/protocols'
 
 type Input = string
 type Output = boolean

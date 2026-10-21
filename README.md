@@ -46,7 +46,7 @@ The private constructor receives a `schema`. A getter reads it. A rule method wr
 <details>
 <summary>⚙️ Application</summary>
 
-- `transactions` — the wager. HTTP and the queue call `wager.service.ts`.
+- `transactions` — `WagerMediator` joins the wager, the wallet, and the ledger. Strategies apply each `kind`. HTTP and the queue will call `wager.service.ts` later.
 - `reconciliations` — `reconciliation.service.ts` compares the wallet with the ledger.
 - `idempotencies` — `idempotency.service.ts` holds the key, the hash, and the replay.
 
@@ -89,7 +89,7 @@ interface MapperProtocol<Input, Output> {
 }
 ```
 
-`Mapper` is the naming example. The file lives in `application/protocols` or `infrastructure/protocols`. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` is in `infrastructure/protocols`.
+`Mapper` is the naming example. The file lives in `application/protocols`. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` and `PatternProtocol` are there too.
 
 </details>
 

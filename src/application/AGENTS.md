@@ -4,9 +4,9 @@ Use cases. It joins the domain and the SQL transaction boundary. No SQL and no H
 
 A folder is plural, one word, no hyphen. The evaluator reads the folder name and knows what is inside.
 
-There is no `shared` folder here. A port that a use case plugs in lives in `protocols`. `TheoryProtocol` is not a use case. It lives in `infrastructure/protocols`. This layer does not import `presentation`. Domain error text does not live here. It stays in the concept, in `data/messages.data.ts`, one `UPPER_SNAKE_CASE` constant per phrase ending with `_MESSAGE`, reexported by `data/index.ts` with `export *`.
+There is no `shared` folder here. A plug-in contract lives in `protocols`. `TheoryProtocol`, `PatternProtocol`, and use-case protocols such as `WagerStrategyProtocol` live there. `protocols/spec.md` describes them. `protocols/index.ts` reexports with `export *`. This layer does not import `presentation`. Domain error text does not live here. It stays in the concept, in `data/messages.data.ts`, one `UPPER_SNAKE_CASE` constant per phrase ending with `_MESSAGE`, reexported by `data/index.ts` with `export *`.
 
-Each folder has an English `spec.md`. The code follows that spec. When the code arrives, one file per folder: a short singular name plus the Nest role. No hyphen in the middle of the concept.
+Each folder has an English `spec.md`. The code follows that spec. Unit tests live in `__tests__/` beside the module they cover, as `{subject}.spec.ts`. When the code arrives, one file per folder: a short singular name plus the Nest role. No hyphen in the middle of the concept.
 
 All project text is English, including the root `README.md`.
 

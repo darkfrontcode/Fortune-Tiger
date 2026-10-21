@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { TheoryProtocol } from '../../infrastructure/protocols'
-import { Money } from '../money/money'
-import { Wallet } from './wallet'
+import { TheoryProtocol } from '../../../application/protocols'
+import { Money } from '../../money/money'
+import { Wallet } from '../wallet'
 
 interface WalletTheory<TParams> extends TheoryProtocol<TParams> {
   title: string
