@@ -34,11 +34,13 @@ Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. Those two f
 
 `src` has four folders, and only these: `domain`, `application`, `infrastructure`, `presentation`. There is no `src/modules` folder and no `src/main` folder.
 
-There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application` or `infrastructure`. Domain does not have that folder. Presentation does not have that folder. `TheoryProtocol` lives in `infrastructure/protocols`.
+There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application` or `infrastructure`. Domain does not have that folder. Presentation does not have that folder. `TheoryProtocol` and `PatternProtocol` live in `infrastructure/protocols`.
+
+A folder that exposes its files reexports them from `index.ts`. Callers import the folder, not the file.
 
 ## Simplicity
 
-Simple code. Clean Architecture lets an outsider see what each folder is. Simple names. A name is one English word, except a message constant. Few files. Small files.
+Simple code. Clean Architecture lets an outsider see what each folder is. Simple names. A name is one English word and says what is being checked. A message constant is the exception: `UPPER_SNAKE_CASE` ending with `_MESSAGE`. A class name may join the concept and the role, as in `MoneyGuard` and `MoneyAmountPattern`. Few files. Small files.
 
 A use-case folder is plural, one word, no hyphen: `transactions`, `reconciliations`, `idempotencies`. Open the folder and the file is the singular subject: `wager.service.ts`, `reconciliation.service.ts`, `idempotency.service.ts`. The Nest role keeps its hyphen (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain names stay the business word: `money`, `wallet`, `ledger`, `wager`.
 
