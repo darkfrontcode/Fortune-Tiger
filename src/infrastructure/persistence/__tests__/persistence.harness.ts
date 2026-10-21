@@ -1,7 +1,7 @@
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { createOrm } from '../orm.factory'
 
-const tables = ['wallet_ledger_entries', 'wallets']
+const tables = ['wallet_ledger_entries', 'wager_transactions', 'wallets']
 
 export class PersistenceHarness {
   static async open(): Promise<MikroORM> {
