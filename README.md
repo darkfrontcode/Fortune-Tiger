@@ -33,6 +33,8 @@ This file follows each phase as it lands.
 
 `wallet` is in place. `open` starts `version` at 1. `debit` and `credit` write the balance. A debit that would pass below zero throws. `version` increases only when the balance changes. `rehydrate` rebuilds and does not revalidate.
 
+`ledger` is in place. `create` keeps a debit or a credit only when `balanceBefore` and `money` produce `balanceAfter`. A debit subtracts. A credit adds. `rehydrate` rebuilds and does not recheck. The entry does not update or delete.
+
 An entity has an `id`. A value object has no `id` and is compared by value. The folder is the concept, and the file is the concept: `ledger/ledger.ts`. `entities/` and `values/` appear inside a concept only when that concept needs both.
 
 The private constructor receives a `schema`. A getter reads it. A rule method writes it. Types of a concept live in `types.ts`, in a namespace `{Concept}Type`.
