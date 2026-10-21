@@ -9,6 +9,7 @@ import { WalletEntity } from '../wallet/wallet.entity'
 @Entity({ tableName: 'wager_transactions' })
 @Unique({ properties: ['idempotencyKey'] })
 @Unique({ properties: ['providerId', 'externalTransactionId'] })
+@Index({ properties: ['status', 'nextAttemptAt'] })
 export class WagerTransactionEntity {
   @PrimaryKey({ type: 'uuid' })
   id!: string
@@ -67,4 +68,10 @@ export class WagerTransactionEntity {
 
   @Property({ fieldName: 'processed_at', type: 'timestamptz', nullable: true })
   processedAt?: Date
+
+  @Property({ type: 'int', default: 0 })
+  attempts!: number
+
+  @Property({ fieldName: 'next_attempt_at', type: 'timestamptz', nullable: true })
+  nextAttemptAt?: Date
 }

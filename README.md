@@ -35,7 +35,7 @@ This file follows each phase as it lands.
 
 `ledger` is in place. `create` keeps a debit or a credit only when `balanceBefore` and `money` produce `balanceAfter`. A debit subtracts. A credit adds. `rehydrate` rebuilds and does not recheck. The entry does not update or delete.
 
-`wager` is in place. `WagerTransaction` is born `PENDING`. It can move to `PENDING_REFERENCE`, `PROCESSED`, `REJECTED`, or `FAILED`. `PENDING_REFERENCE` can move to `PROCESSED`, `REJECTED`, or `FAILED`. A terminal status does not change. `reject` and `fail` store a `failureCode`. `create` requires a reference for `REFUND` and `ROLLBACK`. `rehydrate` rebuilds and does not recheck.
+`wager` is in place. `WagerTransaction` is born `PENDING`. It can move to `PENDING_REFERENCE`, `PROCESSED`, `REJECTED`, or `FAILED`. `PENDING_REFERENCE` can move to `PROCESSED`, `REJECTED`, or `FAILED`. A terminal status does not change. `reject` and `fail` store a `failureCode`. `create` requires a reference for `REFUND` and `ROLLBACK`. `rehydrate` rebuilds and does not recheck. `PENDING_REFERENCE` carries `attempts` and `nextAttemptAt`; the backoff is `1s × 2^(attempts - 1)`, capped at 60 seconds, and the 12th missing retry rejects with `REFERENCE_NOT_FOUND`.
 
 An entity has an `id`. A value object has no `id` and is compared by value. The folder is the concept, and the file is the concept: `ledger/ledger.ts`. `entities/` and `values/` appear inside a concept only when that concept needs both.
 
@@ -47,6 +47,7 @@ The private constructor receives a `schema`. A getter reads it. A rule method wr
 <summary>⚙️ Application</summary>
 
 - `transactions` — `WagerService` hashes the payload and calls `WagerGatewayProtocol`. `WagerMediator` and strategies run inside the SQL transaction (`WagerSubmitWriter`). HTTP and the queue will call the same service later.
+- `references` — `ReferenceService` retries a `PENDING_REFERENCE` wager with backoff and stops after 12 attempts.
 - `reconciliations` — `reconciliation.service.ts` compares the wallet with the ledger.
 - `idempotencies` — `idempotency.service.ts` hashes the canonical business payload. `outcome` replays with `observedBalance`, or returns `IDEMPOTENCY_PAYLOAD_CONFLICT` when the key repeats with a different body.
 

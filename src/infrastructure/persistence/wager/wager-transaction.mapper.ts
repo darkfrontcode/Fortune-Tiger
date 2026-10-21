@@ -19,12 +19,14 @@ export class WagerTransactionMapper {
       gameId: entity.gameId,
       kind: entity.kind,
       money,
-      referenceExternalTransactionId: entity.referenceExternalTransactionId,
+      referenceExternalTransactionId: entity.referenceExternalTransactionId ?? undefined,
       createdAt: entity.createdAt,
       status: entity.status,
-      referenceTransactionId: entity.referenceTransactionId,
-      failureCode: entity.failureCode,
-      processedAt: entity.processedAt,
+      referenceTransactionId: entity.referenceTransactionId ?? undefined,
+      failureCode: entity.failureCode ?? undefined,
+      processedAt: entity.processedAt ?? undefined,
+      attempts: entity.attempts,
+      nextAttemptAt: entity.nextAttemptAt ?? undefined,
     }
 
     return WagerTransaction.rehydrate(schema)
@@ -56,6 +58,8 @@ export class WagerTransactionMapper {
     entity.createdAt = wager.createdAt
     entity.processedAt = wager.processedAt
     entity.observedBalance = observedBalance
+    entity.attempts = wager.attempts
+    entity.nextAttemptAt = wager.nextAttemptAt
 
     return entity
   }
@@ -83,6 +87,8 @@ export class WagerTransactionMapper {
     entity.failureCode = wager.failureCode
     entity.createdAt = wager.createdAt
     entity.processedAt = wager.processedAt
+    entity.attempts = wager.attempts
+    entity.nextAttemptAt = wager.nextAttemptAt
 
     if (observedBalance !== undefined) { entity.observedBalance = observedBalance }
   }

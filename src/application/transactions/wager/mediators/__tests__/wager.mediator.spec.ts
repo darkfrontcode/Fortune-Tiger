@@ -125,6 +125,8 @@ class MediatorProbe {
       referenceTransactionId: undefined,
       failureCode: undefined,
       processedAt,
+      attempts: 0,
+      nextAttemptAt: undefined,
     }
 
     return WagerTransaction.rehydrate(schema)
@@ -221,8 +223,9 @@ describe('WagerMediator', () => {
       const ledger = WagerMediator.mediate(wager, mediation)
       const waiting = wager.status === WagerTransactionStatus.PENDING_REFERENCE
       const empty = ledger === undefined
+      const reset = wager.attempts === 0 && wager.nextAttemptAt === undefined
 
-      expect(waiting && empty).toBe(true)
+      expect(waiting && empty && reset).toBe(true)
     })
 
     test('dead reference - WHEN the reference was rejected SHOULD refuse reference not found', () => {

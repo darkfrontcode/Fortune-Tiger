@@ -1,3 +1,4 @@
+import { LockMode, QueryOrder } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { IdempotencyType } from '../../../application/idempotencies/types'
 import { WagerTransactionKind, WagerTransactionStatus } from '../../../domain/wager/enums'
@@ -63,6 +64,36 @@ export class WagerTransactionRepository {
     if (entity === null) { return undefined }
 
     return this.mapper.toDomain(entity)
+  }
+
+  async findByIdForUpdate(id: string): Promise<WagerTransaction | undefined> {
+    const entity = await this.manager.findOne(
+      WagerTransactionEntity,
+      { id },
+      { lockMode: LockMode.PESSIMISTIC_WRITE },
+    )
+
+    if (entity === null) { return undefined }
+
+    return this.mapper.toDomain(entity)
+  }
+
+  async dueForReference(at: Date, limit: number): Promise<Array<WagerTransaction>> {
+    const entities = await this.manager.find(
+      WagerTransactionEntity,
+      {
+        status: WagerTransactionStatus.PENDING_REFERENCE,
+        $or: [{ nextAttemptAt: null }, { nextAttemptAt: { $lte: at } }],
+      },
+      {
+        limit,
+        orderBy: { nextAttemptAt: QueryOrder.ASC },
+        populate: ['wallet'],
+      },
+    )
+    const toDomain = (entity: WagerTransactionEntity) => this.mapper.toDomain(entity)
+
+    return entities.map(toDomain)
   }
 
   async findByIdempotencyKey(idempotencyKey: string): Promise<WagerTransaction | undefined> {

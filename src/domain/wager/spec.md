@@ -31,13 +31,21 @@ Born `PENDING`.
 
 A reversal that would leave a negative balance → `REJECTED` `REVERSAL_INSUFFICIENT_FUNDS`. It does not use the insufficient-bet code.
 
-A reference that is still missing → `PENDING_REFERENCE`. Worker every 2 seconds. Backoff `1s × 2^n`, cap 60s, 12 attempts. Exhausted → `REJECTED` `REFERENCE_NOT_FOUND` and `WagerTransactionPendingReference`.
+A reference that is still missing → `PENDING_REFERENCE`.
+
+`markPendingReference()` sets `attempts` to 0 and leaves `nextAttemptAt` absent. The initial submit is not counted as an attempt. The first retry is due on the next worker tick.
+
+The worker runs every 2 seconds and loads `PENDING_REFERENCE` rows whose `nextAttemptAt` is absent or not after now. For each row, a missing reference calls `scheduleRetry(now)`. It increments `attempts` and sets `nextAttemptAt` to `now + 1s × 2^(attempts - 1)`, capped at 60 seconds. `attempts` counts worker retries. `exhausted()` is true when `attempts` reaches 12. The 12th missing retry rejects with `REFERENCE_NOT_FOUND`. `PROCESSED`, `REJECTED`, and `FAILED` clear `nextAttemptAt`.
+
+The pending event is recorded on the first transition to `PENDING_REFERENCE`. A retry that is still missing does not record it again. Exhaustion records `WagerTransactionRejected`.
+
+`scheduleRetry` throws when the status is not `PENDING_REFERENCE`.
 
 Replay returns the balance observed at that processing (`observedBalance` on the wager or the ledger), not the current balance.
 
 `create` starts at `PENDING` and checks whether the kind requires a reference. `rehydrate` does not revalidate transitions.
 
-Applying a kind to a wallet and a ledger lives in `src/application/transactions/spec.md` (`WagerMediator` and strategies). This folder keeps the entity, the guard, and the maps.
+Applying a kind to a wallet and a ledger lives in `src/application/transactions/spec.md` (`WagerMediator` and strategies). The retry decision lives in `ReferenceMediator`, in `src/application/references/spec.md`. This folder keeps the entity, the guard, the retry state, and the maps.
 
 ## failureCode
 

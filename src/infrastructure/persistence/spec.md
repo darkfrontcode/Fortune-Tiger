@@ -6,10 +6,12 @@ PostgreSQL 16. Section 4 of the statement excludes Prisma. This project uses Mik
 
 `SELECT FOR UPDATE` on the wallet inside the SQL transaction that also writes the ledger, the wager, the inbox, and the outbox. No global lock. No bare `read → calculate → update`. The schema constraint is the final guarantee.
 
+`ReferenceReader.due` selects `PENDING_REFERENCE` rows whose `next_attempt_at` is null or not after now, ordered by `next_attempt_at`, limited by the caller. `ReferenceRetryWriter.retry` locks the wager row and the wallet row with `SELECT FOR UPDATE`, then writes the wager, the wallet, the ledger, and the outbox in one SQL transaction. A retry that is still waiting writes only `attempts` and `next_attempt_at`.
+
 Tables: `wallets`, `wager_transactions`, `wallet_ledger_entries`, `inbox_messages`, `outbox_messages`.
 
 - `wallets`: unique `(player_id, currency)`; balance `>= 0`; `version >= 1`
-- `wager_transactions`: unique `idempotency_key`; unique `(provider_id, external_transaction_id)`; `kind` and `status` as Postgres enums; scale 2
+- `wager_transactions`: unique `idempotency_key`; unique `(provider_id, external_transaction_id)`; `kind` and `status` as Postgres enums; scale 2; `attempts int not null default 0`; `next_attempt_at timestamptz null`; index `(status, next_attempt_at)`
 - `wallet_ledger_entries`: unique `transaction_id`; no update and no delete in the app; `balance_after` matches the direction
 - `inbox_messages`: unique `(consumer_name, message_id)`
 - `outbox_messages`: index `(published_at, next_attempt_at)`

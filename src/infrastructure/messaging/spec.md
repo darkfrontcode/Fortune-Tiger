@@ -25,6 +25,8 @@ This is queue deduplication. It is not a wager rule. The wager rule is in `src/a
 
 `mappers/wager-events.mapper.ts` holds `WagerEventsMapper`, and it implements `MapperProtocol`. It reads the status the use case left on the wager and returns the rows to enqueue. `PROCESSED` with a ledger row returns `WagerTransactionProcessed` and `WalletBalanceChanged`. `PROCESSED` without a ledger row (`LOSS`) returns only `WagerTransactionProcessed`. `REJECTED` returns `WagerTransactionRejected`. `PENDING_REFERENCE` returns `WagerTransactionPendingReference`. Any other status returns nothing.
 
+A retry that is still missing updates `attempts` and `next_attempt_at` and does not enqueue a second `WagerTransactionPendingReference`. Exhaustion reaches `REJECTED` and enqueues `WagerTransactionRejected`.
+
 `correlationId` is the wager `idempotencyKey`. `causationId` is the queue `messageId` when the entry is the queue, and absent when it is not.
 
 The row is inserted in the same SQL transaction as the business change. Publishing to SQS stays outside that transaction.
