@@ -4,6 +4,12 @@ import type { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '
 import type { WagerTransaction } from '../../../domain/wager/wager'
 
 export namespace TransactionsType {
+  export type QueueInbox = {
+    messageId: string
+    consumerName: string
+    receivedAt: Date
+  }
+
   export type SubmitInput = {
     id: string
     idempotencyKey: string
@@ -17,6 +23,7 @@ export namespace TransactionsType {
     money: Money
     referenceExternalTransactionId: string | undefined
     at: Date
+    inbox?: QueueInbox
   }
 
   export type SubmitOutput = {

@@ -9,29 +9,44 @@ import type { Ledger } from '../../../domain/ledger/ledger'
 import type { Wallet } from '../../../domain/wallet/wallet'
 import { FailureCode } from '../../../domain/wager/enums'
 import type { WagerTransaction } from '../../../domain/wager/wager'
+import { InboxMessage } from '../../messaging/inbox-message'
+import { InboxMessageRepository } from '../inbox/inbox-message.repository'
 import { WalletLedgerRepository } from '../ledger/wallet-ledger.repository'
 import { WalletRepository } from '../wallet/wallet.repository'
 import { WagerTransactionRepository } from './wager-transaction.repository'
 
 type SubmitOutput = TransactionsType.SubmitOutput
+type QueueInbox = TransactionsType.QueueInbox
 
 export class WagerSubmitWriter implements WagerGatewayProtocol {
   private readonly idempotency = new IdempotencyService()
 
   constructor(private readonly orm: MikroORM) {}
 
-  async submit(wager: WagerTransaction, at: Date): Promise<SubmitOutput> {
+  async submit(wager: WagerTransaction, at: Date, inbox?: QueueInbox): Promise<SubmitOutput> {
     const run = async () => {
       return this.orm.em.transactional(async (manager) => {
         const wallets = new WalletRepository(manager)
         const wagers = new WagerTransactionRepository(manager)
         const ledger = new WalletLedgerRepository(manager)
+        const inboxRepo = new InboxMessageRepository(manager)
+        const queue = inbox !== undefined
+        const deduped = queue
+          ? await WagerSubmitWriter.inbox(inboxRepo, wagers, this.idempotency, wager, inbox)
+          : undefined
+
+        if (deduped !== undefined) { return deduped }
+
         const stored = await wagers.findStoredByIdempotencyKey(wager.idempotencyKey)
 
         if (stored !== undefined) {
           const replay = WagerSubmitWriter.replay(this.idempotency, wager, stored)
 
-          if (replay !== undefined) { return replay }
+          if (replay !== undefined) {
+            await WagerSubmitWriter.finishInbox(inboxRepo, inbox, at)
+
+            return replay
+          }
         }
 
         const locked = await wallets.findByIdForUpdate(wager.walletId)
@@ -40,7 +55,6 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
           wager.reject(FailureCode.WALLET_NOT_FOUND)
 
           const observed = '0.00'
-
           return WagerSubmitWriter.fromWager(wager, observed, false)
         }
 
@@ -58,12 +72,63 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
         const observed = locked.balance.amount
 
         await WagerSubmitWriter.persist(wallets, wagers, ledger, locked, wager, row, observed)
+        await WagerSubmitWriter.finishInbox(inboxRepo, inbox, at)
 
         return WagerSubmitWriter.fromWager(wager, observed, false)
       })
     }
 
     return run()
+  }
+
+  private static async inbox(
+    inboxRepo: InboxMessageRepository,
+    wagers: WagerTransactionRepository,
+    idempotency: IdempotencyService,
+    wager: WagerTransaction,
+    envelope: QueueInbox,
+  ): Promise<SubmitOutput | undefined> {
+    const stored = await inboxRepo.find(envelope.consumerName, envelope.messageId)
+
+    if (stored !== undefined && stored.isProcessed()) {
+      const wagerStored = await wagers.findStoredByIdempotencyKey(wager.idempotencyKey)
+
+      if (wagerStored === undefined) { return undefined }
+
+      const replay = WagerSubmitWriter.replay(idempotency, wager, wagerStored)
+
+      return replay
+    }
+
+    if (stored === undefined) {
+      const receive = {
+        messageId: envelope.messageId,
+        consumerName: envelope.consumerName,
+        payloadHash: wager.payloadHash,
+        receivedAt: envelope.receivedAt,
+      }
+      const message = InboxMessage.receive(receive)
+
+      await inboxRepo.save(message)
+    }
+
+    return undefined
+  }
+
+  private static async finishInbox(
+    inboxRepo: InboxMessageRepository,
+    envelope: QueueInbox | undefined,
+    at: Date,
+  ): Promise<void> {
+    if (envelope === undefined) { return }
+
+    const stored = await inboxRepo.find(envelope.consumerName, envelope.messageId)
+
+    if (stored === undefined) { return }
+
+    stored.markProcessed(at)
+
+    await inboxRepo.save(stored)
   }
 
   private static replay(

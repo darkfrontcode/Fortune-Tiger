@@ -28,7 +28,7 @@ export class WagerService {
     const wagerInput = WagerService.wagerInput(input, payloadHash)
     const wager = WagerTransaction.create(wagerInput)
 
-    return this.gateway.submit(wager, input.at)
+    return this.gateway.submit(wager, input.at, input.inbox)
   }
 
   private static rejectOpening(transactionId: string): SubmitOutput {
