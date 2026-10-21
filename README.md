@@ -102,3 +102,9 @@ interface MapperProtocol<Input, Output> {
 A branch leaves `main` as `<type>/<area>/<subject>`. The type is `feat`, `fix`, `docs`, `refactor`, `test`, or `chore`. The area is where the work sits. The subject names the functionality, as in `feat/docs/readme`. The commit uses that same type. One Conventional Commit per pull request. `main` changes only through a pull request.
 
 </details>
+
+## Screenshots
+
+The on-call engineer. The ledger stayed calm. He did not.
+
+![Fortune Tiger celebrating a very responsible balance](docs/screenshots/tiger.jpg)
