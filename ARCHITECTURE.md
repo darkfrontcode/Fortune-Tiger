@@ -42,9 +42,13 @@ The domain is only `money`, `wallet`, `ledger`, and `wager`. Inbox, outbox, and 
 
 An entity has an `id`. A value object has no `id` and is compared by value.
 
-The domain folder is the concept, and the file is the concept: `ledger/ledger.ts`. Do not label each concept as an entity or a value object ahead of time. `entities/` and `values/` appear inside a concept only when that concept needs both.
+The domain folder is the concept, and the file is the concept: `ledger/ledger.ts`. Do not label each concept as an entity or a value object ahead of time. `entities/` and `values/` appear inside a concept only when that concept needs both. A name is one English word, except a message constant.
 
 Types of one concept live in `types.ts` beside that concept, in one `export namespace` named `{Concept}Type`. `Schema` is the state. `Input` and `Output` are the other shapes. The word `props` is not a type name and not a parameter name. The file that uses the namespace aliases each name at the top.
+
+Error text of a concept lives in `data/messages.ts` inside that concept. One constant per phrase. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports the file. Callers import the folder. The domain does not import `application` to read it.
+
+Two rules that share one contract live in `patterns` inside the concept. Each rule is a class in `{subject}.pattern.ts`. The class name ends with `Pattern`, as in `MoneyAmountPattern`. `patterns/index.ts` reexports the classes. The contract is `PatternProtocol`, in `infrastructure/protocols`. It has an input and an output. A concept folder does not hold a protocol.
 
 ## Score
 

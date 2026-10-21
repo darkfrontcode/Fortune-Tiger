@@ -8,7 +8,7 @@ Immutable. `amount` is received and serialized as a decimal string with 2 places
 
 Operations: add, subtract, negate. Queries: zero, positive, negative, less-than, equals. `toJSON` returns `MoneyType.Output`. Different currencies throw inside the operation.
 
-Reject on input: `NaN`, `Infinity`, scientific notation, empty string, more than 2 decimal places, negative amount.
+Reject on input: `NaN`, `Infinity`, scientific notation, empty string, more than 2 decimal places, negative amount. Those checks live in `MoneyGuard` (`money.guard.ts`). `amount` checks the amount. `currency` checks the currency. `equal` throws when two currencies differ. `from` calls `amount` and `currency`, then builds the `Decimal`. `zero` calls `currency`. Add, subtract, and less-than call `equal`. The guard does not build `Money`. The amount expression and the currency expression live in `patterns`. `MoneyAmountPattern` and `MoneyCurrencyPattern` implement `PatternProtocol` from `infrastructure/protocols`. `test` receives the text and returns whether it fits. `MoneyGuard` calls `test`. `patterns/index.ts` reexports the classes. The protocol does not live in this folder. Error text is one constant per phrase in `data/messages.ts`. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`: `INVALID_MONEY_AMOUNT_MESSAGE`, `INVALID_CURRENCY_MESSAGE`, `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports them.
 
 The happy path uses `BRL`. The model accepts another currency, and the currency conflict has a test.
 

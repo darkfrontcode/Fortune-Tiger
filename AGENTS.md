@@ -38,13 +38,13 @@ There is no folder named `shared`, `common`, or `utils`, at `src` or inside a la
 
 ## Simplicity
 
-Simple code. Clean Architecture lets an outsider see what each folder is. Simple names. Few files. Small files.
+Simple code. Clean Architecture lets an outsider see what each folder is. Simple names. A name is one English word, except a message constant. Few files. Small files.
 
 A use-case folder is plural, one word, no hyphen: `transactions`, `reconciliations`, `idempotencies`. Open the folder and the file is the singular subject: `wager.service.ts`, `reconciliation.service.ts`, `idempotency.service.ts`. The Nest role keeps its hyphen (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain names stay the business word: `money`, `wallet`, `ledger`, `wager`.
 
 Clean code: one responsibility per class. No `BaseManager`, `CommonService`, or `GenericHelper`.
 
-A design pattern needs a real problem. The factories the statement asks for are `create`, `from`, `rehydrate`, and `open`. No protocol per class. A section that fits in the parent spec does not become a new folder.
+A design pattern needs a real problem. The factories the statement asks for are `create`, `from`, `rehydrate`, and `open`. No protocol per class. A section that fits in the parent spec does not become a new folder. Two exceptions live inside the concept: `data` for error text, and `patterns` when two rules share one protocol. Error text is one constant per phrase in `data/messages.ts`, inside the concept that throws. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports it. Callers import the folder. The domain does not import `application` to read it.
 
 ## Protocol
 
@@ -56,7 +56,7 @@ interface MapperProtocol<Input, Output> {
 }
 ```
 
-`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The file lives in `application/protocols` or `infrastructure/protocols`. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` is the test contract, in `infrastructure/protocols`.
+`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The file lives in `application/protocols` or `infrastructure/protocols`. A concept folder does not hold a protocol. The classes that implement it may live in the concept, in `patterns`. The class name ends with `Pattern`, as in `MoneyAmountPattern`. `patterns/index.ts` reexports the classes. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` and `PatternProtocol` live in `infrastructure/protocols`.
 
 The delivery target is the full score of section 14. A load test is not part of that score.
 

@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js'
+import { MoneyGuard } from './money.guard'
 import { MoneyType } from './types'
 
 type Schema = MoneyType.Schema
@@ -12,17 +13,6 @@ const scale = {
 
 const ZERO_AMOUNT = '0'
 
-const message = {
-  amount: 'Invalid money amount',
-  currency: 'Invalid currency',
-  conflict: 'Currency mismatch',
-}
-
-const pattern = {
-  amount: /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/,
-  currency: /^[A-Z]{3}$/,
-}
-
 const DecimalMoney = Decimal.clone({
   precision: scale.precision,
   rounding: Decimal.ROUND_HALF_UP,
@@ -34,15 +24,17 @@ export class Money {
   private constructor(private readonly schema: Schema) {}
 
   static from(input: Input): Money {
-    const schema = Money.read(input.amount, input.currency)
+    MoneyGuard.amount(input.amount)
+    MoneyGuard.currency(input.currency)
+
+    const amount = new DecimalMoney(input.amount)
+    const schema = { amount, currency: input.currency }
 
     return new Money(schema)
   }
 
   static zero(currency: string): Money {
-    const code = pattern.currency.test(currency)
-
-    if (!code) { throw new Error(message.currency) }
+    MoneyGuard.currency(currency)
 
     const schema = { amount: ZERO, currency }
 
@@ -58,7 +50,7 @@ export class Money {
   }
 
   add(other: Money): Money {
-    this.assertSameCurrency(other)
+    MoneyGuard.equal(this.currency, other.currency)
 
     const amount = this.schema.amount.plus(other.schema.amount)
 
@@ -66,7 +58,7 @@ export class Money {
   }
 
   subtract(other: Money): Money {
-    this.assertSameCurrency(other)
+    MoneyGuard.equal(this.currency, other.currency)
 
     const amount = this.schema.amount.minus(other.schema.amount)
 
@@ -92,7 +84,7 @@ export class Money {
   }
 
   isLessThan(other: Money): boolean {
-    this.assertSameCurrency(other)
+    MoneyGuard.equal(this.currency, other.currency)
 
     return this.schema.amount.lessThan(other.schema.amount)
   }
@@ -110,42 +102,6 @@ export class Money {
     const currency = this.currency
 
     return { amount, currency }
-  }
-
-  private static read(amount: string, currency: string): Schema {
-    const accepted = pattern.amount.test(amount)
-
-    if (!accepted) { throw new Error(message.amount) }
-
-    const code = pattern.currency.test(currency)
-
-    if (!code) { throw new Error(message.currency) }
-
-    const decimal = new DecimalMoney(amount)
-    const finite = decimal.isFinite()
-
-    if (!finite) { throw new Error(message.amount) }
-
-    const places = decimal.decimalPlaces()
-    const over = places > scale.places
-
-    if (over) { throw new Error(message.amount) }
-
-    const negative = decimal.isNegative()
-
-    if (negative) { throw new Error(message.amount) }
-
-    const schema = { amount: decimal, currency }
-
-    return schema
-  }
-
-  private assertSameCurrency(other: Money): void {
-    const same = this.currency === other.currency
-
-    if (same) { return }
-
-    throw new Error(message.conflict)
   }
 
   private copy(amount: Decimal): Money {
