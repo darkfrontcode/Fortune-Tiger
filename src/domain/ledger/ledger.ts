@@ -1,6 +1,7 @@
 import type { Money } from '../money/money'
+import { LedgerDirection } from './enums'
 import { LedgerGuard } from './ledger.guard'
-import { LedgerDirection, LedgerType } from './types'
+import { LedgerType } from './types'
 
 type Schema = LedgerType.Schema
 type Input = LedgerType.Input

@@ -1,2 +1,2 @@
-export type { PatternProtocol } from './pattern.protocol'
-export type { TheoryProtocol } from './theory.protocol'
+export * from './pattern.protocol'
+export * from './theory.protocol'

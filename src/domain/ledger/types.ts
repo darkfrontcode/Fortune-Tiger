@@ -1,9 +1,5 @@
 import type { Money } from '../money/money'
-
-export enum LedgerDirection {
-  DEBIT = 'DEBIT',
-  CREDIT = 'CREDIT',
-}
+import { LedgerDirection } from './enums'
 
 export namespace LedgerType {
   export type Schema = {

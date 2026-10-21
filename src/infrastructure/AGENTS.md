@@ -2,7 +2,7 @@
 
 Postgres, SQS, workers, clock, logger, and metrics. It does not decide a wager rule.
 
-There is no `shared` folder here. A technical contract lives in `protocols`. `TheoryProtocol` and `PatternProtocol` live there. `index.ts` reexports them. This layer does not import `presentation`.
+There is no `shared` folder here. A technical contract lives in `protocols`. `theory.protocol.ts` and `pattern.protocol.ts` live there. `protocols/index.ts` reexports them with `export *`. `src/infrastructure/index.ts` reexports that folder. This layer does not import `presentation`.
 
 Each folder has an English `spec.md`. The code follows that spec. One adapter, one spec. Inbox and outbox stay inside `messaging`, not in their own folders. Small files.
 
