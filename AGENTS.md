@@ -32,6 +32,7 @@ Nest names, Angular style. The file is `kebab-case` with the role as a suffix. T
 | `transition.map.ts` | `Transition.Map.ts` |
 | `theory.protocol.ts` | `Theory.Protocol.ts` |
 | `health.controller.ts` | `Health.Controller.ts` |
+| `health.module.ts` | `Health.Module.ts` |
 | `wager.service.ts` | `Wager.Service.ts` |
 | `app.module.ts` | `App.Module.ts` |
 
@@ -44,6 +45,14 @@ Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. Those two f
 There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application`. Domain does not have that folder. Presentation does not have that folder. The domain imports only `application/protocols`, not use cases. `TheoryProtocol`, `PatternProtocol`, and `GuardProtocol` live there.
 
 A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder, not the file. `src/domain/index.ts` reexports `money`, `wallet`, `ledger`, and `wager`. A folder with code and no barrel is incomplete.
+
+## Composition
+
+A Nest module sits inside the boundary it wires, as `health.module.ts` or `persistence.module.ts`. It is the only file that knows both sides of a port. `src/app.module.ts` imports the modules and wires only what spans layers: `ReferenceWorker` and `RuntimeService`.
+
+A port is a protocol plus a token. The protocol lives in `application/protocols` and carries no runtime value. The token is one `Symbol` in `application/tokens`, one file each, named after the protocol without the suffix: `CLOCK`, `LOGGER`, `PUBLISHER`, `WAGER_GATEWAY`, `REFERENCE_READER`, `REFERENCE_GATEWAY`. The module that owns the adapter binds the token with `useExisting`, so one instance answers to both names, and the consumer injects the token.
+
+`Environment`, in `infrastructure/environment`, is the only reader of `process.env`.
 
 ## Simplicity
 

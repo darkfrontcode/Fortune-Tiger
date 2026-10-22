@@ -11,14 +11,18 @@ No authentication.
 
 The SQS client is built with `maxAttempts` 1, and the probe aborts the request after 2000 ms, so a dead dependency fails the check instead of hanging it. One failed probe is enough for `503`.
 
-The probe reads `SQS_QUEUE_URL`, `AWS_REGION`, and `AWS_ENDPOINT_URL`. `DATABASE_URL` stays with the ORM.
+The queue URL and the client come from `Environment`. `DATABASE_URL` stays with the ORM.
+
+## Module
+
+`health.module.ts` imports `PersistenceModule` and `MessagingModule`, declares the controller, and builds `HealthService` from `DatabaseReadiness` and `QueueReadiness`. The `readiness` array is the binding, so the service keeps its `Array<ReadinessProtocol>` constructor and the probes stay out of the controller.
 
 ## Boot
 
-`src/main.ts` reads `PORT`, default `3000`, and enables the shutdown hooks, so `SIGTERM` and `SIGINT` close the application.
+`src/main.ts` reads the port from `Environment`, default `3000`, and enables the shutdown hooks, so `SIGTERM` and `SIGINT` close the application.
 
-`src/app.module.ts` wires one instance of the ORM, the clock, the logger, the SQS client, the queue config, the publisher, the outbox worker, the reference worker, and the queue consumer. `RuntimeService` starts the three workers on boot and closes them on shutdown. No migration runs at boot.
+`src/app.module.ts` imports `ObservabilityModule`, `PersistenceModule`, `TransactionsModule`, `ReferencesModule`, `MessagingModule`, and `HealthModule`. It wires only what spans layers: `ReferenceWorker` and `RuntimeService`. `RuntimeService` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. No migration runs at boot, and no adapter is built at the root.
 
-`LOG_PRETTY` is read once at boot and given to `SimpleLogger`. Nest keeps its own startup line; the application log is `SimpleLogger`.
+`LOG_PRETTY` is read once by `Environment` and given to `SimpleLogger` by `ObservabilityModule`. Nest keeps its own startup line; the application log is `SimpleLogger`.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

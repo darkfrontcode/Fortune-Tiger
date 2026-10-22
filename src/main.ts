@@ -1,15 +1,14 @@
 import 'reflect-metadata'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
-
-const defaultPort = 3000
+import { Environment } from './infrastructure/environment'
 
 const bootstrap = async (): Promise<void> => {
-  const port = Number(process.env.PORT ?? defaultPort)
   const app = await NestFactory.create(AppModule)
+  const environment = app.get(Environment)
 
   app.enableShutdownHooks()
-  await app.listen(port)
+  await app.listen(environment.port)
 }
 
 await bootstrap()

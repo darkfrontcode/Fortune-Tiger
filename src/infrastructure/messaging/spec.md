@@ -88,9 +88,15 @@ The publisher reads due outbox rows with `FOR UPDATE SKIP LOCKED`. Several publi
 
 Events are not published before the financial commit.
 
+## Module
+
+`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `TransactionsModule`, and `ObservabilityModule`, and it builds the whole channel. `SQSClient` and the `QUEUE_CONFIG` token are built once from `Environment`; the token lives beside `createQueueConfig` in `factories/queue.factory.ts`. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`. `OutboxPublisher`, `OutboxWorker`, `SqsQueue`, `WagerConsumer`, `SqsConsumer`, and `QueueReadiness` are built by factory, because they take a port, a primitive, or the ORM. The consumer name is the module constant `wager`.
+
+`OutboxWorker`, `SqsConsumer`, and `QueueReadiness` are exported. `RuntimeService` is not: the root wires it, because it starts all three workers.
+
 ## Environment
 
-`AWS_REGION` defaults to `us-east-1`, and `AWS_ENDPOINT_URL` points to LocalStack. `SQS_QUEUE_URL` and `SQS_DEAD_LETTER_QUEUE_URL` carry the absolute queue URLs. The consumer name is `wager`. `factories/sqs.factory.ts` builds the client with `maxAttempts` 1, and `factories/queue.factory.ts` builds the `ConsumerType.Config`: `maxMessages` 10, `waitTimeSeconds` 20, `visibilityTimeout` 30.
+`Environment` is the only reader of the variables below. `AWS_REGION` defaults to `us-east-1`, and `AWS_ENDPOINT_URL` points to LocalStack. `SQS_QUEUE_URL` and `SQS_DEAD_LETTER_QUEUE_URL` carry the absolute queue URLs. The consumer name is `wager`. `factories/sqs.factory.ts` builds the client with `maxAttempts` 1, and `factories/queue.factory.ts` builds the `ConsumerType.Config`: `maxMessages` 10, `waitTimeSeconds` 20, `visibilityTimeout` 30.
 
 Compose starts Postgres 16 and LocalStack, and the ready script in `docker/localstack` creates `wager-transactions.fifo` and `wager-transactions-dlq.fifo`. The queue is FIFO, and the deduplication id is the event id.
 

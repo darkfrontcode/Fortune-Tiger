@@ -10,6 +10,12 @@ PostgreSQL 16. Section 4 of the statement excludes Prisma. This project uses Mik
 
 `OutboxMessageRepository.findDueForUpdate` selects due `outbox_messages` with `FOR UPDATE SKIP LOCKED`, ordered by `occurred_at`, limited by the caller. The statement lives in `outbox/queries/find-due-for-update.query.ts`. `updateMany` writes `attempts`, `next_attempt_at`, and `published_at` for the batch in the same SQL transaction.
 
+## Module
+
+`persistence.module.ts` imports `EnvironmentModule` and builds `MikroORM` from `environment.databaseUrl`. It provides the writers and the readers by class token, plus `DatabaseReadiness`. Three tokens are bound with `useExisting`, so one instance answers to the port and to the class: `WAGER_GATEWAY` is `WagerSubmitWriter`, `REFERENCE_READER` is `ReferenceReader`, and `REFERENCE_GATEWAY` is `ReferenceRetryWriter`. `MikroORM`, `DatabaseReadiness`, and those three tokens are exported.
+
+`ReconciliationReader` stays unbound until `ReconciliationService` has a metric adapter and a route.
+
 Tables: `wallets`, `wager_transactions`, `wallet_ledger_entries`, `inbox_messages`, `outbox_messages`.
 
 - `wallets`: unique `(player_id, currency)`; balance `>= 0`; `version >= 1`

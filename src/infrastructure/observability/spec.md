@@ -8,6 +8,10 @@ A line carries `time`, `level`, `message`, and the context of the child. JSON is
 
 Metrics cover transactions by status, duplicates, retries, DLQ messages, lock conflicts, outbox lag, and processing latency.
 
+## Module
+
+`observability.module.ts` imports `EnvironmentModule` and provides two tokens. `CLOCK` is `SystemClock`. `LOGGER` is `SimpleLogger.open` with the clock and `pretty` from `Environment`. Both tokens are exported, so no other module builds a clock or a logger.
+
 OpenTelemetry and a dashboard are out.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.
