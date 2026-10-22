@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '../../../application/protocols'
+import type { GuardProtocol } from '@application/protocols'
 import type { LedgerType } from '../types'
 import { LedgerCurrencyGuard } from './ledger-currency.guard'
 import { LedgerMovementGuard } from './ledger-movement.guard'

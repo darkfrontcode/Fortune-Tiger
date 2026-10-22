@@ -1,5 +1,5 @@
-import type { MapperProtocol } from '../../../application/protocols'
-import type { Wallet } from '../../../domain/wallet/wallet'
+import type { MapperProtocol } from '@application/protocols'
+import type { Wallet } from '@domain/wallet/wallet'
 import type { HttpType } from '../types'
 
 type Input = Wallet

@@ -1,4 +1,4 @@
-import type { LoggerProtocol } from '../../application/protocols'
+import type { LoggerProtocol } from '@application/protocols'
 import { ObservabilityType } from './types'
 
 type Context = ObservabilityType.Context

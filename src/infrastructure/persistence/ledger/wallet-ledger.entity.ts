@@ -1,5 +1,5 @@
 import { Entity, Enum, Index, ManyToOne, PrimaryKey, Property, Unique } from '@mikro-orm/core'
-import { LedgerDirection } from '../../../domain/ledger/enums'
+import { LedgerDirection } from '@domain/ledger/enums'
 import { WalletEntity } from '../wallet/wallet.entity'
 
 @Entity({ tableName: 'wallet_ledger_entries' })

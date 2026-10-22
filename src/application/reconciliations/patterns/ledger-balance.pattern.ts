@@ -1,6 +1,6 @@
-import { Money } from '../../../domain/money/money'
-import { LedgerDirection } from '../../../domain/ledger/enums'
-import type { Ledger } from '../../../domain/ledger/ledger'
+import { Money } from '@domain/money/money'
+import { LedgerDirection } from '@domain/ledger/enums'
+import type { Ledger } from '@domain/ledger/ledger'
 import type { PatternProtocol } from '../../protocols'
 import { ReconciliationsType } from '../types'
 

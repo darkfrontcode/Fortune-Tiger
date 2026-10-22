@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '../../../application/protocols'
+import type { GuardProtocol } from '@application/protocols'
 import type { Money } from '../../money/money'
 import { INSUFFICIENT_FUNDS_MESSAGE } from '../data'
 

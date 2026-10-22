@@ -1,7 +1,7 @@
-import type { Money } from '../../../domain/money/money'
-import type { Wallet } from '../../../domain/wallet/wallet'
-import type { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '../../../domain/wager/enums'
-import type { WagerTransaction } from '../../../domain/wager/wager'
+import type { Money } from '@domain/money/money'
+import type { Wallet } from '@domain/wallet/wallet'
+import type { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
+import type { WagerTransaction } from '@domain/wager/wager'
 
 export namespace TransactionsType {
   export type QueueInbox = {

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
-import { PersistenceModule } from '../../infrastructure/persistence'
-import { ObservabilityModule } from '../../infrastructure/observability'
+import { PersistenceModule } from '@infrastructure/persistence'
+import { ObservabilityModule } from '@infrastructure/observability'
 import { ReconciliationService } from './reconciliation.service'
 
 const moduleImports = [PersistenceModule, ObservabilityModule]

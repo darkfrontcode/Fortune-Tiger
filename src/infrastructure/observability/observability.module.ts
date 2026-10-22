@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
-import type { ClockProtocol } from '../../application/protocols'
-import { CLOCK, LOGGER, METRIC } from '../../application/tokens'
+import type { ClockProtocol } from '@application/protocols'
+import { CLOCK, LOGGER, METRIC } from '@application/tokens'
 import { Environment, EnvironmentModule } from '../environment'
 import { LoggerService } from './logger.service'
 import { SimpleLogger } from './simple-logger'

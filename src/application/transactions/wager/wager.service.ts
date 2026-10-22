@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '../../../domain/wager/enums'
-import { WagerTransaction } from '../../../domain/wager/wager'
+import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
+import { WagerTransaction } from '@domain/wager/wager'
 import { IdempotencyService } from '../../idempotencies/idempotency.service'
 import type { IdempotencyType } from '../../idempotencies/types'
 import type { WagerGatewayProtocol } from '../../protocols'

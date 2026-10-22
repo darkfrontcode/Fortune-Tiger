@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
-import type { ClockProtocol } from '../../../application/protocols'
+import type { ClockProtocol } from '@application/protocols'
 import { LoggerService } from '../logger.service'
 import { SimpleLogger } from '../simple-logger'
 

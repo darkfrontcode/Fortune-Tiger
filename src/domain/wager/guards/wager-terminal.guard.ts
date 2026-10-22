@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '../../../application/protocols'
+import type { GuardProtocol } from '@application/protocols'
 import { WagerTransactionStatus } from '../enums'
 import { TransitionMap } from '../maps'
 

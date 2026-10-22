@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { uuidv7 } from 'uuidv7'
-import type { MapperProtocol } from '../../../application/protocols'
-import type { TransactionsType } from '../../../application/transactions'
+import type { MapperProtocol } from '@application/protocols'
+import type { TransactionsType } from '@application/transactions'
 import type { WagerRequest } from '../messages'
 
 type Input = {

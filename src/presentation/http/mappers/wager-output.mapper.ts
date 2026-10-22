@@ -1,5 +1,5 @@
-import type { MapperProtocol } from '../../../application/protocols'
-import type { WagerTransaction } from '../../../domain/wager/wager'
+import type { MapperProtocol } from '@application/protocols'
+import type { WagerTransaction } from '@domain/wager/wager'
 import type { HttpType } from '../types'
 
 type Input = WagerTransaction

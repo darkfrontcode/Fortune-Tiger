@@ -1,4 +1,4 @@
-import { WagerTransactionKind } from '../../../../domain/wager'
+import { WagerTransactionKind } from '@domain/wager'
 import { MISSING_STRATEGY_MESSAGE } from '../data'
 import type { WagerStrategyProtocol } from '../../../protocols'
 import { BetStrategy } from './bet.strategy'

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common'
-import type { MapperProtocol } from '../../../application/protocols'
-import type { Ledger } from '../../../domain/ledger/ledger'
-import type { Wallet } from '../../../domain/wallet/wallet'
-import { WagerTransactionStatus } from '../../../domain/wager/enums'
-import type { WagerTransaction } from '../../../domain/wager/wager'
+import type { MapperProtocol } from '@application/protocols'
+import type { Ledger } from '@domain/ledger/ledger'
+import type { Wallet } from '@domain/wallet/wallet'
+import { WagerTransactionStatus } from '@domain/wager/enums'
+import type { WagerTransaction } from '@domain/wager/wager'
 import {
   WagerTransactionPendingReference,
   WagerTransactionProcessed,

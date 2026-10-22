@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { BadRequestException } from '@nestjs/common'
-import { TheoryProtocol } from '../../../application/protocols'
-import { WagerTransactionKind } from '../../../domain/wager/enums'
+import { TheoryProtocol } from '@application/protocols'
+import { WagerTransactionKind } from '@domain/wager/enums'
 import type { WagerDto } from '../dtos'
 import { WagerDtoMapper } from '../mappers'
 

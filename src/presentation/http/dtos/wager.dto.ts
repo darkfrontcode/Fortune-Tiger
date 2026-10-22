@@ -1,6 +1,6 @@
 import { IsIn, IsOptional, IsString, IsNotEmpty, ValidateNested } from 'class-validator'
 import { Type } from 'class-transformer'
-import { WagerTransactionKind } from '../../../domain/wager/enums'
+import { WagerTransactionKind } from '@domain/wager/enums'
 import { MoneyDto } from './money.dto'
 
 const kinds = Object.values(WagerTransactionKind)

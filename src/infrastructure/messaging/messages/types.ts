@@ -1,5 +1,5 @@
-import type { Money } from '../../../domain/money/money'
-import type { WagerTransactionKind } from '../../../domain/wager/enums'
+import type { Money } from '@domain/money/money'
+import type { WagerTransactionKind } from '@domain/wager/enums'
 
 export namespace WagerRequestType {
   export type Schema = {

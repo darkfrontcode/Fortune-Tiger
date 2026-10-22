@@ -1,5 +1,5 @@
-import { Money } from '../../../domain/money/money'
-import { WagerTransaction } from '../../../domain/wager/wager'
+import { Money } from '@domain/money/money'
+import { WagerTransaction } from '@domain/wager/wager'
 import { WalletEntity } from '../wallet/wallet.entity'
 import { WagerTransactionEntity } from './wager-transaction.entity'
 

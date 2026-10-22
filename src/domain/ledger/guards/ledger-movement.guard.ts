@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '../../../application/protocols'
+import type { GuardProtocol } from '@application/protocols'
 import { LedgerDirection } from '../enums'
 import type { LedgerType } from '../types'
 

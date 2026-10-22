@@ -1,6 +1,6 @@
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs'
 import { Inject, Injectable } from '@nestjs/common'
-import type { Published, PublisherProtocol } from '../../../application/protocols'
+import type { Published, PublisherProtocol } from '@application/protocols'
 import type { ConsumerType } from '../consumers'
 import { QUEUE_CONFIG } from '../factories'
 

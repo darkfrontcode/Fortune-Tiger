@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '../../../application/protocols'
+import type { GuardProtocol } from '@application/protocols'
 import { STATUS_TRANSITION_MESSAGE, TERMINAL_STATUS_MESSAGE } from '../data'
 import { TransitionMap } from '../maps'
 import type { WagerType } from '../types'

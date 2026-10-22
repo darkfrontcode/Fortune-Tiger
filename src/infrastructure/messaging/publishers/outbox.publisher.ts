@@ -1,7 +1,7 @@
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
-import type { PublisherProtocol } from '../../../application/protocols'
-import { PUBLISHER } from '../../../application/tokens'
+import type { PublisherProtocol } from '@application/protocols'
+import { PUBLISHER } from '@application/tokens'
 import { OutboxMessageRepository } from '../../persistence/outbox'
 import type { OutboxMessage } from '../messages'
 

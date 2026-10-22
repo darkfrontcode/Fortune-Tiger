@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '../../../../application/protocols'
+import type { TheoryProtocol } from '@application/protocols'
 import { WagerTransactionStatus } from '../../enums'
 import { WagerTerminalGuard } from '../wager-terminal.guard'
 

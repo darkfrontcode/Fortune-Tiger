@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { WagerTransactionStatus } from '../../../domain/wager/enums'
+import { WagerTransactionStatus } from '@domain/wager/enums'
 import type { ReferenceGatewayProtocol, ReferenceReaderProtocol } from '../../protocols'
 import { ReferenceType } from '../types'
 import { ReferenceService } from '../reference.service'

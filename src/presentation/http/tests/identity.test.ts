@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { TheoryProtocol } from '../../../application/protocols'
+import { TheoryProtocol } from '@application/protocols'
 import { AnonymousProviderIdentity } from '../providers'
 
 interface IdentityTheory<TParams> extends TheoryProtocol<TParams> {

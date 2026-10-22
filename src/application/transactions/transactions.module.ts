@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common'
-import { PersistenceModule } from '../../infrastructure/persistence'
+import { PersistenceModule } from '@infrastructure/persistence'
 import { IdempotenciesModule } from '../idempotencies/idempotencies.module'
 import { WagerService } from './wager'
 

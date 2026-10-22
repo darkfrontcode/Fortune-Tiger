@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { ClockProtocol, LoggerProtocol } from '../../../application/protocols'
-import { ReferenceService } from '../../../application/references/reference.service'
-import { CLOCK, LOGGER } from '../../../application/tokens'
+import type { ClockProtocol, LoggerProtocol } from '@application/protocols'
+import { ReferenceService } from '@application/references/reference.service'
+import { CLOCK, LOGGER } from '@application/tokens'
 
 const intervalMs = 2_000
 const limit = 20

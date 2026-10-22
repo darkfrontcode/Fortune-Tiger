@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { WagerService } from '../../../application/transactions'
+import { WagerService } from '@application/transactions'
 import { WagerRequestMapper } from '../mappers'
 import { WagerRequest } from '../messages'
 import { CONSUMER_NAME } from './consumer-name.token'

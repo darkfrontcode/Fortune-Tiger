@@ -1,5 +1,5 @@
-import type { MapperProtocol } from '../../../application/protocols'
-import type { TransactionsType } from '../../../application/transactions'
+import type { MapperProtocol } from '@application/protocols'
+import type { TransactionsType } from '@application/transactions'
 import type { HttpType } from '../types'
 
 type Input = {

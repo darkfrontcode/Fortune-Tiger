@@ -2,7 +2,7 @@ import type {
   ProviderIdentity,
   ProviderIdentityInput,
   ProviderIdentityProtocol,
-} from '../../../application/protocols'
+} from '@application/protocols'
 
 const empty = String()
 

@@ -2,8 +2,8 @@ import 'reflect-metadata'
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
-import { Environment } from './infrastructure/environment'
-import { LoggerService } from './infrastructure/observability'
+import { Environment } from '@infrastructure/environment'
+import { LoggerService } from '@infrastructure/observability'
 
 const bootstrap = async (): Promise<void> => {
   const app = await NestFactory.create(AppModule, { bufferLogs: true })

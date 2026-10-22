@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '../../../application/protocols'
+import type { GuardProtocol } from '@application/protocols'
 import { BALANCE_EQUATION_MESSAGE, CURRENCY_CONFLICT_MESSAGE } from '../data'
 import type { LedgerType } from '../types'
 import { LedgerCurrencyGuard } from './ledger-currency.guard'

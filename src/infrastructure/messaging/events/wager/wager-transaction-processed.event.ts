@@ -1,4 +1,4 @@
-import type { WagerTransaction } from '../../../../domain/wager/wager'
+import type { WagerTransaction } from '@domain/wager/wager'
 import { IntegrationEvent } from '../integration-event'
 import type { IntegrationEventType } from '../types'
 import type { WagerEventType } from './types'

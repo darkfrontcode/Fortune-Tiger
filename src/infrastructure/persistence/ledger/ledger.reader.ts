@@ -1,7 +1,7 @@
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
-import type { LedgerPage, LedgerPageInput, LedgerReaderProtocol } from '../../../application/protocols'
-import type { Ledger } from '../../../domain/ledger/ledger'
+import type { LedgerPage, LedgerPageInput, LedgerReaderProtocol } from '@application/protocols'
+import type { Ledger } from '@domain/ledger/ledger'
 import { WalletLedgerRepository } from './wallet-ledger.repository'
 
 type Input = LedgerPageInput

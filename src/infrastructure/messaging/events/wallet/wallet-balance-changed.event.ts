@@ -1,5 +1,5 @@
-import type { Ledger } from '../../../../domain/ledger/ledger'
-import type { Wallet } from '../../../../domain/wallet/wallet'
+import type { Ledger } from '@domain/ledger/ledger'
+import type { Wallet } from '@domain/wallet/wallet'
 import { IntegrationEvent } from '../integration-event'
 import type { IntegrationEventType } from '../types'
 import type { WalletEventType } from './types'

@@ -1,4 +1,4 @@
-import type { Ledger } from '../../domain/ledger/ledger'
+import type { Ledger } from '@domain/ledger/ledger'
 
 export type LedgerPageInput = {
   walletId: string

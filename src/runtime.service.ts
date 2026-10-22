@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common'
-import type { LoggerProtocol } from './application/protocols'
-import { LOGGER } from './application/tokens'
-import { OutboxWorker, SqsConsumer } from './infrastructure/messaging'
-import { ReferenceWorker } from './infrastructure/persistence'
+import type { LoggerProtocol } from '@application/protocols'
+import { LOGGER } from '@application/tokens'
+import { OutboxWorker, SqsConsumer } from '@infrastructure/messaging'
+import { ReferenceWorker } from '@infrastructure/persistence'
 
 @Injectable()
 export class RuntimeService implements OnApplicationBootstrap, OnApplicationShutdown {

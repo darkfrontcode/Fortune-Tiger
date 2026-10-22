@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { FailureCode } from '../../domain/wager/enums'
+import { FailureCode } from '@domain/wager/enums'
 import type { LoggerProtocol, MetricProtocol, ReconciliationGatewayProtocol } from '../protocols'
 import { LOGGER, METRIC, RECONCILIATION_GATEWAY } from '../tokens'
 import { RECONCILIATION_DIVERGENCE_MESSAGE } from './data'
