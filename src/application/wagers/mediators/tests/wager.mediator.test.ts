@@ -331,6 +331,31 @@ describe('WagerMediator', () => {
       expect(rejected && code && empty).toBe(true)
     })
 
+    test('win - WHEN the bet reference was reversed SHOULD refuse already reversed', () => {
+      const wager = MediatorProbe.open(
+        WagerTransactionKind.WIN,
+        identity.referenceExternal,
+        money,
+      )
+      const reference = MediatorProbe.stored(
+        identity.referenceWager,
+        identity.referenceExternal,
+        WagerTransactionKind.BET,
+        WagerTransactionStatus.PROCESSED,
+        undefined,
+        money,
+        identity.player,
+        identity.round,
+      )
+      const mediation = MediatorProbe.mediation(wallet, reference, true)
+      const ledger = mediator.mediate(wager, mediation)
+      const rejected = wager.status === WagerTransactionStatus.REJECTED
+      const code = wager.failureCode === FailureCode.REFERENCE_ALREADY_REVERSED
+      const empty = ledger === undefined
+
+      expect(rejected && code && empty).toBe(true)
+    })
+
     test('reversed - WHEN the reference was already reversed SHOULD refuse already reversed', () => {
       const wager = MediatorProbe.open(
         WagerTransactionKind.REFUND,

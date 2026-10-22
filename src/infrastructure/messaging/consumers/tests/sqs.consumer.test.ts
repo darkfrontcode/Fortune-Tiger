@@ -3,7 +3,7 @@ import type { ClockProtocol } from '@application/time'
 import type { LoggerProtocol } from '@application/observability'
 import { ConsumerOutcome } from '../enums'
 import type { SqsQueue } from '../sqs.queue'
-import { SqsConsumer } from '../sqs.consumer'
+import { consumerBackoffSeconds, SqsConsumer } from '../sqs.consumer'
 import type { ConsumerType } from '../types'
 import type { WagerConsumer } from '../wager.consumer'
 
@@ -92,6 +92,12 @@ const subject = (queue: RecordingQueue, outcome: ConsumerOutcome, logger: Logger
   )
 
 describe('SqsConsumer', () => {
+  test('WHEN poll failures repeat SHOULD grow the backoff up to the cap', () => {
+    expect(consumerBackoffSeconds(1)).toBe(1)
+    expect(consumerBackoffSeconds(3)).toBe(4)
+    expect(consumerBackoffSeconds(10)).toBe(60)
+  })
+
   test('WHEN the outcome is ACK SHOULD delete the message', async () => {
     const queue = new RecordingQueue()
     const consumer = subject(queue, ConsumerOutcome.ACK, new RecordingLogger())

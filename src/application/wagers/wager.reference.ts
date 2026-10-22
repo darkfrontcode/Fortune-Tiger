@@ -51,13 +51,13 @@ export class WagerReference {
 
     if (!allowed) { return WagerReference.refuse(FailureCode.INVALID_REFERENCE_KIND) }
 
+    if (reversed) { return WagerReference.refuse(FailureCode.REFERENCE_ALREADY_REVERSED) }
+
     if (!required) { return WagerReference.ready() }
 
     const equal = wager.money.equals(reference.money)
 
     if (!equal) { return WagerReference.refuse(FailureCode.REFERENCE_AMOUNT_MISMATCH) }
-
-    if (reversed) { return WagerReference.refuse(FailureCode.REFERENCE_ALREADY_REVERSED) }
 
     return WagerReference.ready()
   }
