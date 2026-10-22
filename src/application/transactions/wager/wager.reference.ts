@@ -6,7 +6,6 @@ import {
 } from '../../../domain/wager/enums'
 import { ReferenceMap } from '../../../domain/wager/maps'
 import type { WagerTransaction } from '../../../domain/wager/wager'
-import { WagerGuard } from '../../../domain/wager/wager.guard'
 import { TransactionsType } from './types'
 
 type Hold = TransactionsType.Hold
@@ -26,7 +25,7 @@ export class WagerReference {
   }
 
   static hold(wager: WagerTransaction, reference: WagerTransaction | undefined, reversed: boolean): Hold {
-    const required = WagerGuard.referenced(wager.kind)
+    const required = wager.requiresReference()
     const win = wager.kind === WagerTransactionKind.WIN
     const present = reference !== undefined
     const optional = win && present

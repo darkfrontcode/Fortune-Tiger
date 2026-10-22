@@ -15,4 +15,9 @@ export namespace MoneyType {
     amount: string
     currency: string
   }
+
+  export type Conflict = {
+    currency: string
+    compared: string
+  }
 }

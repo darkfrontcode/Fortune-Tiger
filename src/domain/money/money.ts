@@ -1,10 +1,14 @@
 import Decimal from 'decimal.js'
-import { MoneyGuard } from './money.guard'
+import { MoneyAmountGuard, MoneyConflictGuard, MoneyCurrencyGuard } from './guards'
 import { MoneyType } from './types'
 
 type Schema = MoneyType.Schema
 type Input = MoneyType.Input
 type Output = MoneyType.Output
+
+const amountGuard = new MoneyAmountGuard()
+const conflictGuard = new MoneyConflictGuard()
+const currencyGuard = new MoneyCurrencyGuard()
 
 const scale = {
   places: 2,
@@ -24,8 +28,8 @@ export class Money {
   private constructor(private readonly schema: Schema) {}
 
   static from(input: Input): Money {
-    MoneyGuard.amount(input.amount)
-    MoneyGuard.currency(input.currency)
+    amountGuard.guard(input.amount)
+    currencyGuard.guard(input.currency)
 
     const amount = new DecimalMoney(input.amount)
     const schema = { amount, currency: input.currency }
@@ -34,7 +38,7 @@ export class Money {
   }
 
   static zero(currency: string): Money {
-    MoneyGuard.currency(currency)
+    currencyGuard.guard(currency)
 
     const schema = { amount: ZERO, currency }
 
@@ -50,7 +54,7 @@ export class Money {
   }
 
   add(other: Money): Money {
-    MoneyGuard.equal(this.currency, other.currency)
+    this.assertCurrency(other)
 
     const amount = this.schema.amount.plus(other.schema.amount)
 
@@ -58,7 +62,7 @@ export class Money {
   }
 
   subtract(other: Money): Money {
-    MoneyGuard.equal(this.currency, other.currency)
+    this.assertCurrency(other)
 
     const amount = this.schema.amount.minus(other.schema.amount)
 
@@ -84,7 +88,7 @@ export class Money {
   }
 
   isLessThan(other: Money): boolean {
-    MoneyGuard.equal(this.currency, other.currency)
+    this.assertCurrency(other)
 
     return this.schema.amount.lessThan(other.schema.amount)
   }
@@ -108,5 +112,13 @@ export class Money {
     const schema = { amount, currency: this.currency }
 
     return new Money(schema)
+  }
+
+  private assertCurrency(other: Money): void {
+    const currency = this.currency
+    const compared = other.currency
+    const conflictInput = { currency, compared }
+
+    conflictGuard.guard(conflictInput)
   }
 }

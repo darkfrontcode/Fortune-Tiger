@@ -6,6 +6,8 @@ A plug-in contract. The folder is `protocols`, inside `application`. The file ro
 
 `PatternProtocol` has an input and an output. `test` receives the input and returns the output. `MoneyAmountPattern` and `MoneyCurrencyPattern` implement it. The money expression stays a `private readonly` property on those classes. It is not a method and not a `const` above the class. The protocol does not live in `domain`.
 
+`GuardProtocol` has an input and an output. `guard` receives the input. A guard that refuses returns nothing and throws: the output is `void`. A guard that only answers returns a `boolean`. One class per rule, in the `guards` folder of the concept or use case that owns it. The owner instantiates it once. A guard may hold other guards inside when the rule is composed, as `LedgerBalanceGuard` does, and each one stays individual. `MoneyAmountGuard`, `WalletSignGuard`, `LedgerEquationGuard`, `WagerReferenceGuard`, and `IdempotencyHashGuard` implement it.
+
 `MapperProtocol` has an input and an output. `map` receives the input and returns the output. `WagerEventsMapper` implements it: the mediated wager becomes the outbox rows.
 
 `WagerStrategyProtocol` mediates one `WagerTransactionKind` against a wallet and an optional reference. Strategies live in `transactions/wager/strategies/`.
@@ -24,6 +26,6 @@ A plug-in contract. The folder is `protocols`, inside `application`. The file ro
 
 `ClockProtocol` is the injectable clock. `now` returns a `Date`. `SystemClock` implements it in `src/infrastructure/observability`.
 
-The files are `theory.protocol.ts`, `pattern.protocol.ts`, `mapper.protocol.ts`, `publisher.protocol.ts`, `logger.protocol.ts`, `metric.protocol.ts`, `clock.protocol.ts`, `reconciliation.gateway.protocol.ts`, `reference.gateway.protocol.ts`, `reference.reader.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
+The files are `theory.protocol.ts`, `pattern.protocol.ts`, `guard.protocol.ts`, `mapper.protocol.ts`, `publisher.protocol.ts`, `logger.protocol.ts`, `metric.protocol.ts`, `clock.protocol.ts`, `reconciliation.gateway.protocol.ts`, `reference.gateway.protocol.ts`, `reference.reader.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
 
 All project text is English, including the root `README.md`.

@@ -16,9 +16,9 @@ Clean Architecture is here so an evaluator, or the evaluator's assistant, can op
 
 A folder name is one word, plural, with no hyphen: `transactions`, `reconciliations`, `idempotencies`. Open the folder and the file inside is the singular subject: `wager.service.ts`, `reconciliation.service.ts`, `idempotency.service.ts`. A Nest role stays as a suffix (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain folders stay the business word: `money`, `wallet`, `ledger`, `wager`.
 
-Clean code: one responsibility per class. A name is one English word and says what is being checked. A message constant is the exception: `UPPER_SNAKE_CASE` ending with `_MESSAGE`. A class name may join the concept and the role, as in `MoneyGuard` and `MoneyAmountPattern`. No `BaseManager`, `CommonService`, or `GenericHelper`.
+Clean code: one responsibility per class. A name is one English word and says what is being checked. A message constant is the exception: `UPPER_SNAKE_CASE` ending with `_MESSAGE`. A class name may join the concept, the subject, and the role, as in `MoneyAmountGuard` and `MoneyAmountPattern`. No `BaseManager`, `CommonService`, or `GenericHelper`.
 
-A design pattern is used only when it solves a problem in this challenge. The statement already asks for factories (`create`, `from`, `rehydrate`, `open`). No protocol per class. A section that fits in the parent spec does not become a new folder. Two exceptions live inside the concept: `data` for error text, and `patterns` when two rules share one protocol.
+A design pattern is used only when it solves a problem in this challenge. The statement already asks for factories (`create`, `from`, `rehydrate`, `open`). No protocol per class. A section that fits in the parent spec does not become a new folder. Three exceptions live inside the concept: `data` for error text, `patterns` when two rules share one contract, and `guards` when a rule is a class of its own.
 
 `src` has four folders: `domain`, `application`, `infrastructure`, and `presentation`. `src/main.ts` and `src/app.module.ts` are files beside them. There is no `src/modules` folder.
 
@@ -34,7 +34,7 @@ interface MapperProtocol<Input, Output> {
 }
 ```
 
-`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The file lives in `application/protocols`. A concept folder does not hold a protocol. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` and `PatternProtocol` live there. `index.ts` reexports that folder. Callers import the folder.
+`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The file lives in `application/protocols`. A concept folder does not hold a protocol. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol`, `PatternProtocol`, and `GuardProtocol` live there. `index.ts` reexports that folder. Callers import the folder.
 
 The domain is only `money`, `wallet`, `ledger`, and `wager`. Inbox, outbox, and the event envelope are sections of `messaging/spec.md`.
 
@@ -49,6 +49,8 @@ Types of one concept live in `types.ts` beside that concept, in one `export name
 Error text of a concept lives in `data/messages.data.ts` inside that concept. One constant per phrase. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports the file with `export *`. Callers import the folder. The domain imports only `application/protocols`, not use cases. An enum lives in `enums/`, one file per enum: `failure-code.enum.ts`. `enums/index.ts` reexports it. A map lives in `maps/`: `transition.map.ts` extends `Map`.
 
 Two rules that share one contract live in `patterns` inside the concept. Each rule is a class in `{subject}.pattern.ts`, as in `amount.pattern.ts`. The class name ends with `Pattern`, as in `MoneyAmountPattern`. The expression is a `private readonly` property on that class. It is not a method and not a `const` above the class. `patterns/index.ts` reexports the classes with `export *`. The contract is `PatternProtocol`, in `application/protocols`, file `pattern.protocol.ts`. It has an input and an output. A concept folder does not hold a protocol.
+
+A rule that refuses or answers lives in `guards` inside the concept or the use case that owns it. One rule per class, in `{subject}.guard.ts`, as in `money-amount.guard.ts`. The class name joins the concept, the subject, and the role, as in `MoneyAmountGuard`. Every class implements `GuardProtocol`, in `application/protocols`, file `guard.protocol.ts`, and the method is `guard`: a guard that refuses returns nothing and throws, and a guard that only answers returns a `boolean`. The owner holds one instance, as a `const` at the top of the concept file or as a `private readonly` property. A guard does not build the entity, and the owner asks it instead of restating the rule. A guard may hold other guards inside when the rule is composed, as `LedgerBalanceGuard` does: it asks the inner guard instead of repeating the inner rule. Each guard stays individual: one rule per class, and no inner rule restated. The input of a composite guard is a type in `types.ts` of that concept. A guard holds no optional field. `guards/index.ts` reexports the classes with `export *`, the concept keeps its own `guards/spec.md`, and each guard has a spec in `guards/__tests__/{subject}.guard.spec.ts`. A concept barrel does not reexport `guards`: the concept uses the guard, and the caller uses the entity.
 
 ## Score
 
@@ -99,7 +101,7 @@ src/
 
 `main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` wires the layers. There is no `src/modules` folder. There is no `shared` folder.
 
-Files follow the Nest name (`health.controller.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, and `patterns/` holds the rule classes. A protocol stays in `application/protocols`. Unit tests live in `__tests__/` next to the module they cover. The file is `{subject}.spec.ts`. Production barrels do not reexport tests.
+Files follow the Nest name (`health.controller.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, `patterns/` holds the rule classes, and `guards/` holds one class per rule with its own `spec.md`. A protocol stays in `application/protocols`. Unit tests live in `__tests__/` next to the module they cover. The file is `{subject}.spec.ts`. Production barrels do not reexport tests.
 
 ## Stack
 

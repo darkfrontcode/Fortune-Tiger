@@ -1,9 +1,13 @@
 import type { Money } from '../money/money'
-import { WalletGuard } from './wallet.guard'
+import { WalletCurrencyGuard, WalletFundsGuard, WalletSignGuard } from './guards'
 import { WalletType } from './types'
 
 type Schema = WalletType.Schema
 type Input = WalletType.Input
+
+const currencyGuard = new WalletCurrencyGuard()
+const fundsGuard = new WalletFundsGuard()
+const signGuard = new WalletSignGuard()
 
 const revision = {
   open: 1,
@@ -14,7 +18,7 @@ export class Wallet {
   private constructor(private readonly schema: Schema) {}
 
   static open(input: Input): Wallet {
-    WalletGuard.sign(input.balance)
+    signGuard.guard(input.balance)
 
     const schema = {
       id: input.id,
@@ -61,22 +65,30 @@ export class Wallet {
   }
 
   debit(money: Money, at: Date): void {
-    WalletGuard.sign(money)
-    WalletGuard.currency(this.currency, money.currency)
+    signGuard.guard(money)
+    this.assertCurrency(money)
 
     const balance = this.schema.balance.subtract(money)
 
-    WalletGuard.funds(balance)
+    fundsGuard.guard(balance)
     this.write(balance, at)
   }
 
   credit(money: Money, at: Date): void {
-    WalletGuard.sign(money)
-    WalletGuard.currency(this.currency, money.currency)
+    signGuard.guard(money)
+    this.assertCurrency(money)
 
     const balance = this.schema.balance.add(money)
 
     this.write(balance, at)
+  }
+
+  private assertCurrency(money: Money): void {
+    const currency = this.currency
+    const compared = money.currency
+    const conflictInput = { currency, compared }
+
+    currencyGuard.guard(conflictInput)
   }
 
   private write(balance: Money, at: Date): void {

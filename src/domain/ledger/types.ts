@@ -14,4 +14,11 @@ export namespace LedgerType {
   }
 
   export type Input = Schema
+
+  export type Movement = {
+    direction: LedgerDirection
+    balanceBefore: Money
+    money: Money
+    balanceAfter: Money
+  }
 }

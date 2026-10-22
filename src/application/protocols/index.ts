@@ -1,4 +1,5 @@
 export * from './clock.protocol'
+export * from './guard.protocol'
 export * from './logger.protocol'
 export * from './mapper.protocol'
 export * from './metric.protocol'

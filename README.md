@@ -46,7 +46,7 @@ The private constructor receives a `schema`. A getter reads it. A rule method wr
 <details>
 <summary>⚙️ Application</summary>
 
-- `transactions` — `WagerService` hashes the payload and calls `WagerGatewayProtocol`. `WagerMediator` and strategies run inside the SQL transaction (`WagerSubmitWriter`). HTTP and the queue will call the same service later.
+- `transactions` — `WagerService` hashes the payload and calls `WagerGatewayProtocol`. `WagerMediator` and strategies run inside the SQL transaction (`WagerSubmitWriter`). HTTP and the queue call the same service.
 - `references` — `ReferenceService` retries a `PENDING_REFERENCE` wager with backoff and stops after 12 attempts.
 - `reconciliations` — `reconciliation.service.ts` compares the wallet with the ledger.
 - `idempotencies` — `idempotency.service.ts` hashes the canonical business payload. `outcome` replays with `observedBalance`, or returns `IDEMPOTENCY_PAYLOAD_CONFLICT` when the key repeats with a different body.
@@ -59,7 +59,7 @@ One word, plural, no hyphen in the middle of the name.
 <summary>🗄️ Infrastructure</summary>
 
 - `persistence` — MikroORM, schema, and the wallet lock
-- `messaging` — queue, inbox, outbox, the outbox publisher, and the event envelope
+- `messaging` — queue, inbox, outbox, the publisher, the consumer, and the event envelope
 - `observability` — `SimpleLogger`, `ClockProtocol`, and metrics
 - `protocols` — `TheoryProtocol`, the contract a unit theory plugs in
 
@@ -67,7 +67,7 @@ One word, plural, no hyphen in the middle of the name.
 
 `observability` is in place for `SimpleLogger` and `SystemClock`. A child logger attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. The line is JSON, or pretty when `open` receives `pretty`; the Nest adapter will read `LOG_PRETTY`. No financial payload enters the log.
 
-`messaging` is in place for the event envelope, the inbox, the outbox, and the outbox publisher. `OutboxPublisher` claims due rows with `FOR UPDATE SKIP LOCKED`, and `SqsPublisher` sends them to `wager-transactions.fifo` with the aggregate as the message group and the event id as the deduplication id. A failed send schedules the row for retry.
+`messaging` is in place for the event envelope, the inbox, the outbox, the publisher, and the consumer. `OutboxPublisher` claims due rows with `FOR UPDATE SKIP LOCKED`, and `SqsPublisher` sends them to `wager-transactions.fifo` with the aggregate as the message group and the event id as the deduplication id. A failed send schedules the row for retry. `SqsConsumer` long-polls the main queue; `WagerConsumer` parses the request, calls `WagerService` with the inbox row, and acks after the commit. A business failure is acked, a transient failure retries with backoff, and the fifth receive or a malformed request goes to `wager-transactions-dlq.fifo`.
 
 PostgreSQL 16 stores `numeric(20, 2)`. The queue runs on LocalStack.
 

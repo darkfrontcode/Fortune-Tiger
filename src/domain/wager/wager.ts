@@ -1,11 +1,16 @@
 import type { Money } from '../money/money'
 import { STATUS_TRANSITION_MESSAGE } from './data'
 import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from './enums'
+import { WagerReferenceGuard, WagerReversalGuard, WagerTerminalGuard, WagerTransitionGuard } from './guards'
 import { WagerType } from './types'
-import { WagerGuard } from './wager.guard'
 
 type Schema = WagerType.Schema
 type Input = WagerType.Input
+
+const referenceGuard = new WagerReferenceGuard()
+const reversalGuard = new WagerReversalGuard()
+const terminalGuard = new WagerTerminalGuard()
+const transitionGuard = new WagerTransitionGuard()
 
 const none = 0
 const retryFactor = 2
@@ -17,7 +22,11 @@ export class WagerTransaction {
   private constructor(private readonly schema: Schema) {}
 
   static create(input: Input): WagerTransaction {
-    WagerGuard.reference(input.kind, input.referenceExternalTransactionId)
+    const kind = input.kind
+    const reference = input.referenceExternalTransactionId ?? String()
+    const referenceInput = { kind, reference }
+
+    referenceGuard.guard(referenceInput)
 
     const schema = {
       id: input.id,
@@ -125,7 +134,7 @@ export class WagerTransaction {
   }
 
   markProcessed(referenceTransactionId: string | undefined, at: Date): void {
-    WagerGuard.move(this.schema.status, WagerTransactionStatus.PROCESSED)
+    this.move(WagerTransactionStatus.PROCESSED)
 
     this.schema.status = WagerTransactionStatus.PROCESSED
     this.schema.referenceTransactionId = referenceTransactionId
@@ -135,7 +144,7 @@ export class WagerTransaction {
   }
 
   markPendingReference(): void {
-    WagerGuard.move(this.schema.status, WagerTransactionStatus.PENDING_REFERENCE)
+    this.move(WagerTransactionStatus.PENDING_REFERENCE)
 
     this.schema.status = WagerTransactionStatus.PENDING_REFERENCE
     this.schema.attempts = none
@@ -164,7 +173,7 @@ export class WagerTransaction {
   }
 
   reject(code: FailureCode): void {
-    WagerGuard.move(this.schema.status, WagerTransactionStatus.REJECTED)
+    this.move(WagerTransactionStatus.REJECTED)
 
     this.schema.status = WagerTransactionStatus.REJECTED
     this.schema.failureCode = code
@@ -172,7 +181,7 @@ export class WagerTransaction {
   }
 
   fail(code: FailureCode): void {
-    WagerGuard.move(this.schema.status, WagerTransactionStatus.FAILED)
+    this.move(WagerTransactionStatus.FAILED)
 
     this.schema.status = WagerTransactionStatus.FAILED
     this.schema.failureCode = code
@@ -180,10 +189,23 @@ export class WagerTransaction {
   }
 
   isTerminal(): boolean {
-    return WagerGuard.terminal(this.schema.status)
+    const status = this.schema.status
+    const terminal = terminalGuard.guard(status)
+
+    return terminal
   }
 
   requiresReference(): boolean {
-    return WagerGuard.referenced(this.schema.kind)
+    const kind = this.schema.kind
+    const reversal = reversalGuard.guard(kind)
+
+    return reversal
+  }
+
+  private move(target: WagerTransactionStatus): void {
+    const status = this.schema.status
+    const transitionInput = { status, target }
+
+    transitionGuard.guard(transitionInput)
   }
 }

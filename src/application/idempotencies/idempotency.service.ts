@@ -1,6 +1,6 @@
 import { FailureCode } from '../../domain/wager/enums'
 import { IdempotencyOutcome } from './enums'
-import { IdempotencyGuard } from './idempotency.guard'
+import { IdempotencyHashGuard } from './guards'
 import { IdempotencyReplay } from './idempotency.replay'
 import { PayloadHashPattern } from './patterns'
 import { IdempotencyType } from './types'
@@ -10,6 +10,8 @@ type Input = IdempotencyType.Input
 type Output = IdempotencyType.Output
 
 export class IdempotencyService {
+  private readonly hashGuard = new IdempotencyHashGuard()
+
   hash(payload: Payload): string {
     return new PayloadHashPattern().test(payload)
   }
@@ -22,7 +24,11 @@ export class IdempotencyService {
       return { outcome }
     }
 
-    const same = IdempotencyGuard.same(stored.wager.payloadHash, input.hash)
+    const storedHash = stored.wager.payloadHash
+    const incoming = input.hash
+    const hashInput = { stored: storedHash, incoming }
+
+    const same = this.hashGuard.guard(hashInput)
 
     if (!same) {
       const outcome = IdempotencyOutcome.CONFLICT

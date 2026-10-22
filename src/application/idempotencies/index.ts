@@ -1,5 +1,5 @@
 export * from './enums'
-export * from './idempotency.guard'
+export * from './guards'
 export * from './idempotency.replay'
 export * from './idempotency.service'
 export * from './patterns'
