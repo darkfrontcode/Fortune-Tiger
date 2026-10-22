@@ -1,10 +1,10 @@
 import { BadRequestException } from '@nestjs/common'
-import type { MapperProtocol } from '@application/protocols'
 import { Money } from '@domain/money/money'
 import { WagerTransactionKind } from '@domain/wager/enums'
 import type { WagerDto } from '../dtos'
 import { INVALID_WAGER_BODY_MESSAGE } from '../data'
 import type { HttpType } from '../types'
+import type { MapperProtocol } from './mapper.protocol'
 
 type Input = WagerDto
 type Output = HttpType.WagerInput

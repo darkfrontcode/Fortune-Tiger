@@ -1,4 +1,5 @@
 export * from './tokens'
+export * from './protocols'
 export * from './patterns'
 export * from './use-cases'
 export * from './reconciliations.module'

@@ -1,6 +1,6 @@
-import type { MapperProtocol } from '@application/protocols'
 import type { Ledger } from '@domain/ledger/ledger'
 import type { HttpType } from '../types'
+import type { MapperProtocol } from './mapper.protocol'
 
 type Input = Ledger
 type Output = HttpType.LedgerOutput

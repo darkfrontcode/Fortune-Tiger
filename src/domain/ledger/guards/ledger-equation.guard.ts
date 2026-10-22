@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '@application/protocols'
+
 import { BALANCE_EQUATION_MESSAGE, CURRENCY_CONFLICT_MESSAGE } from '../data'
 import type { LedgerType } from '../types'
 import { LedgerCurrencyGuard } from './ledger-currency.guard'
@@ -7,7 +7,7 @@ import { LedgerMovementGuard } from './ledger-movement.guard'
 type Input = LedgerType.Movement
 type Output = void
 
-export class LedgerEquationGuard implements GuardProtocol<Input, Output> {
+export class LedgerEquationGuard {
   private readonly currency = new LedgerCurrencyGuard()
   private readonly movement = new LedgerMovementGuard()
 

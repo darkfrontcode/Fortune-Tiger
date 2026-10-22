@@ -8,7 +8,7 @@ Unit tests sit in `tests/` beside the module they cover. The file name is `{subj
 
 `Money`: scale, invalid input, currency conflict. `Wallet`: balance and version. `BET`, `WIN`, `LOSS`, `REFUND`, `ROLLBACK`. Same key with a different payload. Factories `create` and `rehydrate`.
 
-A unit case is a theory. `TheoryProtocol` lives in `src/application/protocols`. The case carries `params`, `expected`, and a description `WHEN` … `SHOULD`. The test compares the actual boolean with `expected`. The domain file under test does not import it.
+A unit case is a theory. The `Theory` type lives in `src/infrastructure/protocols/theory.protocol.ts`. A case carries `params` and `expected`; each test supplies its own `WHEN` … `SHOULD` description. Production code does not import this type.
 
 `bun run test:unit` runs the unit suite.
 

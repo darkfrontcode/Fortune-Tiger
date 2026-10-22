@@ -1,4 +1,4 @@
-import type { ClockProtocol } from '@application/protocols'
+import type { ClockProtocol } from '@application/time'
 
 export namespace ObservabilityType {
   export type Schema = {

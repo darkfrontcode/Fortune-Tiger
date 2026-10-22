@@ -1,6 +1,6 @@
 import { GetQueueAttributesCommand, SQSClient } from '@aws-sdk/client-sqs'
 import { Inject, Injectable } from '@nestjs/common'
-import type { ReadinessProtocol } from '@application/protocols'
+import type { ReadinessProtocol } from '@application/health'
 import { QUEUE_CONFIG } from '../factories'
 import type { ConsumerType } from './types'
 

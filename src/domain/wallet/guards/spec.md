@@ -1,6 +1,6 @@
 # Wallet guards
 
-A guard checks one rule and refuses it by throwing. One rule per class. Every class here implements `GuardProtocol` from `application/protocols`, and the protocol method is `guard`.
+A guard checks one rule and refuses it by throwing. One rule per class. Each class is a concrete domain rule with the method `guard`; domain guards do not depend on application contracts.
 
 The class name joins the concept, the subject, and the role: `WalletSignGuard`. The file is `kebab-case` with the role as a suffix: `wallet-sign.guard.ts`. `index.ts` reexports the classes with `export *`, and callers import the folder. A guard is not reexported by `src/domain/wallet/index.ts`.
 
@@ -14,6 +14,6 @@ The guard only checks. It reads the `Money` it receives and it does not build on
 
 `Wallet` holds one instance of each as a `const` at the top of `wallet.ts`. `open` calls `WalletSignGuard`, `debit` and `credit` call `WalletSignGuard` and `WalletCurrencyGuard` through the private `assertCurrency`, and `debit` calls `WalletFundsGuard` on the balance it computed.
 
-Unit tests live in `tests/`, as `{subject}.guard.test.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
+Unit tests live in `tests/`, as `{subject}.guard.test.ts`, using the test-only `Theory` type and copy in `WHEN` / `SHOULD`.
 
 All project text is English, including the root `README.md`.

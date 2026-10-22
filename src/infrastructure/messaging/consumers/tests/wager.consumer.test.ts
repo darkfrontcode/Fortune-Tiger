@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { IdempotencyService } from '@application/idempotencies/idempotency.service'
-import type { WagerGatewayProtocol } from '@application/protocols'
-import { SubmitWagerUseCase } from '@application/transactions/wager/use-cases'
-import type { TransactionsType } from '@application/transactions'
+import type { WagerGatewayProtocol } from '@application/wagers'
+import { SubmitWagerUseCase } from '@application/wagers/use-cases'
+import type { WagersType } from '@application/wagers'
 import { WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
 import type { WagerTransaction } from '@domain/wager/wager'
 import { WagerRequestMapper } from '../../mappers'
@@ -10,8 +10,8 @@ import { ConsumerOutcome } from '../enums'
 import type { ConsumerType } from '../types'
 import { WagerConsumer } from '../wager.consumer'
 
-type SubmitOutput = TransactionsType.SubmitOutput
-type QueueInbox = TransactionsType.QueueInbox
+type SubmitOutput = WagersType.SubmitOutput
+type QueueInbox = WagersType.QueueInbox
 
 const identity = {
   messageId: 'msg-123',

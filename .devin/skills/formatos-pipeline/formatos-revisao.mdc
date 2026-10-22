@@ -1,0 +1,13 @@
+---
+description: Antes de terminar código, conferir a skill formatos-de-codigo
+alwaysApply: true
+---
+
+# Conferir formatos antes de terminar
+
+Quando esta conversa escreveu ou alterou código TypeScript ou JavaScript:
+
+1. Abra a skill `formatos-de-codigo` (o índice inteiro).
+2. Abra só o arquivo do assunto da tarefa.
+3. Corrija o código que fugiu do padrão.
+4. Só então diga que terminou.

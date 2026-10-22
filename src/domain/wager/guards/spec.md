@@ -1,6 +1,6 @@
 # Wager guards
 
-A guard checks one rule. A guard that refuses throws; a guard that only answers returns a `boolean`. One rule per class. Every class here implements `GuardProtocol` from `application/protocols`, and the protocol method is `guard`.
+A guard checks one rule. A guard that refuses throws; a guard that only answers returns a `boolean`. One concrete rule per class. Its method is `guard`; domain guards do not depend on application contracts.
 
 The class name joins the concept, the subject, and the role: `WagerReferenceGuard`. The file is `kebab-case` with the role as a suffix: `wager-reference.guard.ts`. `index.ts` reexports the classes with `export *`, and callers import the folder. A guard is not reexported by `src/domain/wager/index.ts`.
 
@@ -19,6 +19,6 @@ The text comes from `data/`. The status table comes from `maps/transition.map.ts
 
 The application asks the entity (`requiresReference`), not the guard: the use case does not import this folder.
 
-Unit tests live in `tests/`, as `{subject}.guard.test.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
+Unit tests live in `tests/`, as `{subject}.guard.test.ts`, using the test-only `Theory` type and copy in `WHEN` / `SHOULD`.
 
 All project text is English, including the root `README.md`.

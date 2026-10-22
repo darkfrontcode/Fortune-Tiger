@@ -1,5 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { LedgerPage, LedgerReaderProtocol, WalletReaderProtocol } from '@application/protocols'
+import type {
+  LedgerPage,
+  LedgerReaderProtocol,
+  WalletReaderProtocol,
+} from '@application/wallets'
 import { LEDGER_READER, WALLET_READER } from '../tokens'
 import { WalletNotFoundError } from '../wallet-not-found.error'
 

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { ReadinessProtocol } from '../../protocols'
+import type { ReadinessProtocol } from '@application/health'
 import { READINESS } from '../tokens'
 import { HealthReadinessError } from './health-readiness.error'
 import { HealthStatus } from '../enums'

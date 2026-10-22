@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ReferencesModule } from '@application/references'
-import { TransactionsModule } from '@application/transactions'
+import { WagersModule } from '@application/wagers'
 import { MessagingModule } from '@infrastructure/messaging'
 import { ObservabilityModule } from '@infrastructure/observability'
 import { PersistenceModule, ReferenceWorker } from '@infrastructure/persistence'
@@ -11,7 +11,7 @@ import { RuntimeService } from './runtime.service'
 const moduleImports = [
   ObservabilityModule,
   PersistenceModule,
-  TransactionsModule,
+  WagersModule,
   ReferencesModule,
   MessagingModule,
   HealthModule,

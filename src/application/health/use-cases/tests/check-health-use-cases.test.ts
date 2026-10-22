@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { ReadinessProtocol } from '../../../protocols'
+import type { ReadinessProtocol } from '../../protocols'
 import { HealthStatus } from '../../enums'
 import { CheckHealthLivenessUseCase } from '../check-health-liveness.use-case'
 import { CheckHealthReadinessUseCase } from '../check-health-readiness.use-case'

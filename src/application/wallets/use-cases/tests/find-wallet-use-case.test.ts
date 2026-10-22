@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { WalletReaderProtocol } from '@application/protocols'
+import type { WalletReaderProtocol } from '@application/wallets'
 import { Money } from '@domain/money/money'
 import { Wallet } from '@domain/wallet/wallet'
 import { WalletNotFoundError } from '../../wallet-not-found.error'

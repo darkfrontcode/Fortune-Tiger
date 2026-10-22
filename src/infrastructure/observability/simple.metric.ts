@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import type { MetricProtocol } from '@application/protocols'
+import type { MetricProtocol } from '@application/observability'
 
 @Injectable()
 export class SimpleMetric implements MetricProtocol {

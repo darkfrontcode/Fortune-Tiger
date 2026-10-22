@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { GetQueueAttributesCommand } from '@aws-sdk/client-sqs'
-import type { TheoryProtocol } from '@application/protocols'
+import type { Theory } from '@infrastructure/protocols'
 import { QueueReadiness } from '../queue.readiness'
 import type { ConsumerType } from '../types'
 
@@ -8,7 +8,7 @@ type Params = {
   reachable: boolean
 }
 
-interface QueueReadinessTheory extends TheoryProtocol<Params> {
+interface QueueReadinessTheory extends Theory<Params> {
   title: string
   description: string
 }

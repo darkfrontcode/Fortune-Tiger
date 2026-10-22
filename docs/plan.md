@@ -6,11 +6,11 @@ Each phase closes with a green test of what it introduced. Do not postpone the t
 
 No phase starts in code while its `spec.md` is missing.
 
-Application contexts are plural and one word: `transactions`, `reconciliations`, `idempotencies`. Each application operation lives in its context's `use-cases/` folder; reusable responsibilities remain services. Domain folders stay `money`, `wallet`, `ledger`, and `wager`. Types of one concept live in `types.ts`, in one namespace `{Concept}Type`. The word `props` is not used.
+Application capabilities are plural and one word: `wagers`, `wallets`, `references`, `reconciliations`, `idempotencies`. Each application operation lives in its capability's `use-cases/` folder; reusable responsibilities remain services. Domain folders stay `money`, `wallet`, `ledger`, and `wager`. Types of one concept live in `types.ts`, in one namespace `{Concept}Type`. The word `props` is not used.
 
 `src` has only `domain`, `application`, `infrastructure`, and `presentation`. There is no folder named `shared`, `common`, or `utils`. That name is a junk drawer.
 
-A plug-in contract ends with `Protocol`. The file is `mapper.protocol.ts`, inside `application/protocols`. Domain and presentation do not have that folder. The domain imports only that folder from `application`, not use cases. Inside, the TypeScript interface has an input and an output, as in `map(input)`. `MapperProtocol` is the naming example, not a type in this project. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` and `PatternProtocol` live there. No protocol per class.
+A plug-in contract ends with `Protocol`. Application ports live in the `protocols/` folder of the consuming capability. Cross-cutting application ports have explicit `observability` and `time` owners. Infrastructure-internal and presentation-specific contracts stay beside their consumers. The domain has no application imports. Generic mapper, guard, and pattern contracts are not used without a real plug-in boundary. Test-only theory data lives in root `test-support/`. No protocol per class.
 
 History uses Conventional Commits. A branch leaves `main` as `<type>/<area>/<subject>`. The type is `feat`, `fix`, `docs`, `refactor`, `test`, or `chore`. The area is where the work sits. The subject names the functionality, as in `feat/docs/readme`. The commit uses that same type. One commit per pull request. `main` changes only through a pull request. Work does not start on `main`. Split a diff that no longer fits one commit.
 

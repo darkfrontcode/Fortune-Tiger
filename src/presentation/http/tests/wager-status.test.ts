@@ -1,16 +1,16 @@
 import { describe, expect, test } from 'bun:test'
 import { HttpStatus } from '@nestjs/common'
-import { TheoryProtocol } from '@application/protocols'
-import type { TransactionsType } from '@application/transactions'
+import { Theory } from '@infrastructure/protocols'
+import type { WagersType } from '@application/wagers'
 import { FailureCode, WagerTransactionStatus } from '@domain/wager/enums'
 import { WagerStatus } from '../statuses'
 
-interface WagerStatusTheory<TParams> extends TheoryProtocol<TParams> {
+interface WagerStatusTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }
 
-type Output = TransactionsType.SubmitOutput
+type Output = WagersType.SubmitOutput
 type Params = { value: Output; code: HttpStatus }
 
 const status = new WagerStatus()

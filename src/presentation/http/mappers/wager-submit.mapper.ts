@@ -1,9 +1,9 @@
-import type { MapperProtocol } from '@application/protocols'
-import type { TransactionsType } from '@application/transactions'
+import type { WagersType } from '@application/wagers'
 import type { HttpType } from '../types'
+import type { MapperProtocol } from './mapper.protocol'
 
 type Input = {
-  output: TransactionsType.SubmitOutput
+  output: WagersType.SubmitOutput
   currency: string
 }
 

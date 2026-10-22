@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '@application/protocols'
+
 import { REFERENCE_REQUIRED_MESSAGE } from '../data'
 import type { WagerType } from '../types'
 import { WagerReversalGuard } from './wager-reversal.guard'
@@ -6,7 +6,7 @@ import { WagerReversalGuard } from './wager-reversal.guard'
 type Input = WagerType.Reference
 type Output = void
 
-export class WagerReferenceGuard implements GuardProtocol<Input, Output> {
+export class WagerReferenceGuard {
   private readonly reversal = new WagerReversalGuard()
 
   guard(input: Input): Output {

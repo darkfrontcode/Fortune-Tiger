@@ -4,9 +4,9 @@ The scheduled retry of a wager that is waiting for its reference.
 
 `use-cases/retry-references.use-case.ts` defines `RetryReferencesUseCase.execute`. It receives `{ at, limit }`, asks `ReferenceReaderProtocol.due` for the due transaction IDs, and calls `ReferenceGatewayProtocol.retry` in order. It returns `{ checked, processed, rejected, waiting }`.
 
-`REFERENCE_READER` and `REFERENCE_GATEWAY` live in this context's `tokens/` folder.
+`ReferenceReaderProtocol` and `ReferenceGatewayProtocol` live in this context's `protocols/` folder. `REFERENCE_READER` and `REFERENCE_GATEWAY` live in this context's `tokens/` folder.
 
-`ReferenceMediator.retry` (in `transactions/wager/mediators/`) decides one due wager inside the SQL transaction:
+`ReferenceMediator.retry` (in `wagers/mediators/`) decides one due wager inside the SQL transaction:
 
 - a reference that is absent or not terminal calls `wager.scheduleRetry(at)`;
 - `wager.exhausted()` rejects with `REFERENCE_NOT_FOUND`;

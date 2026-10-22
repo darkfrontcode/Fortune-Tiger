@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 
-import type { PatternProtocol } from '../../protocols'
+
 import { IdempotencyType } from '../types'
 
 type Input = IdempotencyType.Payload
@@ -12,7 +12,7 @@ type KeyChild = {
   child: JsonValue
 }
 
-export class PayloadHashPattern implements PatternProtocol<Input, Output> {
+export class PayloadHashPattern {
   private readonly algorithm = 'sha256'
   private readonly encoding = 'hex'
 

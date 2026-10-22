@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '@application/protocols'
+import type { Theory } from '@infrastructure/protocols'
 import { WagerTransactionKind } from '../../enums'
 import { WagerReversalGuard } from '../wager-reversal.guard'
 
-interface WagerReversalTheory<TParams> extends TheoryProtocol<TParams> {
+interface WagerReversalTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '@application/protocols'
+
 import type { LedgerType } from '../types'
 import { LedgerCurrencyGuard } from './ledger-currency.guard'
 import { LedgerMovementGuard } from './ledger-movement.guard'
@@ -6,7 +6,7 @@ import { LedgerMovementGuard } from './ledger-movement.guard'
 type Input = LedgerType.Movement
 type Output = boolean
 
-export class LedgerBalanceGuard implements GuardProtocol<Input, Output> {
+export class LedgerBalanceGuard {
   private readonly currency = new LedgerCurrencyGuard()
   private readonly movement = new LedgerMovementGuard()
 

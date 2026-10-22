@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import type { ClockProtocol, LoggerProtocol } from '@application/protocols'
+import type { ClockProtocol } from '@application/time'
+import type { LoggerProtocol } from '@application/observability'
 import { ConsumerOutcome } from '../enums'
 import type { SqsQueue } from '../sqs.queue'
 import { SqsConsumer } from '../sqs.consumer'

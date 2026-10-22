@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '@application/protocols'
+
 import { WagerTransactionStatus } from '../enums'
 import { TransitionMap } from '../maps'
 
@@ -7,7 +7,7 @@ type Output = boolean
 
 const none = 0
 
-export class WagerTerminalGuard implements GuardProtocol<Input, Output> {
+export class WagerTerminalGuard {
   private readonly transitions = new TransitionMap()
 
   guard(input: Input): Output {

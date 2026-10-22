@@ -3,9 +3,9 @@ import { Inject, Injectable } from '@nestjs/common'
 import { uuidv7 } from 'uuidv7'
 import { IdempotencyService } from '@application/idempotencies/idempotency.service'
 import { IdempotencyOutcome } from '@application/idempotencies/enums'
-import type { WagerGatewayProtocol } from '@application/protocols'
-import { WagerMediator } from '@application/transactions/wager/mediators/wager.mediator'
-import type { TransactionsType } from '@application/transactions/wager'
+import type { WagerGatewayProtocol } from '@application/wagers'
+import { WagerMediator } from '@application/wagers/mediators'
+import type { WagersType } from '@application/wagers'
 import type { Ledger } from '@domain/ledger/ledger'
 import type { Wallet } from '@domain/wallet/wallet'
 import { FailureCode } from '@domain/wager/enums'
@@ -18,8 +18,8 @@ import { OutboxMessageRepository } from '../outbox/outbox-message.repository'
 import { WalletRepository } from '../wallet/wallet.repository'
 import { WagerTransactionRepository } from './wager-transaction.repository'
 
-type SubmitOutput = TransactionsType.SubmitOutput
-type QueueInbox = TransactionsType.QueueInbox
+type SubmitOutput = WagersType.SubmitOutput
+type QueueInbox = WagersType.QueueInbox
 
 @Injectable()
 export class WagerSubmitWriter implements WagerGatewayProtocol {

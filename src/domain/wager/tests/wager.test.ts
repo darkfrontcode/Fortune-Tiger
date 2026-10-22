@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { TheoryProtocol } from '@application/protocols'
+import { Theory } from '@infrastructure/protocols'
 import { Money } from '../../money/money'
 import {
   REFERENCE_REQUIRED_MESSAGE,
@@ -10,7 +10,7 @@ import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '../en
 import { WagerType } from '../types'
 import { WagerTransaction } from '../wager'
 
-interface WagerTheory<TParams> extends TheoryProtocol<TParams> {
+interface WagerTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

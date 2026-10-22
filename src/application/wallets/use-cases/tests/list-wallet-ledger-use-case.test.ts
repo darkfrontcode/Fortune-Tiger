@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import type { LedgerReaderProtocol, WalletReaderProtocol } from '@application/protocols'
-import type { LedgerPage } from '@application/protocols'
+import type { LedgerReaderProtocol, WalletReaderProtocol } from '@application/wallets'
+import type { LedgerPage } from '@application/wallets'
 import { Money } from '@domain/money/money'
 import { Wallet } from '@domain/wallet/wallet'
 import { WalletNotFoundError } from '../../wallet-not-found.error'

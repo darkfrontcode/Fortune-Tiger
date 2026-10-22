@@ -1,6 +1,6 @@
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
-import type { WalletReaderProtocol } from '@application/protocols'
+import type { WalletReaderProtocol } from '@application/wallets'
 import type { Wallet } from '@domain/wallet/wallet'
 import { WalletRepository } from './wallet.repository'
 

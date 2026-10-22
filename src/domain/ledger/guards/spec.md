@@ -1,6 +1,6 @@
 # Ledger guards
 
-A guard checks one rule. A guard that refuses throws; a guard that only answers returns a `boolean`. One rule per class. Every class here implements `GuardProtocol` from `application/protocols`, and the protocol method is `guard`.
+A guard checks one rule. A guard that refuses throws; a guard that only answers returns a `boolean`. One concrete rule per class. Its method is `guard`; domain guards do not depend on application contracts.
 
 The class name joins the concept, the subject, and the role: `LedgerEquationGuard`. The file is `kebab-case` with the role as a suffix: `ledger-equation.guard.ts`. `index.ts` reexports the classes with `export *`, and callers import the folder. A guard is not reexported by `src/domain/ledger/index.ts`.
 
@@ -17,6 +17,6 @@ A guard may hold other guards inside when the rule is composed. Each one stays i
 
 `Ledger` holds one instance of `LedgerBalanceGuard` and one of `LedgerEquationGuard` as a `const` at the top of `ledger.ts`, and `Ledger.create` calls `LedgerEquationGuard`. `Ledger.isBalanced` calls `LedgerBalanceGuard` and never throws.
 
-Unit tests live in `tests/`, as `{subject}.guard.test.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
+Unit tests live in `tests/`, as `{subject}.guard.test.ts`, using the test-only `Theory` type and copy in `WHEN` / `SHOULD`.
 
 All project text is English, including the root `README.md`.

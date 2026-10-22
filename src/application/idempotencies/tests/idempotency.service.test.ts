@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { TheoryProtocol } from '../../protocols'
+import { Theory } from '@infrastructure/protocols'
 import { Money } from '@domain/money/money'
 import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
 import { WagerType } from '@domain/wager/types'
@@ -8,7 +8,7 @@ import { IdempotencyOutcome } from '../enums'
 import { IdempotencyService } from '../idempotency.service'
 import { IdempotencyType } from '../types'
 
-interface IdempotencyTheory<TParams> extends TheoryProtocol<TParams> {
+interface IdempotencyTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

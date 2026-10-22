@@ -11,13 +11,13 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common'
-import type { ClockProtocol } from '@application/protocols'
+import type { ClockProtocol } from '@application/time'
 import {
   FindWagerByProviderUseCase,
   FindWagerUseCase,
   SubmitWagerUseCase,
-} from '@application/transactions/wager/use-cases'
-import { CLOCK } from '@application/dependencies/tokens'
+} from '@application/wagers/use-cases'
+import { CLOCK } from '@application/time'
 import { AuthGuard } from '../guards'
 import { IDEMPOTENCY_KEY_REQUIRED_MESSAGE } from '../data'
 import type { WagerDto } from '../dtos'

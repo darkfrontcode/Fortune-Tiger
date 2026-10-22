@@ -35,7 +35,7 @@ The row is inserted in the same SQL transaction as the business change. Publishi
 
 `publishers/outbox.publisher.ts` holds `OutboxPublisher`. `publish` receives `at` and `limit`, opens one SQL transaction, and claims due rows with `SELECT ... FOR UPDATE SKIP LOCKED`. A row is due when `publishedAt` is absent and `nextAttemptAt` is absent or not after `at`. Rows are ordered by `occurredAt` and limited by the caller. The batch stays inside the transaction, and the limit keeps the lock window small.
 
-Each row is published through `PublisherProtocol` from `src/application/protocols`. `publishers/sqs.publisher.ts` holds `SqsPublisher`, which sends the envelope to `wager-transactions.fifo`. `MessageGroupId` is `aggregateId`, so one aggregate keeps its order. `MessageDeduplicationId` is the event id.
+Each row is published through the infrastructure-owned `PublisherProtocol` in `publishers/`. `publishers/sqs.publisher.ts` holds `SqsPublisher`, which sends the envelope to `wager-transactions.fifo`. `MessageGroupId` is `aggregateId`, so one aggregate keeps its order. `MessageDeduplicationId` is the event id.
 
 A published row calls `markPublished(at)`. A failed publish calls `scheduleRetry(at)`, and the batch continues. The transaction commits the published and the retry state together. A process that dies before the commit leaves the rows pending for another publisher. A process that dies after the send and before the commit republishes; the consumer inbox deduplicates.
 
@@ -56,7 +56,7 @@ The target is `wager-transactions.fifo`, the main FIFO queue in the statement. I
 | `WalletBalanceChanged` | only when the balance changed | `walletId`, `transactionId`, `direction`, `money`, `balanceBefore`, `balanceAfter`, `walletVersion` |
 | `WagerTransactionPendingReference` | reference is missing | `transactionId`, `providerId`, `externalTransactionId`, `playerId`, `walletId`, `kind`, `status` |
 
-A processed `LOSS` publishes `WagerTransactionProcessed` and does not publish `WalletBalanceChanged`. The use case decides that. See `src/application/transactions/spec.md`.
+A processed `LOSS` publishes `WagerTransactionProcessed` and does not publish `WalletBalanceChanged`. The use case decides that. See `src/application/wagers/spec.md`.
 
 ## Consumer
 
@@ -66,7 +66,7 @@ A processed `LOSS` publishes `WagerTransactionProcessed` and does not publish `W
 
 `messages/wager-request.ts` holds `WagerRequest`. `from` receives the body. It parses the JSON, returns nothing for an integration event, and returns a `WagerRequest` otherwise. `WagerRequestGuard` checks `messageId`, `type`, `occurredAt`, `data`, kind, money, and reference. Malformed JSON, a missing field, an unknown kind, an invalid money, and a missing reference for `REFUND` or `ROLLBACK` throw `Error` with `INVALID_WAGER_REQUEST_MESSAGE` from `messages/data/messages.data.ts`. Its types live in `messages/types.ts`, in `WagerRequestType`.
 
-`mappers/wager-request.mapper.ts` holds `WagerRequestMapper`, and it implements `MapperProtocol`. It maps a valid `WagerRequest`, the consumer name, and the receive time to `TransactionsType.SubmitInput`. The request id is a new UUIDv7. `at` is the request `occurredAt`. The receive time goes to the inbox row.
+`mappers/wager-request.mapper.ts` holds `WagerRequestMapper`, and it implements `MapperProtocol`. It maps a valid `WagerRequest`, the consumer name, and the receive time to `WagersType.SubmitInput`. The request id is a new UUIDv7. `at` is the request `occurredAt`. The receive time goes to the inbox row.
 
 The inbox `messageId` is the envelope `messageId`, not the SQS id. The use case commits the inbox row with the wager, the wallet, the ledger, and the outbox. `ACK` happens only after `SubmitWagerUseCase.execute` resolves. A resolved `REJECTED` is a business rule and is acked.
 
@@ -74,7 +74,7 @@ The attempt limit before the DLQ is 5. A transient failure under the limit retur
 
 `consumers/sqs.consumer.ts` holds `SqsConsumer`. `open` starts one long-poll loop. `close` stops the loop and awaits the in-flight batch. A process killed before the commit or before the ack leaves the message for redelivery, and the inbox keeps the effect single. The boot wires `SIGTERM` to `close`.
 
-The message envelope is `messageId`, `type`, `occurredAt`, and `data`. `type` is `WagerTransactionRequested`. `data` carries the wager fields plus `idempotencyKey`. The consumer calls the use case in `src/application/transactions`.
+The message envelope is `messageId`, `type`, `occurredAt`, and `data`. `type` is `WagerTransactionRequested`. `data` carries the wager fields plus `idempotencyKey`. The consumer calls the use case in `src/application/wagers`.
 
 | Error | Destination |
 | --- | --- |
@@ -90,11 +90,11 @@ Events are not published before the financial commit.
 
 ## Module
 
-`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `TransactionsModule`, and `ObservabilityModule`, and it provides the whole channel. `SQSClient` and the `QUEUE_CONFIG` token are built once from `Environment`; the token lives beside `createQueueConfig` in `factories/queue.factory.ts`.
+`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `WagersModule`, and `ObservabilityModule`, and it provides the whole channel. `SQSClient` and the `QUEUE_CONFIG` token are built once from `Environment`; the token lives beside `createQueueConfig` in `factories/queue.factory.ts`.
 
 `SqsQueue`, `SqsPublisher`, `QueueReadiness`, `OutboxPublisher`, `OutboxWorker`, `WagerConsumer`, and `SqsConsumer` are `@Injectable()`. They receive `SQSClient` and `MikroORM` by class token, `CLOCK`, `LOGGER`, and `PUBLISHER` by their tokens, and `QUEUE_CONFIG` for the queue URLs and the poll limits. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`.
 
-`PUBLISHER` is owned by messaging and lives in `tokens/`. `CLOCK` and `LOGGER` are cross-cutting tokens from `application/dependencies/tokens`.
+`PUBLISHER` and `PublisherProtocol` are owned by messaging; the token lives in `tokens/` and the protocol stays beside the publisher consumer. `CLOCK` lives in `application/time/tokens`; `LOGGER` lives in `application/observability/tokens`.
 
 The consumer name is `wager`. It is the `CONSUMER_NAME` token in `consumers/consumer-name.token.ts`, bound with `useValue`, and `WagerConsumer` receives it in the constructor.
 

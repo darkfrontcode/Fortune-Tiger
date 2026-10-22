@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { ClockProtocol, WalletOpeningProtocol } from '@application/protocols'
+import type { ClockProtocol } from '@application/time'
+import type { WalletOpeningProtocol } from '@application/wallets'
 import type { Money } from '@domain/money/money'
 import type { Wallet } from '@domain/wallet/wallet'
-import { CLOCK } from '@application/dependencies/tokens'
+import { CLOCK } from '@application/time'
 import { WALLET_OPENING } from '../tokens'
 
 type Input = {

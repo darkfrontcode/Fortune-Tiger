@@ -16,7 +16,7 @@ Metrics cover transactions by status, duplicates, retries, DLQ messages, lock co
 
 `observability.module.ts` imports `EnvironmentModule` and provides three tokens. `CLOCK` is `SystemClock`. `LOGGER` is `SimpleLogger.open` with the clock and `pretty` from `Environment`. `METRIC` is `SimpleMetric`. The tokens are exported, so no other module builds a clock, a logger, or a metric. `SimpleLogger` answers to its class token through `useExisting`, `LoggerService` is provided and exported, and `src/main.ts` hands it to `useLogger`.
 
-The cross-cutting tokens are declared in `application/dependencies/tokens`.
+The cross-cutting `LOGGER` and `METRIC` tokens are declared in `application/observability/tokens`. `CLOCK` is declared in `application/time/tokens`.
 
 OpenTelemetry and a dashboard are out.
 

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test'
 
-import type { ClockProtocol } from '@application/protocols'
+import type { ClockProtocol } from '@application/time'
 import { SimpleLogger } from '../simple-logger'
 
 const instant = {

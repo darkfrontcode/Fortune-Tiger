@@ -1,4 +1,5 @@
 export * from './enums'
+export * from './protocols'
 export * from './tokens'
 export * from './types'
 export * from './use-cases'

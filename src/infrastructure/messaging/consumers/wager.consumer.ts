@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { SubmitWagerUseCase } from '@application/transactions/wager/use-cases'
+import { SubmitWagerUseCase } from '@application/wagers/use-cases'
 import { WagerRequestMapper } from '../mappers'
 import { WagerRequest } from '../messages'
 import { CONSUMER_NAME } from './consumer-name.token'

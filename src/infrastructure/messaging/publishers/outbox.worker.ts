@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { ClockProtocol, LoggerProtocol } from '@application/protocols'
-import { CLOCK, LOGGER } from '@application/dependencies/tokens'
+import type { ClockProtocol } from '@application/time'
+import type { LoggerProtocol } from '@application/observability'
+import { CLOCK } from '@application/time'
+import { LOGGER } from '@application/observability'
 import { OutboxPublisher } from './outbox.publisher'
 
 const intervalMs = 2_000

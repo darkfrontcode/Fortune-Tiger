@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { WagerTransactionStatus } from '@domain/wager/enums'
-import type { ReferenceGatewayProtocol, ReferenceReaderProtocol } from '../../../protocols'
+import type { ReferenceGatewayProtocol, ReferenceReaderProtocol } from '../../protocols'
 import { ReferenceType } from '../../types'
 import { RetryReferencesUseCase } from '../retry-references.use-case'
 

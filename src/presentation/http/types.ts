@@ -1,4 +1,4 @@
-import type { ProviderIdentity } from '@application/protocols'
+import type { ProviderIdentity } from '@presentation/http/providers'
 import type { LedgerDirection } from '@domain/ledger/enums'
 import type { Money } from '@domain/money/money'
 import type {

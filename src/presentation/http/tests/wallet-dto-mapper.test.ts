@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { BadRequestException } from '@nestjs/common'
-import { TheoryProtocol } from '@application/protocols'
+import { Theory } from '@infrastructure/protocols'
 import type { WalletDto } from '../dtos'
 import { WalletDtoMapper } from '../mappers'
 
-interface WalletDtoMapperTheory<TParams> extends TheoryProtocol<TParams> {
+interface WalletDtoMapperTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

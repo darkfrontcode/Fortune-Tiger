@@ -1,6 +1,6 @@
 # Money guards
 
-A guard checks one rule and refuses it by throwing. One rule per class. Every class here implements `GuardProtocol` from `application/protocols`, and the protocol method is `guard`.
+A guard checks one rule and refuses it by throwing. One concrete rule per class. Its method is `guard`; domain guards do not depend on application contracts.
 
 The class name joins the concept, the subject, and the role: `MoneyAmountGuard`. The file is `kebab-case` with the role as a suffix: `money-amount.guard.ts`. `index.ts` reexports the classes with `export *`, and callers import the folder. A guard is not reexported by `src/domain/money/index.ts`.
 
@@ -14,6 +14,6 @@ The guard only checks. The pattern stays in `patterns/`, and the guard calls `te
 
 `Money` holds one instance of each as a `const` at the top of `money.ts`. `from` calls `MoneyAmountGuard` and `MoneyCurrencyGuard`, `zero` calls `MoneyCurrencyGuard`, and `add`, `subtract`, and `isLessThan` call `MoneyConflictGuard` through the private `assertCurrency`.
 
-Unit tests live in `tests/`, as `{subject}.guard.test.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
+Unit tests live in `tests/`, as `{subject}.guard.test.ts`, using the test-only `Theory` type and copy in `WHEN` / `SHOULD`.
 
 All project text is English, including the root `README.md`.

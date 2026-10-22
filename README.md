@@ -36,7 +36,7 @@ The application is the coordinator. It gives the same wager rules to requests fr
 - 🧾 Reuse that key for different details, and the request is flagged as a conflict.
 - 🔎 Missing references can be checked again later; reconciliation compares the wallet with its ledger without silently changing either.
 - 👛 Every HTTP route delegates its operation to an explicit application use case; the global filter translates application errors into HTTP responses.
-- 🧩 Injection tokens live with their owning module; shared dependencies live under `application/dependencies/tokens`.
+- 🧩 Ports and injection tokens live with their owning capability; cross-cutting observability and time contracts have explicit owners.
 
 </details>
 
@@ -155,8 +155,9 @@ These are the coding assistants and model names used to build Fortune Tiger:
 
 - 🖱️ **Cursor** — Composer 2.5 and Grok 4.7.
 - 🧰 **OpenCode** — DeepSeek V4.1 Flash.
-- 🦆 **CLIXAD** (terminal assistant) — DeepSeek V4.1 Flash.
+- 🦆 **CLIXAD** (terminal assistant) — GPT-05 reasoning.
 - 💻 **GitHub Copilot in VS Code** — GPT-5.3-Codex.
+- 🖥️ **Devin Desktop** — SWE-1.6 Slow.
 
 </details>
 
