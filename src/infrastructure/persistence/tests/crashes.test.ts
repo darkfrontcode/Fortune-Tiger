@@ -19,6 +19,8 @@ import { Wallet } from '@domain/wallet'
 import { WagerTransaction, WagerTransactionKind, WagerTransactionStatus } from '@domain/wager'
 import { WagerEventsMapper, WagerRequestMapper } from '../../messaging/mappers'
 import { OutboxMessage } from '../../messaging/messages'
+import { OutboxPublisher } from '../../messaging/publishers/outbox.publisher'
+import type { Published, PublisherProtocol } from '../../messaging/publishers'
 import { SqsConsumer, SqsQueue, WagerConsumer } from '../../messaging/consumers'
 import type { ConsumerType } from '../../messaging/consumers'
 import { Environment } from '../../environment'
@@ -80,6 +82,23 @@ const separator = ':'
 const requestType = 'WagerTransactionRequested'
 const event = {
   type: 'WagerTransactionProcessed',
+}
+
+class RecordingPublisher implements PublisherProtocol {
+  readonly published = new Array<Published>()
+
+  async publish(published: Published): Promise<void> {
+    this.published.push(published)
+  }
+}
+
+class FailingUpdatePublisher implements PublisherProtocol {
+  readonly published = new Array<Published>()
+
+  async publish(published: Published): Promise<void> {
+    this.published.push(published)
+    throw new Error('Database update failed')
+  }
 }
 const consumerName = 'wager'
 const acknowledgement = 'ACK_PENDING'
@@ -432,6 +451,74 @@ describe('Crash recovery', () => {
     expect(pending).toHaveLength(1)
     expect(pending[0].id).toBe(messageId)
     expect(pending[0].isPending()).toBe(true)
+  }, timeout)
+
+  test('WHEN outbox row is persisted and publisher runs after restart SHOULD publish and mark published', async () => {
+    const orm = persistence()
+    const messageId = uuidv7()
+    const aggregateId = uuidv7()
+    const payload = { eventId: messageId, eventType: event.type }
+    const schema = {
+      id: messageId,
+      aggregateId,
+      eventType: event.type,
+      payload,
+      occurredAt: instant.open,
+      attempts: 0,
+      nextAttemptAt: instant.open,
+      publishedAt: null,
+    }
+    const message = OutboxMessage.rehydrate(schema)
+
+    await orm.em.transactional(async (manager) => {
+      const outbox = new OutboxMessageRepository(manager)
+      outbox.saveMany([message])
+    })
+
+    await reopen()
+
+    const publisher = new RecordingPublisher()
+    const service = new OutboxPublisher(persistence(), publisher)
+    const report = await service.publish({ at: instant.retry, limit: 20 })
+    const stored = await new OutboxMessageRepository(persistence().em.fork()).findById(messageId)
+
+    expect(report).toEqual({ published: 1, retried: 0 })
+    expect(publisher.published.map((p) => p.id)).toEqual([messageId])
+    expect(stored?.publishedAt).toEqual(instant.retry)
+    expect(stored?.attempts).toBe(0)
+  }, timeout)
+
+  test('WHEN publish succeeds but database update fails SHOULD remain eligible for retry', async () => {
+    const orm = persistence()
+    const messageId = uuidv7()
+    const aggregateId = uuidv7()
+    const payload = { eventId: messageId, eventType: event.type }
+    const schema = {
+      id: messageId,
+      aggregateId,
+      eventType: event.type,
+      payload,
+      occurredAt: instant.open,
+      attempts: 0,
+      nextAttemptAt: instant.open,
+      publishedAt: null,
+    }
+    const message = OutboxMessage.rehydrate(schema)
+
+    await orm.em.transactional(async (manager) => {
+      const outbox = new OutboxMessageRepository(manager)
+      outbox.saveMany([message])
+    })
+
+    const publisher = new FailingUpdatePublisher()
+    const service = new OutboxPublisher(orm, publisher)
+    const report = await service.publish({ at: instant.retry, limit: 20 })
+    const stored = await new OutboxMessageRepository(orm.em.fork()).findById(messageId)
+
+    expect(report).toEqual({ published: 0, retried: 1 })
+    expect(publisher.published).toHaveLength(1)
+    expect(stored?.publishedAt).toBeNull()
+    expect(stored?.attempts).toBe(1)
   }, timeout)
 
   test('WHEN a refund arrives before its bet SHOULD reconcile without restart', async () => {
