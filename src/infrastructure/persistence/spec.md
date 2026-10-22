@@ -8,6 +8,8 @@ PostgreSQL 16. Section 4 of the statement excludes Prisma. This project uses Mik
 
 `ReferenceReader.due` selects `PENDING_REFERENCE` rows whose `next_attempt_at` is null or not after now, ordered by `next_attempt_at`, limited by the caller. `ReferenceRetryWriter.retry` locks the wager row and the wallet row with `SELECT FOR UPDATE`, then writes the wager, the wallet, the ledger, and the outbox in one SQL transaction. A retry that is still waiting writes only `attempts` and `next_attempt_at`.
 
+`OutboxMessageRepository.findDueForUpdate` selects due `outbox_messages` with `FOR UPDATE SKIP LOCKED`, ordered by `occurred_at`, limited by the caller. The statement lives in `outbox/queries/find-due-for-update.query.ts`. `updateMany` writes `attempts`, `next_attempt_at`, and `published_at` for the batch in the same SQL transaction.
+
 Tables: `wallets`, `wager_transactions`, `wallet_ledger_entries`, `inbox_messages`, `outbox_messages`.
 
 - `wallets`: unique `(player_id, currency)`; balance `>= 0`; `version >= 1`

@@ -10,8 +10,8 @@ export class OutboxMessageMapper {
       payload: entity.payload,
       occurredAt: entity.occurredAt,
       attempts: entity.attempts,
-      nextAttemptAt: entity.nextAttemptAt,
-      publishedAt: entity.publishedAt,
+      nextAttemptAt: entity.nextAttemptAt ?? undefined,
+      publishedAt: entity.publishedAt ?? undefined,
     }
 
     return OutboxMessage.rehydrate(schema)
