@@ -22,7 +22,7 @@ A design pattern is used only when it solves a problem in this challenge. The st
 
 `src` has four folders: `domain`, `application`, `infrastructure`, and `presentation`. `src/main.ts` and `src/app.module.ts` are files beside them. There is no `src/modules` folder.
 
-There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application` or `infrastructure`. Domain does not have that folder. Presentation does not have that folder.
+There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. Plug-in contracts live in `application/protocols`. Domain and presentation do not have a `protocols` folder.
 
 ## Protocols
 
@@ -79,30 +79,76 @@ src/
   runtime.service.ts
   domain/
     AGENTS.md
-    money/spec.md
-    wallet/spec.md
-    ledger/spec.md
-    wager/spec.md
+    index.ts
+    ledger/
+      data/
+      enums/
+      guards/tests/
+      tests/
+    money/
+      data/
+      guards/tests/
+      patterns/tests/
+      tests/
+    wager/
+      data/
+      enums/
+      guards/tests/
+      maps/
+      tests/
+    wallet/
+      data/
+      guards/tests/
+      tests/
   application/
     AGENTS.md
-    protocols/spec.md
-    tokens/spec.md
-    transactions/spec.md
-    references/spec.md
-    reconciliations/spec.md
-    idempotencies/spec.md
+    idempotencies/
+      enums/
+      guards/tests/
+      patterns/tests/
+      tests/
+    protocols/
+    reconciliations/
+      data/
+      patterns/
+      tests/
+    references/tests/
+    tokens/
+    transactions/wager/
+      data/
+      mediators/tests/
+      strategies/
+      tests/
   infrastructure/
     AGENTS.md
-    environment/spec.md
-    persistence/spec.md
-    messaging/spec.md
-    observability/spec.md
+    environment/tests/
+    messaging/
+      consumers/enums/
+      consumers/tests/
+      events/wager/
+      events/wallet/
+      factories/
+      mappers/tests/
+      messages/data/
+      messages/tests/
+      publishers/tests/
+    observability/tests/
+    persistence/
+      data/
+      inbox/
+      ledger/
+      migrations/
+      outbox/queries/
+      reconciliation/
+      tests/
+      wager/
+      wallet/
   presentation/
     AGENTS.md
     http/
-      bodies/
       controllers/
       data/
+      dtos/
       filters/
       guards/
       mappers/
@@ -111,14 +157,11 @@ src/
       queries/
       statuses/
       tests/
-      spec.md
     health/
       controllers/
-      services/
       enums/
-      types/
+      services/
       tests/
-      spec.md
 ```
 
 `main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` imports the layer modules, and `runtime.service.ts` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.
