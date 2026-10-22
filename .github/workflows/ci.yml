@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fortune_tiger
+      SQS_ENDPOINT: http://localhost:4566
 
     services:
       postgres:
@@ -51,27 +54,15 @@ jobs:
 
       - name: Run migrations
         run: bun run migration:up
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fortune_tiger
-          SQS_ENDPOINT: http://localhost:4566
 
       - name: Run unit tests
         run: bun run test:unit
 
       - name: Run integration tests
         run: bun run test:int
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fortune_tiger
-          SQS_ENDPOINT: http://localhost:4566
 
       - name: Run concurrency tests
         run: bun run test:concurrency
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fortune_tiger
-          SQS_ENDPOINT: http://localhost:4566
 
       - name: Run E2E tests
         run: bun run test:e2e
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fortune_tiger
-          SQS_ENDPOINT: http://localhost:4566

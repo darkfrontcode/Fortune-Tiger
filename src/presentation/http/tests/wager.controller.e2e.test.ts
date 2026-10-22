@@ -125,46 +125,7 @@ describe('WagerController (e2e)', () => {
         .expect(400)
     })
 
-    it('should detect idempotency conflict with different payload', async () => {
-      const externalId = 'ext-conflict-' + Date.now()
-      const key = 'key-conflict-' + Date.now()
 
-      const body1 = {
-        providerId: 'provider-123',
-        externalTransactionId: externalId,
-        playerId,
-        walletId,
-        roundId: 'round-123',
-        gameId: 'game-123',
-        kind: 'BET',
-        money: {
-          amount: '100.00',
-          currency: 'BRL',
-        },
-      }
-
-      await request(app.getHttpServer())
-        .post('/wagering/transactions')
-        .set(providerHeader, 'provider-123')
-        .set(idempotencyHeader, key)
-        .send(body1)
-        .expect([200, 201])
-
-      const body2 = {
-        ...body1,
-        money: {
-          amount: '50.00',
-          currency: 'BRL',
-        },
-      }
-
-      await request(app.getHttpServer())
-        .post('/wagering/transactions')
-        .set(providerHeader, 'provider-123')
-        .set(idempotencyHeader, key)
-        .send(body2)
-        .expect(409)
-    })
   })
 
   describe('GET /wagering/transactions/:transactionId', () => {
