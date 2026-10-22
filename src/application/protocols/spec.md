@@ -18,10 +18,12 @@ A plug-in contract. The folder is `protocols`, inside `application`. The file ro
 
 `ReferenceGatewayProtocol` retries one wager inside the SQL transaction and returns its status, or nothing when the wager is gone or terminal. The MikroORM adapter is `ReferenceRetryWriter` in `src/infrastructure/persistence/wager`.
 
+`PublisherProtocol` sends one outbox event to the queue. `publish` receives `Published` from `publisher.protocol.ts`: `id`, `aggregateId`, and `payload`. `SqsPublisher` in `src/infrastructure/messaging/publishers` implements it. The protocol does not know SQS.
+
 `LoggerProtocol` and `MetricProtocol` are observability hooks. `SimpleLogger` and the metric adapter land in `src/infrastructure/observability`.
 
 `ClockProtocol` is the injectable clock. `now` returns a `Date`. `SystemClock` implements it in `src/infrastructure/observability`.
 
-The files are `theory.protocol.ts`, `pattern.protocol.ts`, `mapper.protocol.ts`, `logger.protocol.ts`, `metric.protocol.ts`, `clock.protocol.ts`, `reconciliation.gateway.protocol.ts`, `reference.gateway.protocol.ts`, `reference.reader.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
+The files are `theory.protocol.ts`, `pattern.protocol.ts`, `mapper.protocol.ts`, `publisher.protocol.ts`, `logger.protocol.ts`, `metric.protocol.ts`, `clock.protocol.ts`, `reconciliation.gateway.protocol.ts`, `reference.gateway.protocol.ts`, `reference.reader.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
 
 All project text is English, including the root `README.md`.

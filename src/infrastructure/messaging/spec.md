@@ -9,7 +9,7 @@ FIFO is an optimization. Uniqueness and the inbox live in Postgres.
 
 ## Layout
 
-`messaging` has three folders. `events/` holds the integration event contract in `integration-event.ts` and `types.ts`, plus one folder per concept that records an event: `events/wager` and `events/wallet`. Each concept folder holds its events, its `types.ts` with `{Concept}EventType`, and an `index.ts`. `messages/` holds the inbox row and the outbox row. `mappers/` holds the projection from a wager to outbox rows. A namespace lives in the `types.ts` of the concept that owns it. `index.ts` reexports the child folders with `export *`.
+`messaging` has four folders. `events/` holds the integration event contract in `integration-event.ts` and `types.ts`, plus one folder per concept that records an event: `events/wager` and `events/wallet`. Each concept folder holds its events, its `types.ts` with `{Concept}EventType`, and an `index.ts`. `messages/` holds the inbox row and the outbox row. `mappers/` holds the projection from a wager to outbox rows. `publishers/` holds the outbox publisher, the SQS adapter, and the worker. A namespace lives in the `types.ts` of the concept that owns it. `index.ts` reexports the child folders with `export *`.
 
 ## Inbox
 
@@ -21,7 +21,7 @@ This is queue deduplication. It is not a wager rule. The wager rule is in `src/a
 
 ## Outbox
 
-`messages/outbox-message.ts` holds `OutboxMessage`. Its types live in `messages/types.ts`, in `OutboxMessageType`. `enqueue` receives one `IntegrationEvent` and takes `eventId`, `aggregateId`, `eventType`, `occurredAt`, and `toJSON()` from it. The row id is the event id. `isPending` is true until `publishedAt` is set. `isDue` is true when `nextAttemptAt` is absent or not after now. `scheduleRetry` increments `attempts` and sets `nextAttemptAt` to now plus `1s × 2^(attempts - 1)`, capped at 60 seconds. `markPublished` sets `publishedAt`. `rehydrate` only rebuilds.
+`messages/outbox-message.ts` holds `OutboxMessage`. Its types live in `messages/types.ts`, in `OutboxMessageType`. `enqueue` receives one `IntegrationEvent` and takes `eventId`, `aggregateId`, `eventType`, `occurredAt`, and `toJSON()` from it. The row id is the event id. `isPending` is true until `publishedAt` is set. `isDue` is true when `nextAttemptAt` is absent or not after now. `scheduleRetry` increments `attempts` and sets `nextAttemptAt` to now plus `1s × 2^(attempts - 1)`, capped at 60 seconds. `markPublished` sets `publishedAt`. `rehydrate` only rebuilds. The mapper turns a null column into the absent field.
 
 `mappers/wager-events.mapper.ts` holds `WagerEventsMapper`, and it implements `MapperProtocol`. It reads the status the use case left on the wager and returns the rows to enqueue. `PROCESSED` with a ledger row returns `WagerTransactionProcessed` and `WalletBalanceChanged`. `PROCESSED` without a ledger row (`LOSS`) returns only `WagerTransactionProcessed`. `REJECTED` returns `WagerTransactionRejected`. `PENDING_REFERENCE` returns `WagerTransactionPendingReference`. Any other status returns nothing.
 
@@ -29,7 +29,21 @@ A retry that is still missing updates `attempts` and `next_attempt_at` and does 
 
 `correlationId` is the wager `idempotencyKey`. `causationId` is the queue `messageId` when the entry is the queue, and absent when it is not.
 
-The row is inserted in the same SQL transaction as the business change. Publishing to SQS stays outside that transaction.
+The row is inserted in the same SQL transaction as the business change. Publishing to SQS stays outside that transaction, in the publisher transaction.
+
+## Publisher
+
+`publishers/outbox.publisher.ts` holds `OutboxPublisher`. `publish` receives `at` and `limit`, opens one SQL transaction, and claims due rows with `SELECT ... FOR UPDATE SKIP LOCKED`. A row is due when `publishedAt` is absent and `nextAttemptAt` is absent or not after `at`. Rows are ordered by `occurredAt` and limited by the caller. The batch stays inside the transaction, and the limit keeps the lock window small.
+
+Each row is published through `PublisherProtocol` from `src/application/protocols`. `publishers/sqs.publisher.ts` holds `SqsPublisher`, which sends the envelope to `wager-transactions.fifo`. `MessageGroupId` is `aggregateId`, so one aggregate keeps its order. `MessageDeduplicationId` is the event id.
+
+A published row calls `markPublished(at)`. A failed publish calls `scheduleRetry(at)`, and the batch continues. The transaction commits the published and the retry state together. A process that dies before the commit leaves the rows pending for another publisher. A process that dies after the send and before the commit republishes; the consumer inbox deduplicates.
+
+`publishers/outbox.worker.ts` holds `OutboxWorker`. It ticks every 2 seconds and calls `OutboxPublisher.publish` with `limit` 20. `open` starts one timer; `close` stops it. A failed batch goes to the logger as a warning.
+
+There is no outbox dead-letter. A failed row keeps retrying with the `1s × 2^(attempts - 1)` backoff capped at 60 seconds. `attempts` and `nextAttemptAt` are the control.
+
+The target is `wager-transactions.fifo`, the main FIFO queue in the statement. Integration events share it with `WagerTransactionRequested`. An integration event carries `eventType`; a request carries `type`. The consumer separates them by that field. FIFO is an optimization; uniqueness stays in Postgres.
 
 ## Integration event
 

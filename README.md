@@ -59,13 +59,15 @@ One word, plural, no hyphen in the middle of the name.
 <summary>🗄️ Infrastructure</summary>
 
 - `persistence` — MikroORM, schema, and the wallet lock
-- `messaging` — queue, consumer, inbox, outbox, and the event envelope
+- `messaging` — queue, inbox, outbox, the outbox publisher, and the event envelope
 - `observability` — `SimpleLogger`, `ClockProtocol`, and metrics
 - `protocols` — `TheoryProtocol`, the contract a unit theory plugs in
 
 `persistence` is in place for `wallets` and `wallet_ledger_entries`. Migrations are versioned and reversible. Money columns are `numeric(20, 2)` with `currency char(3)`. Copy `.env.example` to `.env`, run `docker compose up -d postgres`, then `test:int` and `migration:*` read `DATABASE_URL`.
 
 `observability` is in place for `SimpleLogger` and `SystemClock`. A child logger attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. The line is JSON, or pretty when `open` receives `pretty`; the Nest adapter will read `LOG_PRETTY`. No financial payload enters the log.
+
+`messaging` is in place for the event envelope, the inbox, the outbox, and the outbox publisher. `OutboxPublisher` claims due rows with `FOR UPDATE SKIP LOCKED`, and `SqsPublisher` sends them to `wager-transactions.fifo` with the aggregate as the message group and the event id as the deduplication id. A failed send schedules the row for retry.
 
 PostgreSQL 16 stores `numeric(20, 2)`. The queue runs on LocalStack.
 
