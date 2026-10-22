@@ -1,6 +1,6 @@
 # Wager
 
-The challenge names this type `WagerTransaction`. The folder is `wager`. The class keeps that name. Enums live in `enums/`: `wager-transaction-kind.enum.ts`, `wager-transaction-status.enum.ts`, and `failure-code.enum.ts`. `enums/index.ts` reexports them with `export *`. Error text is `data/messages.data.ts`. The status table is `maps/transition.map.ts`, a class that extends `Map`. The guard is `wager.guard.ts`.
+The challenge names this type `WagerTransaction`. The folder is `wager`. The class keeps that name. Enums live in `enums/`: `wager-transaction-kind.enum.ts`, `wager-transaction-status.enum.ts`, and `failure-code.enum.ts`. `enums/index.ts` reexports them with `export *`. Error text is `data/messages.data.ts`. The status table is `maps/transition.map.ts`, a class that extends `Map`. The guards live in `guards/`, one class per rule, and each one implements `GuardProtocol` from `application/protocols`; the method is `guard`. `WagerReversalGuard` answers whether the kind reverses another transaction, `WagerReferenceGuard` refuses a reversal without a reference, `WagerTerminalGuard` answers whether the status has no transition, and `WagerTransitionGuard` refuses a move the map does not allow. `WagerReferenceGuard` holds a `WagerReversalGuard`, and `WagerTransitionGuard` holds a `WagerTerminalGuard` and the transition map. `guards/spec.md` describes each one, and `wager.ts` holds one instance of each as a `const` at the top of the file. `create` calls `WagerReferenceGuard`, and the transitions call `WagerTransitionGuard` through the private `move`.
 
 The private constructor receives a `schema`. Getters read the schema. `markProcessed`, `reject`, and the other transitions write the schema. There is no `_status`.
 
@@ -45,7 +45,7 @@ Replay returns the balance observed at that processing (`observedBalance` on the
 
 `create` starts at `PENDING` and checks whether the kind requires a reference. `rehydrate` does not revalidate transitions.
 
-Applying a kind to a wallet and a ledger lives in `src/application/transactions/spec.md` (`WagerMediator` and strategies). The retry decision lives in `ReferenceMediator`, in `src/application/references/spec.md`. This folder keeps the entity, the guard, the retry state, and the maps.
+Applying a kind to a wallet and a ledger lives in `src/application/transactions/spec.md` (`WagerMediator` and strategies). The retry decision lives in `ReferenceMediator`, in `src/application/references/spec.md`. This folder keeps the entity, the guards, the retry state, and the maps.
 
 ## failureCode
 
@@ -53,6 +53,6 @@ The wager carries a stable machine-readable `failureCode`. The provider uses it 
 
 `INSUFFICIENT_FUNDS`, `REVERSAL_INSUFFICIENT_FUNDS`, `CURRENCY_MISMATCH`, `WALLET_NOT_FOUND`, `PLAYER_WALLET_MISMATCH`, `INVALID_KIND`, `INVALID_REFERENCE_KIND`, `REFERENCE_NOT_FOUND`, `REFERENCE_ALREADY_REVERSED`, `REFERENCE_AMOUNT_MISMATCH`, `REFERENCE_SCOPE_MISMATCH`, `IDEMPOTENCY_PAYLOAD_CONFLICT`, `OPENING_NOT_ALLOWED`, `NEGATIVE_AMOUNT`, `INVALID_MONEY`.
 
-Unit tests live in `__tests__/wager.spec.ts`.
+Unit tests live in `__tests__/wager.spec.ts`. Each guard has its own spec, in `guards/__tests__/{subject}.guard.spec.ts`.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

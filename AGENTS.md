@@ -27,7 +27,7 @@ Nest names, Angular style. The file is `kebab-case` with the role as a suffix. T
 | --- | --- |
 | `messages.data.ts` | `Messages.Data.ts` |
 | `failure-code.enum.ts` | `FailureCode.Enum.ts` |
-| `money.guard.ts` | `Money.Guard.ts` |
+| `money-amount.guard.ts` | `MoneyAmount.Guard.ts` |
 | `amount.pattern.ts` | `MoneyAmount.Pattern.ts` |
 | `transition.map.ts` | `Transition.Map.ts` |
 | `theory.protocol.ts` | `Theory.Protocol.ts` |
@@ -41,19 +41,21 @@ Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. Those two f
 
 `src` has four folders, and only these: `domain`, `application`, `infrastructure`, `presentation`. There is no `src/modules` folder and no `src/main` folder.
 
-There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application`. Domain does not have that folder. Presentation does not have that folder. The domain imports only `application/protocols`, not use cases. `TheoryProtocol` and `PatternProtocol` live there.
+There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application`. Domain does not have that folder. Presentation does not have that folder. The domain imports only `application/protocols`, not use cases. `TheoryProtocol`, `PatternProtocol`, and `GuardProtocol` live there.
 
 A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder, not the file. `src/domain/index.ts` reexports `money`, `wallet`, `ledger`, and `wager`. A folder with code and no barrel is incomplete.
 
 ## Simplicity
 
-Simple code. Clean Architecture lets an outsider see what each folder is. Simple names. A name is one English word and says what is being checked. A message constant is the exception: `UPPER_SNAKE_CASE` ending with `_MESSAGE`. A class name may join the concept and the role, as in `MoneyGuard` and `MoneyAmountPattern`. Few files. Small files.
+Simple code. Clean Architecture lets an outsider see what each folder is. Simple names. A name is one English word and says what is being checked. A message constant is the exception: `UPPER_SNAKE_CASE` ending with `_MESSAGE`. A class name may join the concept, the subject, and the role, as in `MoneyAmountGuard` and `MoneyAmountPattern`. Few files. Small files.
 
 A use-case folder is plural, one word, no hyphen: `transactions`, `reconciliations`, `idempotencies`. Open the folder and the file is the singular subject: `wager.service.ts`, `reconciliation.service.ts`, `idempotency.service.ts`. The Nest role keeps its suffix (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain names stay the business word: `money`, `wallet`, `ledger`, `wager`.
 
 Clean code: one responsibility per class. No `BaseManager`, `CommonService`, or `GenericHelper`.
 
-A design pattern needs a real problem. The factories the statement asks for are `create`, `from`, `rehydrate`, and `open`. No protocol per class. A section that fits in the parent spec does not become a new folder. Two exceptions live inside the concept: `data` for error text, and `patterns` when two rules share one protocol. Error text is one constant per phrase in `data/messages.data.ts`, inside the concept that throws. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports it with `export *`. Callers import the folder. The domain does not import `application` to read it. An enum lives in `enums/`, one enum per file: `failure-code.enum.ts`. A map lives in `maps/`, a class that extends `Map`: `transition.map.ts`.
+A design pattern needs a real problem. The factories the statement asks for are `create`, `from`, `rehydrate`, and `open`. No protocol per class. A section that fits in the parent spec does not become a new folder. Three exceptions live inside the concept: `data` for error text, `patterns` when two rules share one contract, and `guards` when a rule is a class of its own. Error text is one constant per phrase in `data/messages.data.ts`, inside the concept that throws. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports it with `export *`. Callers import the folder. The domain does not import `application` to read it. An enum lives in `enums/`, one enum per file: `failure-code.enum.ts`. A map lives in `maps/`, a class that extends `Map`: `transition.map.ts`.
+
+A guard checks one rule and refuses it by throwing, or answers it with a `boolean`. One rule per class, in `guards/` inside the concept or the use case that owns it, with `index.ts`, `spec.md`, and `__tests__/`. The file is `{subject}.guard.ts`, as in `money-amount.guard.ts`. Every class implements `GuardProtocol`, and the method is `guard`. The owner holds one instance, as a `const` at the top of the concept file or as a `private readonly` property. A guard does not build the entity, and the owner asks it instead of restating the rule. A guard may hold other guards inside when the rule is composed, as `LedgerBalanceGuard` does: it asks the inner guard instead of repeating the inner rule. Each guard stays individual. A guard holds no optional field: the input of a composite guard is a type in `types.ts` of that concept, as in `MoneyType.Conflict`. Every guard has a spec in `guards/__tests__/{subject}.guard.spec.ts`, and `guards/spec.md` says what each one checks. A concept barrel does not reexport `guards`: the concept uses the guard, and the caller uses the entity.
 
 ## Protocol
 
@@ -65,7 +67,7 @@ interface MapperProtocol<Input, Output> {
 }
 ```
 
-`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The file lives in `application/protocols`. A concept folder does not hold a protocol. The classes that implement it may live in the concept, in `patterns`. The class name ends with `Pattern`, as in `MoneyAmountPattern`. `patterns/index.ts` reexports the classes. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` and `PatternProtocol` live in `application/protocols`.
+`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The file lives in `application/protocols`. A concept folder does not hold a protocol. The classes that implement it may live in the concept, in `patterns`, in `guards`, or in the use-case folder. The pattern class name ends with `Pattern`, as in `MoneyAmountPattern`. The guard class name ends with `Guard`, as in `MoneyAmountGuard`. `patterns/index.ts` and `guards/index.ts` reexport the classes. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol`, `PatternProtocol`, and `GuardProtocol` live in `application/protocols`.
 
 The delivery target is the full score of section 14. A load test is not part of that score.
 

@@ -1,21 +1,19 @@
 import type { Money } from '../money/money'
 import { LedgerDirection } from './enums'
-import { LedgerGuard } from './ledger.guard'
+import { LedgerBalanceGuard, LedgerEquationGuard } from './guards'
 import { LedgerType } from './types'
 
 type Schema = LedgerType.Schema
 type Input = LedgerType.Input
 
+const balanceGuard = new LedgerBalanceGuard()
+const equationGuard = new LedgerEquationGuard()
+
 export class Ledger {
   private constructor(private readonly schema: Schema) {}
 
   static create(input: Input): Ledger {
-    LedgerGuard.equation(
-      input.direction,
-      input.balanceBefore,
-      input.money,
-      input.balanceAfter,
-    )
+    equationGuard.guard(input)
 
     const schema = {
       id: input.id,
@@ -68,12 +66,8 @@ export class Ledger {
   }
 
   isBalanced(): boolean {
-    const balanced = LedgerGuard.balanced(
-      this.schema.direction,
-      this.schema.balanceBefore,
-      this.schema.money,
-      this.schema.balanceAfter,
-    )
+    const movement = this.schema
+    const balanced = balanceGuard.guard(movement)
 
     return balanced
   }

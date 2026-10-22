@@ -22,6 +22,11 @@ export namespace IdempotencyType {
     observedBalance: string
   }
 
+  export type Hash = {
+    stored: string
+    incoming: string
+  }
+
   export type Input = {
     key: string
     hash: string

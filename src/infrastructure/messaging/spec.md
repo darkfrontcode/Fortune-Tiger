@@ -9,7 +9,7 @@ FIFO is an optimization. Uniqueness and the inbox live in Postgres.
 
 ## Layout
 
-`messaging` has four folders. `events/` holds the integration event contract in `integration-event.ts` and `types.ts`, plus one folder per concept that records an event: `events/wager` and `events/wallet`. Each concept folder holds its events, its `types.ts` with `{Concept}EventType`, and an `index.ts`. `messages/` holds the inbox row and the outbox row. `mappers/` holds the projection from a wager to outbox rows. `publishers/` holds the outbox publisher, the SQS adapter, and the worker. A namespace lives in the `types.ts` of the concept that owns it. `index.ts` reexports the child folders with `export *`.
+`messaging` has five folders. `events/` holds the integration event contract in `integration-event.ts` and `types.ts`, plus one folder per concept that records an event: `events/wager` and `events/wallet`. Each concept folder holds its events, its `types.ts` with `{Concept}EventType`, and an `index.ts`. `messages/` holds the inbox row, the outbox row, the inbound wager request, its guard, and its error text. `mappers/` holds the projection from a wager to outbox rows and the projection from a wager request to a transaction input. `publishers/` holds the outbox publisher, the SQS adapter, and the worker. `consumers/` holds the SQS queue adapter, the SQS consumer, the wager consumer, its outcome enum, and its types. A namespace lives in the `types.ts` of the concept that owns it. `index.ts` reexports the child folders with `export *`.
 
 ## Inbox
 
@@ -58,17 +58,31 @@ The target is `wager-transactions.fifo`, the main FIFO queue in the statement. I
 
 A processed `LOSS` publishes `WagerTransactionProcessed` and does not publish `WalletBalanceChanged`. The use case decides that. See `src/application/transactions/spec.md`.
 
+## Consumer
+
+`consumers/sqs.queue.ts` holds `SqsQueue`, the SQS adapter. `receive` long-polls `wager-transactions.fifo` with `WaitTimeSeconds` 20, `MaxNumberOfMessages` 10, and `VisibilityTimeout` 30. It returns `ConsumerType.QueueMessage`: `sqsMessageId`, `receiptHandle`, `body`, and `receiveCount` from `ApproximateReceiveCount`. `delete` acks. `changeVisibility` sets the retry delay. `deadLetter` sends the original body to `wager-transactions-dlq.fifo` with `MessageGroupId` and `MessageDeduplicationId` equal to the envelope `messageId`.
+
+`consumers/wager.consumer.ts` holds `WagerConsumer`. `consume` receives one queue message and the receive time. It parses the body through `WagerRequest`, maps through `WagerRequestMapper`, and calls `WagerService.submit` with the inbox envelope. A body that is not a request is acked. A parse failure is permanent and goes to the DLQ. A use case failure retries until the limit. `ConsumerOutcome` lives in `consumers/enums/consumer-outcome.enum.ts` and holds `ACK`, `RETRY`, and `DEAD_LETTER`.
+
+`messages/wager-request.ts` holds `WagerRequest`. `from` receives the body. It parses the JSON, returns nothing for an integration event, and returns a `WagerRequest` otherwise. `WagerRequestGuard` checks `messageId`, `type`, `occurredAt`, `data`, kind, money, and reference. Malformed JSON, a missing field, an unknown kind, an invalid money, and a missing reference for `REFUND` or `ROLLBACK` throw `Error` with `INVALID_WAGER_REQUEST_MESSAGE` from `messages/data/messages.data.ts`. Its types live in `messages/types.ts`, in `WagerRequestType`.
+
+`mappers/wager-request.mapper.ts` holds `WagerRequestMapper`, and it implements `MapperProtocol`. It maps a valid `WagerRequest`, the consumer name, and the receive time to `TransactionsType.SubmitInput`. The request id is a new UUIDv7. `at` is the request `occurredAt`. The receive time goes to the inbox row.
+
+The inbox `messageId` is the envelope `messageId`, not the SQS id. The use case commits the inbox row with the wager, the wallet, the ledger, and the outbox. `ACK` happens only after `WagerService.submit` resolves. A resolved `REJECTED` is a business rule and is acked.
+
+The attempt limit before the DLQ is 5. A transient failure under the limit returns `RETRY`; the consumer changes the visibility to `1s × 2^(receiveCount - 1)`, capped at 60 seconds. A transient failure on the fifth receive returns `DEAD_LETTER`. A permanent failure returns `DEAD_LETTER` immediately. A failed DLQ send does not ack; the message returns after the visibility timeout. A failed ack redelivers, and the inbox deduplicates.
+
+`consumers/sqs.consumer.ts` holds `SqsConsumer`. `open` starts one long-poll loop. `close` stops the loop and awaits the in-flight batch. A process killed before the commit or before the ack leaves the message for redelivery, and the inbox keeps the effect single. The boot wires `SIGTERM` to `close`.
+
 The message envelope is `messageId`, `type`, `occurredAt`, and `data`. `type` is `WagerTransactionRequested`. `data` carries the wager fields plus `idempotencyKey`. The consumer calls the use case in `src/application/transactions`.
 
 | Error | Destination |
 | --- | --- |
 | Business, terminal | ack |
-| Transient | retry with backoff |
-| Permanent, attempts exhausted | DLQ |
+| Transient under the limit | retry with backoff |
+| Permanent, or transient on the fifth receive | DLQ |
 
-The statement requires an attempt limit before the DLQ. That number is not locked yet.
-
-`SIGTERM`: finish what is in flight or return visibility. Redelivery does not duplicate the effect.
+Redelivery does not duplicate the effect.
 
 The publisher reads due outbox rows with `FOR UPDATE SKIP LOCKED`. Several publishers do not lose an event and do not republish forever without control. Death after commit and before publish: another instance publishes. A duplicate publish stays safe for the consumer.
 

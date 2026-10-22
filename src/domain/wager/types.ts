@@ -39,4 +39,14 @@ export namespace WagerType {
     referenceExternalTransactionId: string | undefined
     createdAt: Date
   }
+
+  export type Reference = {
+    kind: WagerTransactionKind
+    reference: string
+  }
+
+  export type Transition = {
+    status: WagerTransactionStatus
+    target: WagerTransactionStatus
+  }
 }

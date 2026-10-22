@@ -16,4 +16,9 @@ export namespace WalletType {
     balance: Money
     openedAt: Date
   }
+
+  export type Conflict = {
+    currency: string
+    compared: string
+  }
 }

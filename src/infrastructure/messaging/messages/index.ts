@@ -1,3 +1,6 @@
+export * from './data'
 export * from './inbox-message'
 export * from './outbox-message'
 export * from './types'
+export * from './wager-request'
+export * from './wager-request.guard'
