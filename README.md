@@ -155,8 +155,9 @@ These are the coding assistants and model names used to build Fortune Tiger:
 
 - 🖱️ **Cursor** — Composer 2.5 and Grok 4.7.
 - 🧰 **OpenCode** — DeepSeek V4.1 Flash.
-- 🦆 **CLIXAD** (terminal assistant) — GPT-05 reasoning.
+- 🦆 **Clixad** (terminal assistant) — GPT-05 reasoning.
 - 💻 **GitHub Copilot in VS Code** — GPT-5.3-Codex.
+- 🪐 **Antigravity** — Gemini 3.8 Flash High.
 - 🖥️ **Devin Desktop** — SWE-1.6 Slow.
 
 </details>
