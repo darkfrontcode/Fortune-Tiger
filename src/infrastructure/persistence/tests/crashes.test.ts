@@ -433,7 +433,7 @@ describe('Crash recovery', () => {
       occurredAt: instant.open,
       attempts: 0,
       nextAttemptAt: instant.open,
-      publishedAt: null,
+      publishedAt: undefined,
     }
     const message = OutboxMessage.rehydrate(schema)
 
@@ -449,8 +449,8 @@ describe('Crash recovery', () => {
     const pending = await restartOutbox.findDueForUpdate(instant.retry, 20)
 
     expect(pending).toHaveLength(1)
-    expect(pending[0].id).toBe(messageId)
-    expect(pending[0].isPending()).toBe(true)
+    expect(pending[0]?.id).toBe(messageId)
+    expect(pending[0]?.isPending()).toBe(true)
   }, timeout)
 
   test('WHEN outbox row is persisted and publisher runs after restart SHOULD publish and mark published', async () => {
@@ -466,7 +466,7 @@ describe('Crash recovery', () => {
       occurredAt: instant.open,
       attempts: 0,
       nextAttemptAt: instant.open,
-      publishedAt: null,
+      publishedAt: undefined,
     }
     const message = OutboxMessage.rehydrate(schema)
 
@@ -501,7 +501,7 @@ describe('Crash recovery', () => {
       occurredAt: instant.open,
       attempts: 0,
       nextAttemptAt: instant.open,
-      publishedAt: null,
+      publishedAt: undefined,
     }
     const message = OutboxMessage.rehydrate(schema)
 
@@ -517,7 +517,7 @@ describe('Crash recovery', () => {
 
     expect(report).toEqual({ published: 0, retried: 1 })
     expect(publisher.published).toHaveLength(1)
-    expect(stored?.publishedAt).toBeNull()
+    expect(stored?.publishedAt).toBeUndefined()
     expect(stored?.attempts).toBe(1)
   }, timeout)
 

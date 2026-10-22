@@ -1,3 +1,4 @@
+import { beforeAll, describe, expect, it } from 'bun:test'
 import { INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { createApp } from '../../../../test/test-setup.e2e'
