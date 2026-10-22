@@ -8,16 +8,16 @@ The controller is thin. It parses the request, calls the use case, maps the resu
 
 ## Wallet
 
-- `POST /wallets` — `playerId` and `initialBalance`, both required. An initial balance above zero creates `OPENING` and `CREDIT` in the same SQL transaction. The route calls `WALLET_OPENING`. A duplicate `playerId` + `currency` is a conflict. The body returns `id`, `playerId`, `balance`, and `version`. `201` on creation.
-- `GET /wallets/:walletId` — `id`, `playerId`, `balance`, `version`. `404` when the wallet is absent.
-- `GET /wallets/:walletId/ledger?cursor=&limit=50` — `{ items, nextCursor }`. Each item carries `id`, `transactionId`, `direction`, `amount`, `balanceBefore`, `balanceAfter`, and `createdAt`. An item is ordered by `id`, which is UUIDv7, and `nextCursor` is the base64url of the last `id` of the page. `nextCursor` is absent on the last page. `limit` defaults to `50` and is capped at `100`. An invalid `cursor` or `limit` answers `400`. `404` when the wallet is absent.
-- `POST /wallets/:walletId/reconciliation` — see `src/application/reconciliations/spec.md`. `200` with the comparison, `404` with `failureCode: WALLET_NOT_FOUND` when the wallet is absent.
+- `POST /wallets` — `playerId` and `initialBalance`, both required. `OpenWalletUseCase` obtains the opening time and calls `WALLET_OPENING`. An initial balance above zero creates `OPENING` and `CREDIT` in the same SQL transaction. A duplicate `playerId` + `currency` is a conflict. The body returns `id`, `playerId`, `balance`, and `version`. `201` on creation.
+- `GET /wallets/:walletId` — `id`, `playerId`, `balance`, `version`. `FindWalletUseCase` loads the wallet. `HttpFailureFilter` maps `WalletNotFoundError` to `404`.
+- `GET /wallets/:walletId/ledger?cursor=&limit=50` — `{ items, nextCursor }`. `ListWalletLedgerUseCase` verifies the wallet and reads the page. Each item carries `id`, `transactionId`, `direction`, `amount`, `balanceBefore`, `balanceAfter`, and `createdAt`. An item is ordered by `id`, which is UUIDv7, and `nextCursor` is the base64url of the last `id` of the page. `nextCursor` is absent on the last page. `limit` defaults to `50` and is capped at `100`. An invalid `cursor` or `limit` answers `400`. `404` when the wallet is absent.
+- `POST /wallets/:walletId/reconciliation` — `ReconcileWalletUseCase` loads and compares the snapshot; see `src/application/reconciliations/spec.md`. `200` with the comparison, `404` with `failureCode: WALLET_NOT_FOUND` when the wallet is absent.
 
 ## Wager
 
-- `POST /wagering/transactions` with a required `Idempotency-Key` header. The body returns `transactionId`, `status`, `balance`, `idempotentReplay`, and `failureCode` when the wager carries one. The route calls `WagerService.submit`.
-- `GET /wagering/transactions/:transactionId` — the wager: `transactionId`, `providerId`, `externalTransactionId`, `playerId`, `walletId`, `roundId`, `gameId`, `kind`, `status`, `money`, `failureCode`, and `createdAt`. `404` when the wager is absent.
-- `GET /providers/:providerId/wagering/transactions/:externalTransactionId` — the same body as the previous route, found by the provider pair.
+- `POST /wagering/transactions` with a required `Idempotency-Key` header. The body returns `transactionId`, `status`, `balance`, `idempotentReplay`, and `failureCode` when the wager carries one. The route calls `SubmitWagerUseCase.execute`.
+- `GET /wagering/transactions/:transactionId` — `FindWagerUseCase` returns the wager: `transactionId`, `providerId`, `externalTransactionId`, `playerId`, `walletId`, `roundId`, `gameId`, `kind`, `status`, `money`, `failureCode`, and `createdAt`. `404` when the wager is absent.
+- `GET /providers/:providerId/wagering/transactions/:externalTransactionId` — `FindWagerByProviderUseCase` returns the same body by provider pair.
 
 `OPENING` is not accepted: the use case rejects it with `OPENING_NOT_ALLOWED`.
 
@@ -38,7 +38,7 @@ Decision. Stable across every endpoint.
 
 A replay answers `200` even when the stored wager is `REJECTED`: the body is the original result, and `idempotentReplay` is `true`.
 
-`HttpFailureFilter` maps an error to the table. A Nest `HttpException` keeps its status. The wallet conflict message answers `409`. Any other error goes to the logger and answers `503`, so the provider knows it may resend.
+`HttpFailureFilter` maps an error to the table. A Nest `HttpException` keeps its status. `WalletNotFoundError` and `WagerNotFoundError` answer `404`; the reconciliation error preserves its structured not-found response. The wallet conflict message answers `409`. `HealthReadinessError` preserves the health `503` body. Any other error goes to the logger and answers `503`, so the provider knows it may resend.
 
 ## Auth
 
@@ -50,13 +50,13 @@ Keycloak is out.
 
 ## Module
 
-`http.module.ts` imports `PersistenceModule`, `TransactionsModule`, `ReconciliationsModule`, and `ObservabilityModule`. It declares `WalletController` and `WagerController`. `AuthGuard` is applied to `WagerController`, and `PROVIDER_IDENTITY` is bound to `AnonymousProviderIdentity`; its token lives in this module's `tokens/` folder. `WalletController` receives `WALLET_OPENING`, `WALLET_READER`, `LEDGER_READER`, and `CLOCK` by token, plus `ReconciliationService` by class. `WagerController` receives `WagerService` by class and `WAGER_READER` and `CLOCK` by token. Cross-cutting `CLOCK` and `LOGGER` tokens live in `application/dependencies/tokens`.
+`http.module.ts` imports `PersistenceModule`, `TransactionsModule`, `ReconciliationsModule`, and `ObservabilityModule`. It declares `WalletController` and `WagerController`, and provides `OpenWalletUseCase`, `FindWalletUseCase`, and `ListWalletLedgerUseCase`; `ReconcileWalletUseCase` comes from `ReconciliationsModule`. `AuthGuard` is applied to `WagerController`, and `PROVIDER_IDENTITY` is bound to `AnonymousProviderIdentity`; its token lives in this module's `tokens/` folder. `WalletController` receives wallet use cases by class. `WagerController` receives its three route use cases by class and `CLOCK` by token. Cross-cutting `CLOCK` and `LOGGER` tokens live in `application/dependencies/tokens`.
 
 `wager.dto.ts` and `wallet.dto.ts` in `dtos/` declare the request shape with `class-validator` decorators. The Nest `ValidationPipe` in `main.ts` validates every `@Body()` against the DTO class and answers `400` on mismatch. After validation, `WagerDtoMapper` and `WalletDtoMapper` in `mappers/` convert the validated DTO into `HttpType.WagerInput` and `HttpType.WalletInput` — building domain `Money` and checking cross-field rules (reference required for `REFUND`/`ROLLBACK`). A missing `Idempotency-Key` answers `400` with `IDEMPOTENCY_KEY_REQUIRED_MESSAGE`.
 
 `mappers/` turns the body into `TransactionsType.SubmitInput`, the wallet into its output, the ledger entry into its output, and the wager into its output. `maps/wager-status.map.ts` holds the status table, and `WagerStatus` in `statuses/` answers the HTTP status of one `SubmitOutput`.
 
-`guards/` holds `AuthGuard`, `filters/` holds `HttpFailureFilter`, and `providers/` holds `AnonymousProviderIdentity`.
+`guards/` holds `AuthGuard`, `filters/` holds `HttpFailureFilter`, and `providers/` holds `AnonymousProviderIdentity`. The global filter translates application errors into HTTP responses; controllers do not need per-route `try/catch` blocks for these errors.
 
 ## Folder structure
 

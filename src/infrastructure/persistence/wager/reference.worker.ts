@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { ClockProtocol, LoggerProtocol } from '@application/protocols'
-import { ReferenceService } from '@application/references/reference.service'
+import { RetryReferencesUseCase } from '@application/references/use-cases'
 import { CLOCK, LOGGER } from '@application/dependencies/tokens'
 
 const intervalMs = 2_000
@@ -11,7 +11,7 @@ export class ReferenceWorker {
   private timer: ReturnType<typeof setInterval> | undefined
 
   constructor(
-    private readonly service: ReferenceService,
+    private readonly retryReferences: RetryReferencesUseCase,
     @Inject(CLOCK) private readonly clock: ClockProtocol,
     @Inject(LOGGER) private readonly logger: LoggerProtocol,
   ) {}
@@ -23,7 +23,7 @@ export class ReferenceWorker {
 
     const tick = () => {
       const at = this.clock.now()
-      const retried = this.service.retry({ at, limit })
+      const retried = this.retryReferences.execute({ at, limit })
 
       retried.catch(this.fail)
     }

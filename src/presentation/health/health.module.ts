@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common'
 import type { ReadinessProtocol } from '@application/protocols'
-import { READINESS } from './tokens'
+import {
+  CheckHealthLivenessUseCase,
+  CheckHealthReadinessUseCase,
+  READINESS,
+} from '@application/health'
 import { MessagingModule, QueueReadiness } from '@infrastructure/messaging'
 import { DatabaseReadiness, PersistenceModule } from '@infrastructure/persistence'
 import { HealthController } from './controllers'
-import { HealthService } from './services'
 
 const moduleImports = [PersistenceModule, MessagingModule]
 const readinessDependencies = [DatabaseReadiness, QueueReadiness]
@@ -18,7 +21,8 @@ const joinReadiness = (database: DatabaseReadiness, queue: QueueReadiness): Arra
   imports: moduleImports,
   controllers: [HealthController],
   providers: [
-    HealthService,
+    CheckHealthLivenessUseCase,
+    CheckHealthReadinessUseCase,
     { provide: READINESS, useFactory: joinReadiness, inject: readinessDependencies },
   ],
 })

@@ -7,7 +7,7 @@ No authentication.
 
 ## Ready
 
-`HealthService` asks both probes at the same time. Postgres answers when `select 1` runs on the ORM connection. SQS answers when `GetQueueAttributes` reaches the main queue for its `QueueArn`.
+`CheckHealthReadinessUseCase` asks both probes at the same time. Postgres answers when `select 1` runs on the ORM connection. SQS answers when `GetQueueAttributes` reaches the main queue for its `QueueArn`.
 
 The SQS client is built with `maxAttempts` 1, and the probe aborts the request after 2000 ms, so a dead dependency fails the check instead of hanging it. One failed probe is enough for `503`.
 
@@ -15,9 +15,9 @@ The queue URL and the client come from `Environment`. `DATABASE_URL` stays with 
 
 ## Module
 
-`health.module.ts` imports `PersistenceModule` and `MessagingModule`, declares the controller, and provides `HealthService`. The service is `@Injectable()` and receives `READINESS` by token; the module binds that token with `useFactory` over `DatabaseReadiness` and `QueueReadiness`. The service keeps its `Array<ReadinessProtocol>` constructor and the probes stay out of the controller.
+`health.module.ts` imports `PersistenceModule` and `MessagingModule`, declares the controller, and provides `CheckHealthLivenessUseCase` and `CheckHealthReadinessUseCase`. The readiness use case receives `READINESS` by token; the module binds that token with `useFactory` over `DatabaseReadiness` and `QueueReadiness`. The probes stay out of the controller.
 
-`READINESS` lives in the health module's `tokens/` folder.
+`READINESS` lives in `src/application/health/tokens/`. `HealthReadinessError` is translated by the HTTP filter to the existing `503` response.
 
 ## Boot
 

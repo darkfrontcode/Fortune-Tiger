@@ -1,13 +1,19 @@
 import { Module } from '@nestjs/common'
 import { PersistenceModule } from '@infrastructure/persistence'
 import { IdempotenciesModule } from '../idempotencies/idempotencies.module'
-import { WagerService } from './wager'
+import {
+  FindWagerByProviderUseCase,
+  FindWagerUseCase,
+  SubmitWagerUseCase,
+} from './wager/use-cases'
 
 const moduleImports = [PersistenceModule, IdempotenciesModule]
+const moduleProviders = [FindWagerByProviderUseCase, FindWagerUseCase, SubmitWagerUseCase]
+const moduleExports = [FindWagerByProviderUseCase, FindWagerUseCase, SubmitWagerUseCase]
 
 @Module({
   imports: moduleImports,
-  providers: [WagerService],
-  exports: [WagerService],
+  providers: moduleProviders,
+  exports: moduleExports,
 })
 export class TransactionsModule {}

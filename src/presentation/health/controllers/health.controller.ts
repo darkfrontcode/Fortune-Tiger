@@ -1,18 +1,24 @@
 import { Controller, Get } from '@nestjs/common'
-import { HealthService } from '../services'
-import type { HealthType } from '../types'
+import {
+  CheckHealthLivenessUseCase,
+  CheckHealthReadinessUseCase,
+} from '@application/health'
+import type { HealthType } from '@application/health'
 
 @Controller('health')
 export class HealthController {
-  constructor(private readonly health: HealthService) {}
+  constructor(
+    private readonly checkHealthLiveness: CheckHealthLivenessUseCase,
+    private readonly checkHealthReadiness: CheckHealthReadinessUseCase,
+  ) {}
 
   @Get('live')
   live(): HealthType.Output {
-    return this.health.live()
+    return this.checkHealthLiveness.execute()
   }
 
   @Get('ready')
   ready(): Promise<HealthType.Output> {
-    return this.health.ready()
+    return this.checkHealthReadiness.execute()
   }
 }

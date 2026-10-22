@@ -1,23 +1,23 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { FailureCode } from '@domain/wager/enums'
-import type { LoggerProtocol, MetricProtocol, ReconciliationGatewayProtocol } from '../protocols'
-import { LOGGER, METRIC } from '../dependencies/tokens'
-import { RECONCILIATION_GATEWAY } from './tokens'
-import { RECONCILIATION_DIVERGENCE_MESSAGE } from './data'
-import { LedgerBalancePattern } from './patterns'
-import { ReconciliationsType } from './types'
+import type { LoggerProtocol, MetricProtocol, ReconciliationGatewayProtocol } from '../../protocols'
+import { LOGGER, METRIC } from '../../dependencies/tokens'
+import { RECONCILIATION_GATEWAY } from '../tokens'
+import { RECONCILIATION_DIVERGENCE_MESSAGE } from '../data'
+import { LedgerBalancePattern } from '../patterns'
+import { ReconciliationsType } from '../types'
+import { WalletReconciliationNotFoundError } from './wallet-reconciliation-not-found.error'
 
 type Snapshot = ReconciliationsType.Snapshot
-type Output = ReconciliationsType.Output
 type CompareOutput = ReconciliationsType.CompareOutput
-type MissingOutput = ReconciliationsType.MissingOutput
+type Input = { walletId: string }
+type Output = Promise<CompareOutput>
 
 const reconciliationMetric = {
   divergence: 'reconciliation_divergence',
 }
 
 @Injectable()
-export class ReconciliationService {
+export class ReconcileWalletUseCase {
   private readonly balance = new LedgerBalancePattern()
 
   constructor(
@@ -26,31 +26,22 @@ export class ReconciliationService {
     @Inject(METRIC) private readonly metric: MetricProtocol,
   ) {}
 
-  async reconcile(walletId: string): Promise<Output> {
+  async execute(input: Input): Output {
+    const { walletId } = input
     const snapshot = await this.gateway.load(walletId)
 
-    if (snapshot === undefined) { return ReconciliationService.missing(walletId) }
+    const missing = snapshot === undefined
 
-    return ReconciliationService.compare(walletId, snapshot, this.balance, this.logger, this.metric)
+    if (missing) { throw new WalletReconciliationNotFoundError(walletId) }
+
+    return this.compare(walletId, snapshot)
   }
 
-  private static missing(walletId: string): MissingOutput {
-    const failureCode = FailureCode.WALLET_NOT_FOUND
-
-    return { walletId, failureCode }
-  }
-
-  private static compare(
-    walletId: string,
-    snapshot: Snapshot,
-    balance: LedgerBalancePattern,
-    logger: LoggerProtocol,
-    metric: MetricProtocol,
-  ): CompareOutput {
+  private compare(walletId: string, snapshot: Snapshot): CompareOutput {
     const stored = snapshot.stored
     const currency = stored.currency
     const ledgers = snapshot.ledgers
-    const calculated = balance.test({ currency, ledgers })
+    const calculated = this.balance.test({ currency, ledgers })
     const difference = stored.subtract(calculated)
     const consistent = difference.isZero()
     const ledgerCount = ledgers.length
@@ -70,8 +61,8 @@ export class ReconciliationService {
 
     const message = `${RECONCILIATION_DIVERGENCE_MESSAGE}: ${walletId}`
 
-    logger.warn(message)
-    metric.increment(reconciliationMetric.divergence)
+    this.logger.warn(message)
+    this.metric.increment(reconciliationMetric.divergence)
 
     return output
   }

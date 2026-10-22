@@ -14,7 +14,7 @@ The spec sits next to the code it describes. A `spec.md` is written in English b
 
 Clean Architecture is here so an evaluator, or the evaluator's assistant, can open the repository and see what each folder is. Simple names. Few files. Small files.
 
-A folder name is one word, plural, with no hyphen: `transactions`, `reconciliations`, `idempotencies`. Open the folder and the file inside is the singular subject: `wager.service.ts`, `reconciliation.service.ts`, `idempotency.service.ts`. A Nest role stays as a suffix (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain folders stay the business word: `money`, `wallet`, `ledger`, `wager`.
+A folder name is one word, plural, with no hyphen: `transactions`, `reconciliations`, `idempotencies`. Application use cases live in `use-cases/` with one `{action}.use-case.ts` per operation; reusable responsibilities such as idempotency remain services. A Nest role stays as a suffix (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain folders stay the business word: `money`, `wallet`, `ledger`, `wager`.
 
 Clean code: one responsibility per class. A name is one English word and says what is being checked. A message constant is the exception: `UPPER_SNAKE_CASE` ending with `_MESSAGE`. A string with meaning is a `const` at the top of the file, never loose; the same literal on two lines is one constant. A class name may join the concept, the subject, and the role, as in `MoneyAmountGuard` and `MoneyAmountPattern`. No `BaseManager`, `CommonService`, or `GenericHelper`.
 
@@ -104,23 +104,30 @@ src/
       tests/
   application/
     AGENTS.md
+    health/
+      enums/
+      tokens/
+      use-cases/tests/
     idempotencies/
       enums/
       guards/tests/
       patterns/tests/
       tests/
+    wallets/
+      use-cases/
+        tests/
     protocols/
     reconciliations/
       data/
       patterns/
-      tests/
-    references/tests/
+      use-cases/tests/
+    references/use-cases/tests/
     tokens/
     transactions/wager/
       data/
       mediators/tests/
       strategies/
-      tests/
+      use-cases/tests/
   infrastructure/
     AGENTS.md
     environment/tests/
@@ -161,9 +168,6 @@ src/
       tests/
     health/
       controllers/
-      enums/
-      services/
-      tests/
 ```
 
 `main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` imports the layer modules, and `runtime.service.ts` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.
@@ -172,7 +176,7 @@ Files follow the Nest name (`health.controller.ts`, `health.module.ts`, `message
 
 ## Composition
 
-A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, and `health.module.ts` build the adapters and the controller. `transactions.module.ts` and `references.module.ts` build the use cases.
+A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, and `health.module.ts` build the adapters and the controller. `http.module.ts` provides wallet use cases alongside the HTTP controller and persistence ports. `transactions.module.ts`, `reconciliations.module.ts`, and `references.module.ts` build their use cases.
 
 A port is a protocol plus a token. The protocol is the contract and carries no runtime value. The token is one `Symbol` in `tokens/` under its owning module, one file each, named after the protocol without the suffix. Cross-cutting application tokens live in `application/dependencies/tokens`. The owning module binds the token with `useExisting`, so one instance answers to both names, and the consumer injects only the token.
 
@@ -191,7 +195,7 @@ A port arrives by its token, as `@Inject(WAGER_GATEWAY)`. A collaborator with on
 - a repository tied to the transaction `EntityManager`: `new WalletRepository(manager)` is the Unit of Work;
 - a third-party client at the edge: `createOrm` and `createSqsClient` in a factory.
 
-A service with a collaborator is not built with `new`. `WagerService`, `IdempotencyService`, the mediators, the writers, the readers, the workers, the publisher, the consumer, and the readiness probes arrive through the constructor.
+A use case or service with a collaborator is not built with `new`. `SubmitWagerUseCase`, `IdempotencyService`, the mediators, the writers, the readers, the workers, the publisher, the consumer, and the readiness probes arrive through the constructor.
 
 A factory provider stays for a value the container builds from `Environment` (`MikroORM`, `SQSClient`, `QUEUE_CONFIG`) and for the array the health module joins (`READINESS`). A pure collaborator used by two layers is provided by the module that consumes it, so the layer arrow does not become a module cycle.
 

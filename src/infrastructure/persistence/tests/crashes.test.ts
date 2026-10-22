@@ -10,7 +10,7 @@ import { uuidv7 } from 'uuidv7'
 import { IdempotencyService } from '@application/idempotencies'
 import type { ClockProtocol, LoggerProtocol } from '@application/protocols'
 import { ReferenceMediator, WagerMediator } from '@application/transactions/wager/mediators'
-import { WagerService } from '@application/transactions'
+import { SubmitWagerUseCase } from '@application/transactions/wager/use-cases'
 import { LedgerDirection } from '@domain/ledger'
 import type { Ledger } from '@domain/ledger'
 import { Money } from '@domain/money'
@@ -185,10 +185,10 @@ const writer = (
 const consumer = (orm: MikroORM): WagerConsumer => {
   const idempotency = new IdempotencyService()
   const gateway = writer(orm, idempotency)
-  const service = new WagerService(gateway, idempotency)
+  const useCase = new SubmitWagerUseCase(gateway, idempotency)
   const mapper = new WagerRequestMapper()
 
-  return new WagerConsumer(service, mapper, consumerName)
+  return new WagerConsumer(useCase, mapper, consumerName)
 }
 
 const reopen = async (): Promise<void> => {

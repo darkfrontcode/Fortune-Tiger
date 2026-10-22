@@ -28,7 +28,7 @@ A plug-in contract. The folder is `protocols`, inside `application`. The file ro
 
 A protocol carries no runtime value. The container identity of a port is a token. Each token lives in the `tokens/` folder of its owning module, one file each, with the `UPPER_SNAKE_CASE` name of the protocol without the suffix. Cross-cutting application tokens live in `src/application/dependencies/tokens`. A consumer injects the token and never the adapter class.
 
-`ReadinessProtocol` has one method, `check`, and answers whether one dependency is reachable. `DatabaseReadiness` in `src/infrastructure/persistence` and `QueueReadiness` in `src/infrastructure/messaging` implement it. `HealthService` composes them, and that is how the readiness probe reaches Postgres and SQS.
+`ReadinessProtocol` has one method, `check`, and answers whether one dependency is reachable. `DatabaseReadiness` in `src/infrastructure/persistence` and `QueueReadiness` in `src/infrastructure/messaging` implement it. `CheckHealthReadinessUseCase` composes them, and that is how the readiness probe reaches Postgres and SQS.
 
 `WalletReaderProtocol` has one method, `findById`, and returns the wallet or nothing. `WalletOpeningProtocol` has one method, `open`, receives `playerId`, `initialBalance`, and `openedAt`, and returns the wallet. `LedgerReaderProtocol` has one method, `page`, receives `walletId`, `cursor`, and `limit`, and returns `{ items, nextCursor }`. `WagerReaderProtocol` has `findById` and `findByProviderAndExternal`, and each returns the wager or nothing. The MikroORM adapters are `WalletReader`, `WalletOpeningWriter`, `LedgerReader`, and `WagerReader` in `src/infrastructure/persistence`.
 

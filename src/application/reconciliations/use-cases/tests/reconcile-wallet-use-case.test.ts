@@ -2,10 +2,10 @@ import { describe, expect, test } from 'bun:test'
 import { Money } from '@domain/money/money'
 import { LedgerDirection } from '@domain/ledger/enums'
 import { Ledger } from '@domain/ledger/ledger'
-import { FailureCode } from '@domain/wager/enums'
-import type { LoggerProtocol, MetricProtocol, ReconciliationGatewayProtocol } from '../../protocols'
-import { ReconciliationService } from '../reconciliation.service'
-import { ReconciliationsType } from '../types'
+import type { LoggerProtocol, MetricProtocol, ReconciliationGatewayProtocol } from '../../../protocols'
+import { ReconcileWalletUseCase } from '../reconcile-wallet.use-case'
+import { WalletReconciliationNotFoundError } from '../wallet-reconciliation-not-found.error'
+import { ReconciliationsType } from '../../types'
 
 type Snapshot = ReconciliationsType.Snapshot
 
@@ -66,18 +66,16 @@ const ledgerFor = (
   })
 }
 
-describe('ReconciliationService', () => {
-  test('missing - WHEN the wallet is absent SHOULD return WALLET_NOT_FOUND', async () => {
+describe('ReconcileWalletUseCase', () => {
+  test('missing - WHEN the wallet is absent SHOULD throw a not-found error', async () => {
     const gateway = new Gateway(undefined)
     const logger = new Logger()
     const metric = new Metric()
-    const service = new ReconciliationService(gateway, logger, metric)
-    const output = await service.reconcile('wallet-1')
+    const useCase = new ReconcileWalletUseCase(gateway, logger, metric)
+    const input = { walletId: 'wallet-1' }
+    const result = useCase.execute(input)
 
-    expect(output).toEqual({
-      walletId: 'wallet-1',
-      failureCode: FailureCode.WALLET_NOT_FOUND,
-    })
+    await expect(result).rejects.toBeInstanceOf(WalletReconciliationNotFoundError)
     expect(logger.warnings).toHaveLength(0)
     expect(metric.counts.size).toBe(0)
   })
@@ -90,8 +88,9 @@ describe('ReconciliationService', () => {
     const gateway = new Gateway(snapshot)
     const logger = new Logger()
     const metric = new Metric()
-    const service = new ReconciliationService(gateway, logger, metric)
-    const output = await service.reconcile('wallet-1')
+    const useCase = new ReconcileWalletUseCase(gateway, logger, metric)
+    const input = { walletId: 'wallet-1' }
+    const output = await useCase.execute(input)
 
     expect(output).toEqual({
       walletId: 'wallet-1',
@@ -113,8 +112,9 @@ describe('ReconciliationService', () => {
     const gateway = new Gateway(snapshot)
     const logger = new Logger()
     const metric = new Metric()
-    const service = new ReconciliationService(gateway, logger, metric)
-    const output = await service.reconcile('wallet-1')
+    const useCase = new ReconcileWalletUseCase(gateway, logger, metric)
+    const input = { walletId: 'wallet-1' }
+    const output = await useCase.execute(input)
 
     expect(output).toEqual({
       walletId: 'wallet-1',

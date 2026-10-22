@@ -35,6 +35,7 @@ The application is the coordinator. It gives the same wager rules to requests fr
 - 🔁 Send the same request again with the same key, and it returns the original result instead of charging twice.
 - 🧾 Reuse that key for different details, and the request is flagged as a conflict.
 - 🔎 Missing references can be checked again later; reconciliation compares the wallet with its ledger without silently changing either.
+- 👛 Every HTTP route delegates its operation to an explicit application use case; the global filter translates application errors into HTTP responses.
 - 🧩 Injection tokens live with their owning module; shared dependencies live under `application/dependencies/tokens`.
 
 </details>
@@ -69,10 +70,10 @@ The front door checks and translates requests. The money rules stay in the ruleb
 flowchart TD
     Provider["🎮 Game provider"] --> HTTP["🌐 HTTP API"]
     Provider --> Queue["📨 SQS queue"]
-    HTTP --> Service["⚙️ Shared wager service"]
+    HTTP --> UseCase["⚙️ Submit wager use case"]
     Queue --> Consumer["📥 Queue consumer"]
-    Consumer --> Service
-    Service --> Hash["🔑 Check request key and details"]
+    Consumer --> UseCase
+    UseCase --> Hash["🔑 Check request key and details"]
     Hash --> Transaction["🔒 Start one database transaction"]
     Transaction --> Wallet["👛 Lock wallet and apply the wager"]
     Wallet --> Records["🧾 Save the wager and wallet result"]

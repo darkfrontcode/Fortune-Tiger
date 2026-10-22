@@ -10,4 +10,4 @@ Application error text for a missing strategy lives in `data/messages.data.ts`.
 
 Unit tests live in `tests/` next to the module they cover. `mediators/tests/wager.mediator.test.ts` covers `WagerMediator`. `mediators/tests/reference.mediator.test.ts` covers `ReferenceMediator`.
 
-`types.ts` defines `TransactionsType`. `wager.service.ts` is the Nest entry for this use case.
+`types.ts` defines `TransactionsType`. `use-cases/submit-wager.use-case.ts` is the application entry for submit, and the read routes each have a use case in the same folder.

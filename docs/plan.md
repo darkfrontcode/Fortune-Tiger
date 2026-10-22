@@ -6,7 +6,7 @@ Each phase closes with a green test of what it introduced. Do not postpone the t
 
 No phase starts in code while its `spec.md` is missing.
 
-Use-case folders are one plural word, with no hyphen: `transactions`, `reconciliations`, `idempotencies`. The file inside is the singular subject (`wager.service.ts`). Domain folders stay `money`, `wallet`, `ledger`, and `wager`. Types of one concept live in `types.ts`, in one namespace `{Concept}Type`. The word `props` is not used.
+Application contexts are plural and one word: `transactions`, `reconciliations`, `idempotencies`. Each application operation lives in its context's `use-cases/` folder; reusable responsibilities remain services. Domain folders stay `money`, `wallet`, `ledger`, and `wager`. Types of one concept live in `types.ts`, in one namespace `{Concept}Type`. The word `props` is not used.
 
 `src` has only `domain`, `application`, `infrastructure`, and `presentation`. There is no folder named `shared`, `common`, or `utils`. That name is a junk drawer.
 
@@ -56,7 +56,7 @@ The two bets of 80 do not wait for the end. A second sequential debit fails in t
 ## Nest, last
 
 19. **Boot.** `src/main.ts`, `src/app.module.ts`, `GET /health/live` and `GET /health/ready`. Compose with Postgres 16 and LocalStack.
-20. **HTTP.** Wallet, wager, and reconciliation routes call the use cases that already exist. The `LoggerService` adapter arrives here.
+20. **HTTP.** Every wallet, wager, reconciliation, and health route calls one application use case. Application errors are translated by the global HTTP filter. The `LoggerService` adapter arrives here.
 
 ## Proof and reading
 

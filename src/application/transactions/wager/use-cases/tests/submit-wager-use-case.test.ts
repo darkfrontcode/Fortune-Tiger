@@ -2,10 +2,10 @@ import { describe, expect, test } from 'bun:test'
 import { Money } from '@domain/money/money'
 import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
 import type { WagerTransaction } from '@domain/wager/wager'
-import { IdempotencyService } from '../../../idempotencies/idempotency.service'
-import type { WagerGatewayProtocol } from '../../../protocols'
-import { TransactionsType } from '../types'
-import { WagerService } from '../wager.service'
+import { IdempotencyService } from '../../../../idempotencies/idempotency.service'
+import type { WagerGatewayProtocol } from '../../../../protocols'
+import { TransactionsType } from '../../types'
+import { SubmitWagerUseCase } from '../submit-wager.use-case'
 
 type SubmitInput = TransactionsType.SubmitInput
 type SubmitOutput = TransactionsType.SubmitOutput
@@ -47,13 +47,13 @@ const base = (): SubmitInput => ({
   at: instant,
 })
 
-describe('WagerService', () => {
+describe('SubmitWagerUseCase', () => {
   test('opening - WHEN kind is OPENING SHOULD reject without calling the gateway', async () => {
     const gateway = new Gateway()
-    const service = new WagerService(gateway, new IdempotencyService())
+    const useCase = new SubmitWagerUseCase(gateway, new IdempotencyService())
     const input = base()
     const opening = { ...input, kind: WagerTransactionKind.OPENING }
-    const output = await service.submit(opening)
+    const output = await useCase.execute(opening)
 
     expect(gateway.calls).toHaveLength(0)
     expect(output.status).toBe(WagerTransactionStatus.REJECTED)
@@ -63,9 +63,9 @@ describe('WagerService', () => {
 
   test('bet - WHEN kind is BET SHOULD hash the payload and call the gateway', async () => {
     const gateway = new Gateway()
-    const service = new WagerService(gateway, new IdempotencyService())
+    const useCase = new SubmitWagerUseCase(gateway, new IdempotencyService())
     const input = base()
-    const output = await service.submit(input)
+    const output = await useCase.execute(input)
 
     expect(gateway.calls).toHaveLength(1)
     expect(gateway.calls[0]?.payloadHash).toHaveLength(64)

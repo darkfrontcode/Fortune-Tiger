@@ -1,6 +1,12 @@
 import { Catch, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common'
 import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common'
 import type { LoggerProtocol } from '@application/protocols'
+import { WalletNotFoundError } from '@application/wallets'
+import { HealthReadinessError, HealthStatus } from '@application/health'
+import {
+  WalletReconciliationNotFoundError,
+} from '@application/reconciliations/use-cases'
+import { WagerNotFoundError } from '@application/transactions/wager/use-cases'
 import { LOGGER } from '@application/dependencies/tokens'
 import { WALLET_PLAYER_CURRENCY_CONFLICT_MESSAGE } from '@infrastructure/persistence/data'
 import { INFRASTRUCTURE_FAILURE_MESSAGE } from '../data'
@@ -17,6 +23,38 @@ export class HttpFailureFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus()
       const body = exception.getResponse()
+
+      this.reply(response, status, body)
+      return
+    }
+
+    if (exception instanceof WalletNotFoundError) {
+      const status = HttpStatus.NOT_FOUND
+      const body = exception.message
+
+      this.reply(response, status, body)
+      return
+    }
+
+    if (exception instanceof WagerNotFoundError) {
+      const status = HttpStatus.NOT_FOUND
+      const body = exception.message
+
+      this.reply(response, status, body)
+      return
+    }
+
+    if (exception instanceof WalletReconciliationNotFoundError) {
+      const status = HttpStatus.NOT_FOUND
+      const body = { walletId: exception.walletId, failureCode: exception.failureCode }
+
+      this.reply(response, status, body)
+      return
+    }
+
+    if (exception instanceof HealthReadinessError) {
+      const status = HttpStatus.SERVICE_UNAVAILABLE
+      const body = { status: HealthStatus.UNAVAILABLE }
 
       this.reply(response, status, body)
       return

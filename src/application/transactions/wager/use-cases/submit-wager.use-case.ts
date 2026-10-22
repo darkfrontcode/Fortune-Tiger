@@ -1,24 +1,24 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
 import { WagerTransaction } from '@domain/wager/wager'
-import { IdempotencyService } from '../../idempotencies/idempotency.service'
-import type { IdempotencyType } from '../../idempotencies/types'
-import type { WagerGatewayProtocol } from '../../protocols'
-import { WAGER_GATEWAY } from '../tokens'
-import { TransactionsType } from './types'
+import { IdempotencyService } from '../../../idempotencies/idempotency.service'
+import type { IdempotencyType } from '../../../idempotencies/types'
+import type { WagerGatewayProtocol } from '../../../protocols'
+import { WAGER_GATEWAY } from '../../tokens'
+import { TransactionsType } from '../types'
 
 type SubmitInput = TransactionsType.SubmitInput
 type SubmitOutput = TransactionsType.SubmitOutput
 type Payload = IdempotencyType.Payload
 
 @Injectable()
-export class WagerService {
+export class SubmitWagerUseCase {
   constructor(
     @Inject(WAGER_GATEWAY) private readonly gateway: WagerGatewayProtocol,
     private readonly idempotency: IdempotencyService,
   ) {}
 
-  submit(input: SubmitInput): Promise<SubmitOutput> {
+  execute(input: SubmitInput): Promise<SubmitOutput> {
     const opening = input.kind === WagerTransactionKind.OPENING
 
     if (opening) {
