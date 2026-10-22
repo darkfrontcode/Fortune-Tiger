@@ -80,6 +80,18 @@ describe('WagerStatus', () => {
         },
         expected: true,
       },
+      {
+        title: 'idempotency conflict',
+        description: 'WHEN the idempotency key repeats with a different payload SHOULD answer 409',
+        params: {
+          value: output({
+            status: WagerTransactionStatus.PROCESSED,
+            failureCode: FailureCode.IDEMPOTENCY_PAYLOAD_CONFLICT,
+          }),
+          code: HttpStatus.CONFLICT,
+        },
+        expected: true,
+      },
     ]
 
     const prove = ({ params }: WagerStatusTheory<Params>) => {

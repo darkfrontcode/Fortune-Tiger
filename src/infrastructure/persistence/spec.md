@@ -10,7 +10,7 @@ PostgreSQL 16. Section 4 of the statement excludes Prisma. This project uses Mik
 
 `WalletReader.findById` opens a forked `EntityManager` and reads one wallet. `LedgerReader.page` reads the entries of one wallet ordered by `id`, which is UUIDv7, after the `id` in the cursor, up to the limit plus one row, so the page knows whether another row exists. The cursor is the base64url of the last `id`; a cursor that is not the base64url of a UUID answers nothing. `WagerReader` reads one wager by `id` or by `(provider_id, external_transaction_id)`. All three read only, and none of them locks a row.
 
-`OutboxMessageRepository.findDueForUpdate` selects due `outbox_messages` with `FOR UPDATE SKIP LOCKED`, ordered by `occurred_at`, limited by the caller. The statement lives in `outbox/queries/find-due-for-update.query.ts`. `updateMany` writes `attempts`, `next_attempt_at`, and `published_at` for the batch in the same SQL transaction.
+`OutboxMessageRepository.findById` reads one `outbox_messages` row by `id` without locking it. `findDueForUpdate` selects due `outbox_messages` with `FOR UPDATE SKIP LOCKED`, ordered by `occurred_at`, limited by the caller. The statement lives in `outbox/queries/find-due-for-update.query.ts`. `updateMany` writes `attempts`, `next_attempt_at`, and `published_at` for the batch in the same SQL transaction.
 
 ## Module
 

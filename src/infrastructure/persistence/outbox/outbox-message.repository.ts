@@ -18,6 +18,14 @@ export class OutboxMessageRepository {
     this.manager.persist(entities)
   }
 
+  async findById(id: string): Promise<OutboxMessage | undefined> {
+    const entity = await this.manager.findOne(OutboxMessageEntity, { id })
+
+    if (entity === null) { return undefined }
+
+    return this.mapper.toDomain(entity)
+  }
+
   async findDueForUpdate(at: Date, limit: number): Promise<Array<OutboxMessage>> {
     const context = this.manager.getTransactionContext()
     const connection = this.manager.getConnection()
