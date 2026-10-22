@@ -56,7 +56,7 @@ The two bets of 80 do not wait for the end. A second sequential debit fails in t
 ## Nest, last
 
 19. **Boot.** `src/main.ts`, `src/app.module.ts`, `GET /health/live` and `GET /health/ready`. Compose with Postgres 16 and LocalStack.
-20. **HTTP.** Wallet, wager, and reconciliation routes call the use cases that already exist. The `LoggerService` adapter arrives here.
+20. **HTTP.** Wallet, wager, and reconciliation routes call application operations. `GET /wallets/:walletId` uses `FindWalletUseCase`; `WalletNotFoundError` is translated by the global HTTP filter. The `LoggerService` adapter arrives here.
 
 ## Proof and reading
 

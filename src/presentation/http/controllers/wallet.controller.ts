@@ -10,6 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common'
+import { FindWalletUseCase } from '@application/wallets/use-cases'
 import type {
   ClockProtocol,
   LedgerReaderProtocol,
@@ -42,6 +43,7 @@ export class WalletController {
     @Inject(CLOCK) private readonly clock: ClockProtocol,
     @Inject(WALLET_OPENING) private readonly opening: WalletOpeningProtocol,
     private readonly reconciliation: ReconciliationService,
+    private readonly findWallet: FindWalletUseCase,
   ) {}
 
   @Post()
@@ -56,10 +58,8 @@ export class WalletController {
 
   @Get(':walletId')
   async find(@Param('walletId') walletId: string): Promise<HttpType.WalletOutput> {
-    const wallet = await this.wallets.findById(walletId)
-    const missing = wallet === undefined
-
-    if (missing) { throw new HttpException(WALLET_NOT_FOUND_MESSAGE, HttpStatus.NOT_FOUND) }
+    const input = { walletId }
+    const wallet = await this.findWallet.execute(input)
 
     return this.walletMapper.map(wallet)
   }

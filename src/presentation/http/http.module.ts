@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { APP_FILTER } from '@nestjs/core'
 import { ReconciliationsModule } from '@application/reconciliations'
+import { FindWalletUseCase } from '@application/wallets/use-cases'
 import { PROVIDER_IDENTITY } from './tokens'
 import { TransactionsModule } from '@application/transactions'
 import { ObservabilityModule } from '@infrastructure/observability'
@@ -20,6 +21,7 @@ const moduleImports = [
 const moduleControllers = [WalletController, WagerController]
 
 const moduleProviders = [
+  FindWalletUseCase,
   AuthGuard,
   { provide: PROVIDER_IDENTITY, useClass: AnonymousProviderIdentity },
   { provide: APP_FILTER, useClass: HttpFailureFilter },

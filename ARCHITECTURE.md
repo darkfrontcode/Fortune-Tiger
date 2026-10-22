@@ -109,6 +109,9 @@ src/
       guards/tests/
       patterns/tests/
       tests/
+    wallets/
+      use-cases/
+        tests/
     protocols/
     reconciliations/
       data/
@@ -172,7 +175,7 @@ Files follow the Nest name (`health.controller.ts`, `health.module.ts`, `message
 
 ## Composition
 
-A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, and `health.module.ts` build the adapters and the controller. `transactions.module.ts` and `references.module.ts` build the use cases.
+A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, and `health.module.ts` build the adapters and the controller. `http.module.ts` provides the wallet lookup use case alongside the HTTP controller and persistence port. `transactions.module.ts` and `references.module.ts` build their use cases.
 
 A port is a protocol plus a token. The protocol is the contract and carries no runtime value. The token is one `Symbol` in `tokens/` under its owning module, one file each, named after the protocol without the suffix. Cross-cutting application tokens live in `application/dependencies/tokens`. The owning module binds the token with `useExisting`, so one instance answers to both names, and the consumer injects only the token.
 

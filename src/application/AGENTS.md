@@ -19,3 +19,4 @@ History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request
 - `transactions` — the wager. `wager/wager.service.ts` is the entry. HTTP and the queue call the same use case.
 - `reconciliations` — `reconciliation.service.ts`. Compares the balance with the ledger. Does not repair it.
 - `idempotencies` — `idempotency.service.ts`. Key, hash, and replay.
+- `wallets/use-cases` — one explicit application operation per route when the route coordinates a query, such as `find-wallet.use-case.ts`. `WalletNotFoundError` is an application error and does not depend on Nest, HTTP, or domain exceptions.
