@@ -76,6 +76,7 @@ Type names, kinds, statuses, and `failureCode` follow the statement. The field s
 src/
   main.ts
   app.module.ts
+  runtime.service.ts
   domain/
     AGENTS.md
     money/spec.md
@@ -99,7 +100,7 @@ src/
     health/spec.md
 ```
 
-`main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` wires the layers. There is no `src/modules` folder. There is no `shared` folder.
+`main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` wires the layers, and `runtime.service.ts` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.
 
 Files follow the Nest name (`health.controller.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, `patterns/` holds the rule classes, and `guards/` holds one class per rule with its own `spec.md`. A protocol stays in `application/protocols`. Unit tests live in `__tests__/` next to the module they cover. The file is `{subject}.spec.ts`. Production barrels do not reexport tests.
 

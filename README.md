@@ -63,7 +63,7 @@ One word, plural, no hyphen in the middle of the name.
 - `observability` — `SimpleLogger`, `ClockProtocol`, and metrics
 - `protocols` — `TheoryProtocol`, the contract a unit theory plugs in
 
-`persistence` is in place for `wallets` and `wallet_ledger_entries`. Migrations are versioned and reversible. Money columns are `numeric(20, 2)` with `currency char(3)`. Copy `.env.example` to `.env`, run `docker compose up -d postgres`, then `test:int` and `migration:*` read `DATABASE_URL`.
+`persistence` is in place for `wallets` and `wallet_ledger_entries`. Migrations are versioned and reversible. Money columns are `numeric(20, 2)` with `currency char(3)`. `migration:*` reads `DATABASE_URL`.
 
 `observability` is in place for `SimpleLogger` and `SystemClock`. A child logger attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. The line is JSON, or pretty when `open` receives `pretty`; the Nest adapter will read `LOG_PRETTY`. No financial payload enters the log.
 
@@ -77,11 +77,27 @@ PostgreSQL 16 stores `numeric(20, 2)`. The queue runs on LocalStack.
 <summary>🌐 Presentation</summary>
 
 - `http` — wallet and wager routes. Identity plugs in through `ProviderIdentityProtocol`.
-- `health` — liveness and readiness.
+- `health` — liveness and readiness. `GET /health/live` answers `200` with `{"status":"live"}`. `GET /health/ready` asks Postgres and SQS at the same time; one failed probe answers `503` with `{"status":"unavailable"}`.
+
+`src/main.ts` reads `PORT`, default `3000`, and enables the shutdown hooks. `src/app.module.ts` wires one instance of the ORM, the clock, the logger, the SQS client, the queue, the publisher, the outbox worker, the reference worker, and the consumer. `RuntimeService` starts the three workers on boot and closes them on shutdown. No migration runs at boot.
 
 The controller stays thin. The balance rule stays in the domain.
 
 </details>
+
+## Run
+
+```bash
+bun install
+cp .env.example .env
+docker compose up -d
+bun run migration:up
+bun run start
+```
+
+`docker compose` starts PostgreSQL 16 and LocalStack, and the ready script creates `wager-transactions.fifo` and `wager-transactions-dlq.fifo`. `bun run start:dev` restarts on change. `bun run test:unit` runs the unit suite, and `bun run test:int` runs the integration suite against `DATABASE_URL`.
+
+`LOG_PRETTY=true` writes one text line per log. A missing value or `false` writes JSON.
 
 <details>
 <summary>🧩 Shape</summary>
