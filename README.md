@@ -102,7 +102,7 @@ bun run migration:up
 bun run start
 ```
 
-`docker compose` starts PostgreSQL 16 and LocalStack, and the ready script creates `wager-transactions.fifo` and `wager-transactions-dlq.fifo`. `bun run start:dev` restarts on change. `bun run test:unit` runs the unit suite, and `bun run test:int` runs the integration suite against `DATABASE_URL`.
+`docker compose` starts PostgreSQL 16 and LocalStack, and the ready script creates `wager-transactions.fifo` and `wager-transactions-dlq.fifo`. `bun run start:dev` restarts on change. `bun run test:unit` runs the unit suite, `bun run test:int` runs the integration suite, and `bun run test:concurrency` exercises race scenarios across three application processes. Both integration commands use the services configured in `.env`.
 
 `LOG_PRETTY=true` writes one text line per log. A missing value or `false` writes JSON.
 
