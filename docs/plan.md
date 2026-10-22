@@ -61,5 +61,5 @@ The two bets of 80 do not wait for the end. A second sequential debit fails in t
 ## Proof and reading
 
 21. **Races.** The same bet 50 times becomes one debit. Distinct wallets in parallel. Three or more processes.
-22. **Crash.** Kill after commit and before ack. Two publishers. `ROLLBACK` or `REFUND` before the `BET`. Restart with the balance equal to the ledger.
+22. **Crash.** Kill after commit and before ack. Two publishers. `ROLLBACK` or `REFUND` before the `BET`. Restart with the balance equal to the ledger. Completed: integration tests verify SQS redelivery, concurrent publishers, out-of-order refund, and ledger consistency after restart.
 23. **Usage README.** Setup, commands, environment, and `LOG_PRETTY`. `ARCHITECTURE.md` then describes only what is implemented. FIFO is not the guarantee. Auth is a no-op. The happy path is `BRL`.
