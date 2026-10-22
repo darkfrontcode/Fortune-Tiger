@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
+import { IdempotencyService } from '../../../application/idempotencies/idempotency.service'
+import { WagerMediator } from '../../../application/transactions/wager/mediators/wager.mediator'
 import { LedgerDirection } from '../../../domain/ledger/enums'
 import { Money } from '../../../domain/money/money'
 import { WagerTransactionKind, WagerTransactionStatus } from '../../../domain/wager/enums'
@@ -50,7 +52,7 @@ beforeAll(async () => {
   Suite.wallets = new WalletRepository(Suite.orm.em)
   Suite.wagers = new WagerTransactionRepository(Suite.orm.em)
   Suite.ledger = new WalletLedgerRepository(Suite.orm.em)
-  Suite.writer = new WalletOpeningWriter(Suite.orm)
+  Suite.writer = new WalletOpeningWriter(Suite.orm, new IdempotencyService(), new WagerMediator())
 })
 
 beforeEach(async () => {

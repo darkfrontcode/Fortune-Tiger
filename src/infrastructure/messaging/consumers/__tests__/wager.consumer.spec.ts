@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { IdempotencyService } from '../../../../application/idempotencies/idempotency.service'
 import type { WagerGatewayProtocol } from '../../../../application/protocols'
 import { WagerService } from '../../../../application/transactions'
 import type { TransactionsType } from '../../../../application/transactions'
@@ -93,7 +94,7 @@ const message = (value: unknown, receiveCount = 1): ConsumerType.QueueMessage =>
 })
 
 const consumer = (gateway: WagerGatewayProtocol) =>
-  new WagerConsumer(new WagerService(gateway), new WagerRequestMapper(), identity.consumerName)
+  new WagerConsumer(new WagerService(gateway, new IdempotencyService()), new WagerRequestMapper(), identity.consumerName)
 
 describe('WagerConsumer', () => {
   test('WHEN the request is applied SHOULD ack after the use case', async () => {

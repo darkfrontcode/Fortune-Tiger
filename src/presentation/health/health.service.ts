@@ -1,11 +1,12 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common'
+import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import type { ReadinessProtocol } from '../../application/protocols'
+import { READINESS } from '../../application/tokens'
 import { HealthStatus } from './enums'
 import type { HealthType } from './types'
 
 @Injectable()
 export class HealthService {
-  constructor(private readonly readiness: Array<ReadinessProtocol>) {}
+  constructor(@Inject(READINESS) private readonly readiness: Array<ReadinessProtocol>) {}
 
   live(): HealthType.Output {
     return { status: HealthStatus.LIVE }

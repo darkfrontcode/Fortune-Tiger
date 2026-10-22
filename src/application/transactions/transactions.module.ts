@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common'
 import { PersistenceModule } from '../../infrastructure/persistence'
-import { WAGER_GATEWAY } from '../tokens'
-import type { WagerGatewayProtocol } from '../protocols'
+import { IdempotenciesModule } from '../idempotencies/idempotencies.module'
 import { WagerService } from './wager'
 
-const createWagerService = (gateway: WagerGatewayProtocol) => new WagerService(gateway)
+const moduleImports = [PersistenceModule, IdempotenciesModule]
 
 @Module({
-  imports: [PersistenceModule],
-  providers: [{ provide: WagerService, useFactory: createWagerService, inject: [WAGER_GATEWAY] }],
+  imports: moduleImports,
+  providers: [WagerService],
   exports: [WagerService],
 })
 export class TransactionsModule {}

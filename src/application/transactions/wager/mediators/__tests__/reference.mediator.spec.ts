@@ -10,6 +10,7 @@ import { WagerType } from '../../../../../domain/wager/types'
 import { WagerTransaction } from '../../../../../domain/wager/wager'
 import { TransactionsType } from '../../types'
 import { ReferenceMediator } from '../reference.mediator'
+import { WagerMediator } from '../wager.mediator'
 
 type Schema = WagerType.Schema
 type Input = WagerType.Input
@@ -153,7 +154,7 @@ class ReferenceProbe {
 }
 
 describe('ReferenceMediator', () => {
-  const mediator = new ReferenceMediator()
+  const mediator = new ReferenceMediator(new WagerMediator())
 
   test('WHEN the reference is missing SHOULD schedule the first retry', () => {
     const wager = ReferenceProbe.waiting(0)

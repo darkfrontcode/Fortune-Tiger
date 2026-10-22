@@ -1,37 +1,41 @@
+import { Inject, Injectable } from '@nestjs/common'
 import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '../../../domain/wager/enums'
 import { WagerTransaction } from '../../../domain/wager/wager'
 import { IdempotencyService } from '../../idempotencies/idempotency.service'
 import type { IdempotencyType } from '../../idempotencies/types'
 import type { WagerGatewayProtocol } from '../../protocols'
+import { WAGER_GATEWAY } from '../../tokens'
 import { TransactionsType } from './types'
 
 type SubmitInput = TransactionsType.SubmitInput
 type SubmitOutput = TransactionsType.SubmitOutput
 type Payload = IdempotencyType.Payload
 
+@Injectable()
 export class WagerService {
-  private readonly idempotency = new IdempotencyService()
-
-  constructor(private readonly gateway: WagerGatewayProtocol) {}
+  constructor(
+    @Inject(WAGER_GATEWAY) private readonly gateway: WagerGatewayProtocol,
+    private readonly idempotency: IdempotencyService,
+  ) {}
 
   submit(input: SubmitInput): Promise<SubmitOutput> {
     const opening = input.kind === WagerTransactionKind.OPENING
 
     if (opening) {
-      const output = WagerService.rejectOpening(input.id)
+      const output = this.rejectOpening(input.id)
 
       return Promise.resolve(output)
     }
 
-    const payload = WagerService.payload(input)
+    const payload = this.payload(input)
     const payloadHash = this.idempotency.hash(payload)
-    const wagerInput = WagerService.wagerInput(input, payloadHash)
+    const wagerInput = this.wagerInput(input, payloadHash)
     const wager = WagerTransaction.create(wagerInput)
 
     return this.gateway.submit(wager, input.at, input.inbox)
   }
 
-  private static rejectOpening(transactionId: string): SubmitOutput {
+  private rejectOpening(transactionId: string): SubmitOutput {
     const status = WagerTransactionStatus.REJECTED
     const balance = '0.00'
     const idempotentReplay = false
@@ -46,7 +50,7 @@ export class WagerService {
     }
   }
 
-  private static payload(input: SubmitInput): Payload {
+  private payload(input: SubmitInput): Payload {
     return {
       providerId: input.providerId,
       externalTransactionId: input.externalTransactionId,
@@ -60,7 +64,7 @@ export class WagerService {
     }
   }
 
-  private static wagerInput(input: SubmitInput, payloadHash: string) {
+  private wagerInput(input: SubmitInput, payloadHash: string) {
     return {
       id: input.id,
       providerId: input.providerId,

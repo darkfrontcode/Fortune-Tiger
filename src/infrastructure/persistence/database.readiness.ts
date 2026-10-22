@@ -1,10 +1,12 @@
-import type { MikroORM } from '@mikro-orm/core'
+import { MikroORM } from '@mikro-orm/postgresql'
+import { Inject, Injectable } from '@nestjs/common'
 import type { ReadinessProtocol } from '../../application/protocols'
 
 const ping = 'select 1'
 
+@Injectable()
 export class DatabaseReadiness implements ReadinessProtocol {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(@Inject(MikroORM) private readonly orm: MikroORM) {}
 
   async check(): Promise<boolean> {
     try {

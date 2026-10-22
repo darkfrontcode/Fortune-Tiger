@@ -26,6 +26,6 @@ A business failure rejects the wager. The balance, the version, and the ledger s
 
 ## Module
 
-`transactions.module.ts` imports `PersistenceModule`, builds `WagerService` with `WAGER_GATEWAY`, and exports the service. The module only binds: the service keeps importing the protocol, never `WagerSubmitWriter`.
+`transactions.module.ts` imports `PersistenceModule` and `IdempotenciesModule`, provides `WagerService`, and exports it. `WagerService` is `@Injectable()` and receives `WAGER_GATEWAY` by token and `IdempotencyService` by class. The module only lists the provider: the service keeps importing the protocol, never `WagerSubmitWriter`.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

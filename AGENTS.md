@@ -50,6 +50,8 @@ A folder that exposes its files reexports them from `index.ts` with `export *`. 
 
 A Nest module sits inside the boundary it wires, as `health.module.ts` or `persistence.module.ts`. It is the only file that knows both sides of a port. `src/app.module.ts` imports the modules and wires only what spans layers: `ReferenceWorker` and `RuntimeService`.
 
+A class that receives a collaborator is `@Injectable()` and receives it in the constructor. `application` and `infrastructure` use the Nest decorator; the domain does not. A port arrives by token, as `@Inject(WAGER_GATEWAY)`. A collaborator with one implementation arrives by class, as `IdempotencyService`. `new` inside a class stays for the factory that builds its own type, the pure helper with no I/O, the repository tied to the transaction `EntityManager`, and the third-party client built by a factory. `WagerService`, the mediators, the writers, the workers, the publisher, the consumer, and the readiness probes arrive through the constructor.
+
 A port is a protocol plus a token. The protocol lives in `application/protocols` and carries no runtime value. The token is one `Symbol` in `application/tokens`, one file each, named after the protocol without the suffix: `CLOCK`, `LOGGER`, `PUBLISHER`, `WAGER_GATEWAY`, `REFERENCE_READER`, `REFERENCE_GATEWAY`. The module that owns the adapter binds the token with `useExisting`, so one instance answers to both names, and the consumer injects the token.
 
 `Environment`, in `infrastructure/environment`, is the only reader of `process.env`.

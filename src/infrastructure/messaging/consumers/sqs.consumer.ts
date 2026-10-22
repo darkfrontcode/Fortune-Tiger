@@ -1,8 +1,10 @@
+import { Inject, Injectable } from '@nestjs/common'
 import type { ClockProtocol, LoggerProtocol } from '../../../application/protocols'
+import { CLOCK, LOGGER } from '../../../application/tokens'
 import { ConsumerOutcome } from './enums'
-import type { SqsQueue } from './sqs.queue'
+import { SqsQueue } from './sqs.queue'
 import type { ConsumerType } from './types'
-import type { WagerConsumer } from './wager.consumer'
+import { WagerConsumer } from './wager.consumer'
 
 const retryBaseSeconds = 1
 const retryCapSeconds = 60
@@ -15,6 +17,7 @@ const delay = (receiveCount: number): number => {
   return Math.min(seconds, retryCapSeconds)
 }
 
+@Injectable()
 export class SqsConsumer {
   private running: Promise<void> | undefined
   private stopped = false
@@ -22,8 +25,8 @@ export class SqsConsumer {
   constructor(
     private readonly queue: SqsQueue,
     private readonly consumer: WagerConsumer,
-    private readonly clock: ClockProtocol,
-    private readonly logger: LoggerProtocol,
+    @Inject(CLOCK) private readonly clock: ClockProtocol,
+    @Inject(LOGGER) private readonly logger: LoggerProtocol,
   ) {}
 
   open(): void {

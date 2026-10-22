@@ -24,4 +24,8 @@ Same key and a different hash: conflict, `IDEMPOTENCY_PAYLOAD_CONFLICT`. That is
 
 The same bet 50 times in parallel produces a single debit. A simultaneous duplicate hits the constraint, not two balance updates.
 
+## Module
+
+`IdempotencyService` is `@Injectable()` and takes no collaborator. `idempotencies.module.ts` provides it and exports it, so the transactions module and the persistence module share one instance. `PayloadHashPattern` and `IdempotencyHashGuard` stay inside the service: they have no I/O and no configuration, so the service builds them with `new`.
+
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

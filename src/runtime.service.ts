@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import type { OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common'
 import type { LoggerProtocol } from './application/protocols'
+import { LOGGER } from './application/tokens'
 import { OutboxWorker, SqsConsumer } from './infrastructure/messaging'
 import { ReferenceWorker } from './infrastructure/persistence'
 
@@ -10,7 +11,7 @@ export class RuntimeService implements OnApplicationBootstrap, OnApplicationShut
     private readonly outbox: OutboxWorker,
     private readonly reference: ReferenceWorker,
     private readonly consumer: SqsConsumer,
-    private readonly logger: LoggerProtocol,
+    @Inject(LOGGER) private readonly logger: LoggerProtocol,
   ) {}
 
   onApplicationBootstrap(): void {

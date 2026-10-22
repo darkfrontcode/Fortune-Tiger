@@ -1,6 +1,6 @@
 # Observability
 
-`ClockProtocol` is the injectable clock. The file is `clock.protocol.ts`. A plug-in contract ends with `Protocol`. `SystemClock` implements it with the system time.
+`ClockProtocol` is the injectable clock. The file is `clock.protocol.ts`. A plug-in contract ends with `Protocol`. `SystemClock` is `@Injectable()` and implements it with the system time; `observability.module.ts` binds it to `CLOCK`.
 
 `SimpleLogger` is the application log API. It implements `LoggerProtocol`. `open` receives the clock and `pretty`. The Nest adapter reads `LOG_PRETTY` and passes `pretty`; the adapter arrives with the boot. Pretty output when the value is true. JSON when the variable is missing or false. `child` attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. `warn` writes one line to the standard output. `amount`, `money`, and the wager body never enter the log. No full financial payload.
 

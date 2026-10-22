@@ -6,14 +6,17 @@ A port that is plugged at runtime needs an identity the container resolves. That
 | --- | --- | --- |
 | `clock.token.ts` | `CLOCK` | `ClockProtocol` |
 | `logger.token.ts` | `LOGGER` | `LoggerProtocol` |
+| `metric.token.ts` | `METRIC` | `MetricProtocol` |
 | `publisher.token.ts` | `PUBLISHER` | `PublisherProtocol` |
+| `readiness.token.ts` | `READINESS` | `Array<ReadinessProtocol>` |
+| `reconciliation.gateway.token.ts` | `RECONCILIATION_GATEWAY` | `ReconciliationGatewayProtocol` |
 | `reference.gateway.token.ts` | `REFERENCE_GATEWAY` | `ReferenceGatewayProtocol` |
 | `reference.reader.token.ts` | `REFERENCE_READER` | `ReferenceReaderProtocol` |
 | `wager.gateway.token.ts` | `WAGER_GATEWAY` | `WagerGatewayProtocol` |
 
 A token does not sit beside the interface. `protocols` describes the contract and carries no runtime value; this folder carries the wiring. The module that owns the adapter binds the token with `useExisting`, so one instance answers to both names. A consumer injects the token and never the adapter class.
 
-`ReadinessProtocol` and `MetricProtocol` have no token: the health module joins the two readiness probes itself, and the metric adapter does not exist yet. `QUEUE_CONFIG` is not a port and stays in `messaging/factories/queue.factory.ts`, beside the factory that builds it.
+`READINESS` is the one token that carries a list. `health.module.ts` binds it with `useFactory` over `DatabaseReadiness` and `QueueReadiness`, so `HealthService` keeps its `Array<ReadinessProtocol>` constructor and the probes stay out of the controller. `METRIC` has no provider yet: the metric adapter does not exist. `QUEUE_CONFIG` is not a port and stays in `messaging/factories/queue.factory.ts`, beside the factory that builds it. `CONSUMER_NAME` is a messaging value and stays in `messaging/consumers/consumer-name.token.ts`.
 
 `index.ts` reexports the folder with `export *`. Callers import the folder.
 

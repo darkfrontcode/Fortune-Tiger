@@ -1,16 +1,19 @@
+import { Inject, Injectable } from '@nestjs/common'
 import { WagerService } from '../../../application/transactions'
 import { WagerRequestMapper } from '../mappers'
 import { WagerRequest } from '../messages'
+import { CONSUMER_NAME } from './consumer-name.token'
 import { ConsumerOutcome } from './enums'
 import type { ConsumerType } from './types'
 
 const maxAttempts = 5
 
+@Injectable()
 export class WagerConsumer {
   constructor(
     private readonly service: WagerService,
     private readonly mapper: WagerRequestMapper,
-    private readonly consumerName: string,
+    @Inject(CONSUMER_NAME) private readonly consumerName: string,
   ) {}
 
   async consume(input: ConsumerType.ConsumeInput): Promise<ConsumerOutcome> {

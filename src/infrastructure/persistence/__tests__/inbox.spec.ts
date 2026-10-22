@@ -1,10 +1,13 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
+import { IdempotencyService } from '../../../application/idempotencies/idempotency.service'
+import { WagerMediator } from '../../../application/transactions/wager/mediators/wager.mediator'
 import { Money } from '../../../domain/money/money'
 import { Wallet } from '../../../domain/wallet/wallet'
 import { WagerTransactionKind, WagerTransactionStatus } from '../../../domain/wager/enums'
 import { WagerTransaction } from '../../../domain/wager/wager'
+import { WagerEventsMapper } from '../../messaging/mappers'
 import { InboxMessageRepository } from '../inbox/inbox-message.repository'
 import { WagerSubmitWriter } from '../wager/wager-submit.writer'
 import { WalletRepository } from '../wallet/wallet.repository'
@@ -84,7 +87,12 @@ beforeAll(async () => {
   Suite.orm = await PersistenceHarness.open()
   Suite.wallets = new WalletRepository(Suite.orm.em)
   Suite.inbox = new InboxMessageRepository(Suite.orm.em)
-  Suite.writer = new WagerSubmitWriter(Suite.orm)
+  Suite.writer = new WagerSubmitWriter(
+    Suite.orm,
+    new IdempotencyService(),
+    new WagerEventsMapper(),
+    new WagerMediator(),
+  )
 })
 
 beforeEach(async () => {

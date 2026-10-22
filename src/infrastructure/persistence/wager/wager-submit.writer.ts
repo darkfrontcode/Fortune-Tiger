@@ -1,4 +1,5 @@
-import type { MikroORM } from '@mikro-orm/postgresql'
+import { MikroORM } from '@mikro-orm/postgresql'
+import { Inject, Injectable } from '@nestjs/common'
 import { uuidv7 } from 'uuidv7'
 import { IdempotencyService } from '../../../application/idempotencies/idempotency.service'
 import { IdempotencyOutcome } from '../../../application/idempotencies/enums'
@@ -20,12 +21,14 @@ import { WagerTransactionRepository } from './wager-transaction.repository'
 type SubmitOutput = TransactionsType.SubmitOutput
 type QueueInbox = TransactionsType.QueueInbox
 
+@Injectable()
 export class WagerSubmitWriter implements WagerGatewayProtocol {
-  private readonly idempotency = new IdempotencyService()
-
-  private readonly events = new WagerEventsMapper()
-
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    @Inject(MikroORM) private readonly orm: MikroORM,
+    private readonly idempotency: IdempotencyService,
+    private readonly events: WagerEventsMapper,
+    private readonly mediator: WagerMediator,
+  ) {}
 
   async submit(wager: WagerTransaction, at: Date, inbox?: QueueInbox): Promise<SubmitOutput> {
     const run = async () => {
@@ -73,7 +76,7 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
           ledgerId,
           at,
         }
-        const row = WagerMediator.mediate(wager, mediation)
+        const row = this.mediator.mediate(wager, mediation)
         const observed = locked.balance.amount
 
         await WagerSubmitWriter.persist(wallets, wagers, ledger, locked, wager, row, observed)

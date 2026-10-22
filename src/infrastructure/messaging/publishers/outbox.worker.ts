@@ -1,16 +1,19 @@
+import { Inject, Injectable } from '@nestjs/common'
 import type { ClockProtocol, LoggerProtocol } from '../../../application/protocols'
-import type { OutboxPublisher } from './outbox.publisher'
+import { CLOCK, LOGGER } from '../../../application/tokens'
+import { OutboxPublisher } from './outbox.publisher'
 
 const intervalMs = 2_000
 const limit = 20
 
+@Injectable()
 export class OutboxWorker {
   private timer: ReturnType<typeof setInterval> | undefined
 
   constructor(
     private readonly publisher: OutboxPublisher,
-    private readonly clock: ClockProtocol,
-    private readonly logger: LoggerProtocol,
+    @Inject(CLOCK) private readonly clock: ClockProtocol,
+    @Inject(LOGGER) private readonly logger: LoggerProtocol,
   ) {}
 
   open(): void {

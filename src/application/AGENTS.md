@@ -10,6 +10,8 @@ A use case that owns a rule with its own class puts it in `guards/`, inside the 
 
 Each folder has an English `spec.md`. The code follows that spec. Unit tests live in `__tests__/` beside the module they cover, as `{subject}.spec.ts`. When the code arrives, one file per folder: a short singular name plus the Nest role. No hyphen in the middle of the concept.
 
+`@Injectable()` is allowed here. A use case, a mediator, and the idempotency service receive their collaborators in the constructor. A port arrives by its token from `tokens`, as `@Inject(REFERENCE_READER)`. A collaborator with one implementation arrives by class, as `IdempotencyService`. A pure helper with no I/O is built by its owner. The domain keeps no Nest decorator.
+
 All project text is English, including the root `README.md`.
 
 History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this folder starts doing something.

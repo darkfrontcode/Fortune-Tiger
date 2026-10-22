@@ -20,6 +20,6 @@ Unit tests live in `__tests__/reference.service.spec.ts`.
 
 ## Module
 
-`references.module.ts` imports `PersistenceModule`, builds `ReferenceService` with `REFERENCE_READER` and `REFERENCE_GATEWAY`, and exports the service. `ReferenceWorker` stays out of this module: the root wires it, because it joins the service with the clock, the logger, and a process loop.
+`references.module.ts` imports `PersistenceModule`, provides `ReferenceService`, and exports it. `ReferenceService` is `@Injectable()` and receives `REFERENCE_READER` and `REFERENCE_GATEWAY` by token. `ReferenceWorker` stays out of this module: the root provides it, because it joins the service with the clock, the logger, and a process loop. The worker is `@Injectable()` too.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

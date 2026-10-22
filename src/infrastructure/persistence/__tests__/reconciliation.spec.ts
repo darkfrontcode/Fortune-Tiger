@@ -1,8 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
+import { IdempotencyService } from '../../../application/idempotencies/idempotency.service'
 import { ReconciliationService } from '../../../application/reconciliations/reconciliation.service'
 import type { LoggerProtocol, MetricProtocol } from '../../../application/protocols'
+import { WagerMediator } from '../../../application/transactions/wager/mediators/wager.mediator'
 import { Money } from '../../../domain/money/money'
 import { WalletOpeningWriter } from '../wallet/wallet-opening.writer'
 import { ReconciliationReader } from '../reconciliation/reconciliation.reader'
@@ -38,7 +40,7 @@ class Suite {
 
 beforeAll(async () => {
   Suite.orm = await PersistenceHarness.open()
-  Suite.writer = new WalletOpeningWriter(Suite.orm)
+  Suite.writer = new WalletOpeningWriter(Suite.orm, new IdempotencyService(), new WagerMediator())
   const gateway = new ReconciliationReader(Suite.orm)
   const logger = new Logger()
   const metric = new Metric()

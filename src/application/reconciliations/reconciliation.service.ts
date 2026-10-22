@@ -1,5 +1,7 @@
+import { Inject, Injectable } from '@nestjs/common'
 import { FailureCode } from '../../domain/wager/enums'
 import type { LoggerProtocol, MetricProtocol, ReconciliationGatewayProtocol } from '../protocols'
+import { LOGGER, METRIC, RECONCILIATION_GATEWAY } from '../tokens'
 import { RECONCILIATION_DIVERGENCE_MESSAGE } from './data'
 import { LedgerBalancePattern } from './patterns'
 import { ReconciliationsType } from './types'
@@ -13,13 +15,14 @@ const reconciliationMetric = {
   divergence: 'reconciliation_divergence',
 }
 
+@Injectable()
 export class ReconciliationService {
   private readonly balance = new LedgerBalancePattern()
 
   constructor(
-    private readonly gateway: ReconciliationGatewayProtocol,
-    private readonly logger: LoggerProtocol,
-    private readonly metric: MetricProtocol,
+    @Inject(RECONCILIATION_GATEWAY) private readonly gateway: ReconciliationGatewayProtocol,
+    @Inject(LOGGER) private readonly logger: LoggerProtocol,
+    @Inject(METRIC) private readonly metric: MetricProtocol,
   ) {}
 
   async reconcile(walletId: string): Promise<Output> {

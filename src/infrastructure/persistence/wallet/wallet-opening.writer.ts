@@ -1,4 +1,5 @@
-import type { MikroORM } from '@mikro-orm/postgresql'
+import { MikroORM } from '@mikro-orm/postgresql'
+import { Inject, Injectable } from '@nestjs/common'
 import { uuidv7 } from 'uuidv7'
 import { IdempotencyService } from '../../../application/idempotencies/idempotency.service'
 import { WagerMediator } from '../../../application/transactions/wager/mediators/wager.mediator'
@@ -24,8 +25,13 @@ export type WalletOpeningInput = {
   openedAt: Date
 }
 
+@Injectable()
 export class WalletOpeningWriter {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    @Inject(MikroORM) private readonly orm: MikroORM,
+    private readonly idempotency: IdempotencyService,
+    private readonly mediator: WagerMediator,
+  ) {}
 
   async open(input: WalletOpeningInput): Promise<Wallet> {
     const walletId = uuidv7()
@@ -56,7 +62,7 @@ export class WalletOpeningWriter {
 
         if (!funded) { return }
 
-        const opening = WalletOpeningWriter.opening(wallet, input)
+        const opening = this.opening(wallet, input)
         const ledgerId = uuidv7()
         const mediation = {
           wallet,
@@ -65,7 +71,7 @@ export class WalletOpeningWriter {
           ledgerId,
           at: input.openedAt,
         }
-        const row = WagerMediator.mediate(opening, mediation)
+        const row = this.mediator.mediate(opening, mediation)
 
         await WalletOpeningWriter.persist(wallets, wagers, ledger, wallet, opening, row)
       })
@@ -76,11 +82,10 @@ export class WalletOpeningWriter {
     return wallet
   }
 
-  private static opening(wallet: Wallet, input: WalletOpeningInput): WagerTransaction {
+  private opening(wallet: Wallet, input: WalletOpeningInput): WagerTransaction {
     const externalTransactionId = `opening:${wallet.id}`
     const idempotencyKey = `opening:${wallet.id}`
     const wagerId = uuidv7()
-    const hashService = new IdempotencyService()
     const payload = {
       providerId: scope.provider,
       externalTransactionId,
@@ -92,7 +97,7 @@ export class WalletOpeningWriter {
       money: input.initialBalance,
       referenceExternalTransactionId: undefined,
     }
-    const payloadHash = hashService.hash(payload)
+    const payloadHash = this.idempotency.hash(payload)
     const wagerInput = {
       id: wagerId,
       providerId: scope.provider,

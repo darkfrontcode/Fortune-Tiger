@@ -90,9 +90,13 @@ Events are not published before the financial commit.
 
 ## Module
 
-`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `TransactionsModule`, and `ObservabilityModule`, and it builds the whole channel. `SQSClient` and the `QUEUE_CONFIG` token are built once from `Environment`; the token lives beside `createQueueConfig` in `factories/queue.factory.ts`. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`. `OutboxPublisher`, `OutboxWorker`, `SqsQueue`, `WagerConsumer`, `SqsConsumer`, and `QueueReadiness` are built by factory, because they take a port, a primitive, or the ORM. The consumer name is the module constant `wager`.
+`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `TransactionsModule`, and `ObservabilityModule`, and it provides the whole channel. `SQSClient` and the `QUEUE_CONFIG` token are built once from `Environment`; the token lives beside `createQueueConfig` in `factories/queue.factory.ts`.
 
-`OutboxWorker`, `SqsConsumer`, and `QueueReadiness` are exported. `RuntimeService` is not: the root wires it, because it starts all three workers.
+`SqsQueue`, `SqsPublisher`, `QueueReadiness`, `OutboxPublisher`, `OutboxWorker`, `WagerConsumer`, and `SqsConsumer` are `@Injectable()`. They receive `SQSClient` and `MikroORM` by class token, `CLOCK`, `LOGGER`, and `PUBLISHER` by their tokens, and `QUEUE_CONFIG` for the queue URLs and the poll limits. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`.
+
+The consumer name is `wager`. It is the `CONSUMER_NAME` token in `consumers/consumer-name.token.ts`, bound with `useValue`, and `WagerConsumer` receives it in the constructor.
+
+`OutboxWorker`, `SqsConsumer`, and `QueueReadiness` are exported. `RuntimeService` is not: the root provides it, because it starts all three workers.
 
 ## Environment
 

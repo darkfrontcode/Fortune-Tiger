@@ -1,5 +1,7 @@
-import type { MikroORM } from '@mikro-orm/postgresql'
+import { MikroORM } from '@mikro-orm/postgresql'
+import { Inject, Injectable } from '@nestjs/common'
 import type { PublisherProtocol } from '../../../application/protocols'
+import { PUBLISHER } from '../../../application/tokens'
 import { OutboxMessageRepository } from '../../persistence/outbox'
 import type { OutboxMessage } from '../messages'
 
@@ -15,10 +17,11 @@ type Output = {
 
 const EMPTY = 0
 
+@Injectable()
 export class OutboxPublisher {
   constructor(
-    private readonly orm: MikroORM,
-    private readonly publisher: PublisherProtocol,
+    @Inject(MikroORM) private readonly orm: MikroORM,
+    @Inject(PUBLISHER) private readonly publisher: PublisherProtocol,
   ) {}
 
   async publish(input: Input): Promise<Output> {

@@ -1,10 +1,12 @@
-import type { MikroORM } from '@mikro-orm/postgresql'
+import { MikroORM } from '@mikro-orm/postgresql'
+import { Inject, Injectable } from '@nestjs/common'
 import type { ReferenceReaderProtocol } from '../../../application/protocols'
 import type { WagerTransaction } from '../../../domain/wager/wager'
 import { WagerTransactionRepository } from './wager-transaction.repository'
 
+@Injectable()
 export class ReferenceReader implements ReferenceReaderProtocol {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(@Inject(MikroORM) private readonly orm: MikroORM) {}
 
   async due(at: Date, limit: number): Promise<Array<string>> {
     const manager = this.orm.em.fork()

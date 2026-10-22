@@ -1,9 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs'
+import type { ConsumerType } from '../../consumers'
 import { SqsPublisher } from '../sqs.publisher'
 
-const queue = {
-  url: 'http://localhost:4566/000000000000/wager-transactions.fifo',
+const config: ConsumerType.Config = {
+  queueUrl: 'http://localhost:4566/000000000000/wager-transactions.fifo',
+  deadLetterQueueUrl: 'http://localhost:4566/000000000000/wager-transactions-dlq.fifo',
+  maxMessages: 10,
+  waitTimeSeconds: 20,
+  visibilityTimeout: 30,
 }
 
 const aws = {
@@ -32,14 +37,14 @@ class RecordingClient {
 describe('SqsPublisher', () => {
   test('WHEN the SDK client is injected SHOULD build the adapter', () => {
     const client = new SQSClient({ region: aws.region })
-    const publisher = new SqsPublisher(client, queue.url)
+    const publisher = new SqsPublisher(client, config)
 
     expect(publisher).toBeInstanceOf(SqsPublisher)
   })
 
   test('WHEN publishing SHOULD send a FIFO message with the aggregate and the event', async () => {
     const client = new RecordingClient()
-    const publisher = new SqsPublisher(client, queue.url)
+    const publisher = new SqsPublisher(client, config)
 
     await publisher.publish(event)
 
@@ -47,7 +52,7 @@ describe('SqsPublisher', () => {
 
     expect(client.commands).toHaveLength(1)
     expect(command?.input).toEqual({
-      QueueUrl: queue.url,
+      QueueUrl: config.queueUrl,
       MessageBody: JSON.stringify(event.payload),
       MessageGroupId: event.aggregateId,
       MessageDeduplicationId: event.id,

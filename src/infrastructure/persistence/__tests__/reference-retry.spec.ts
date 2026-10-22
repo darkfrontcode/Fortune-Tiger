@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
+import { ReferenceMediator } from '../../../application/transactions/wager/mediators/reference.mediator'
+import { WagerMediator } from '../../../application/transactions/wager/mediators/wager.mediator'
 import { Money } from '../../../domain/money/money'
 import { Wallet } from '../../../domain/wallet/wallet'
 import {
@@ -10,6 +12,7 @@ import {
 } from '../../../domain/wager/enums'
 import { WagerType } from '../../../domain/wager/types'
 import { WagerTransaction } from '../../../domain/wager/wager'
+import { WagerEventsMapper } from '../../messaging/mappers'
 import { OutboxMessageEntity } from '../outbox/outbox-message.entity'
 import { WalletLedgerEntity } from '../ledger/wallet-ledger.entity'
 import { ReferenceReader } from '../wager/reference.reader'
@@ -141,7 +144,11 @@ beforeAll(async () => {
   Suite.wallets = new WalletRepository(Suite.orm.em)
   Suite.wagers = new WagerTransactionRepository(Suite.orm.em)
   Suite.reader = new ReferenceReader(Suite.orm)
-  Suite.writer = new ReferenceRetryWriter(Suite.orm)
+  Suite.writer = new ReferenceRetryWriter(
+    Suite.orm,
+    new ReferenceMediator(new WagerMediator()),
+    new WagerEventsMapper(),
+  )
 })
 
 beforeEach(async () => {

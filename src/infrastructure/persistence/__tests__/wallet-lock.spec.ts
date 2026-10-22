@@ -1,13 +1,16 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
+import { IdempotencyService } from '../../../application/idempotencies/idempotency.service'
+import { WagerMediator } from '../../../application/transactions/wager/mediators/wager.mediator'
 import { LedgerDirection } from '../../../domain/ledger/enums'
 import { Money } from '../../../domain/money/money'
 import { Wallet } from '../../../domain/wallet/wallet'
 import { WagerTransactionKind, WagerTransactionStatus } from '../../../domain/wager/enums'
 import { WagerTransaction } from '../../../domain/wager/wager'
+import { WagerEventsMapper } from '../../messaging/mappers'
 import { WalletLedgerRepository } from '../ledger/wallet-ledger.repository'
-import { WagerBetWriter } from '../wager/wager-bet.writer'
+import { WagerSubmitWriter } from '../wager/wager-submit.writer'
 import { WagerTransactionRepository } from '../wager/wager-transaction.repository'
 import { WalletRepository } from '../wallet/wallet.repository'
 import { PersistenceHarness } from './persistence.harness'
@@ -40,7 +43,7 @@ class Suite {
 
   static ledger!: WalletLedgerRepository
 
-  static writer!: WagerBetWriter
+  static writer!: WagerSubmitWriter
 }
 
 const openWallet = (playerId: string) => {
@@ -85,7 +88,12 @@ beforeAll(async () => {
   Suite.wallets = new WalletRepository(Suite.orm.em)
   Suite.wagers = new WagerTransactionRepository(Suite.orm.em)
   Suite.ledger = new WalletLedgerRepository(Suite.orm.em)
-  Suite.writer = new WagerBetWriter(Suite.orm)
+  Suite.writer = new WagerSubmitWriter(
+    Suite.orm,
+    new IdempotencyService(),
+    new WagerEventsMapper(),
+    new WagerMediator(),
+  )
 })
 
 beforeEach(async () => {
@@ -107,11 +115,11 @@ describe('Wallet lock', () => {
     await Suite.wallets.save(wallet)
 
     const firstBet = async () => {
-      await Suite.writer.place(first, instant.processed)
+      await Suite.writer.submit(first, instant.processed)
     }
 
     const secondBet = async () => {
-      await Suite.writer.place(second, instant.processed)
+      await Suite.writer.submit(second, instant.processed)
     }
 
     await Promise.all([firstBet(), secondBet()])

@@ -115,6 +115,23 @@ A port is a protocol plus a token. The protocol is the contract and carries no r
 
 `src/app.module.ts` imports the modules and wires only what spans layers: `ReferenceWorker` and `RuntimeService`. It holds no adapter and no use case. A module imports the module whose provider it needs, and that import is the composition edge: the arrow points outward there, and nowhere else. Inside a layer the code imports protocols, never adapters.
 
+## Injection
+
+Nest builds the graph. `application` and `infrastructure` declare `@Injectable()` on the class and receive a collaborator through the constructor. The domain does not: a concept holds its guard and its pattern as a `const` at the top of its own file.
+
+A port arrives by its token, as `@Inject(WAGER_GATEWAY)`. A collaborator with one implementation arrives by its class, as `IdempotencyService`, `WagerMediator`, or `WagerEventsMapper`. A protocol exists only when something is plugged in, so a class with one implementation carries no token.
+
+`new` inside a class is allowed in four places, and nowhere else:
+
+- a factory that builds its own type: `Money.from`, `WagerRequest.from`, `SimpleLogger.open`, the event `enqueue` and `from`;
+- a pure helper with no I/O and no configuration, held by its owner: `WalletMapper` inside its repository, `PayloadHashPattern` inside `IdempotencyService`;
+- a repository tied to the transaction `EntityManager`: `new WalletRepository(manager)` is the Unit of Work;
+- a third-party client at the edge: `createOrm` and `createSqsClient` in a factory.
+
+A service with a collaborator is not built with `new`. `WagerService`, `IdempotencyService`, the mediators, the writers, the readers, the workers, the publisher, the consumer, and the readiness probes arrive through the constructor.
+
+A factory provider stays for a value the container builds from `Environment` (`MikroORM`, `SQSClient`, `QUEUE_CONFIG`) and for the array the health module joins (`READINESS`). A pure collaborator used by two layers is provided by the module that consumes it, so the layer arrow does not become a module cycle.
+
 `Environment` is the only reader of `process.env`. `environment.module.ts` provides it and exports it, so every factory receives it instead of reading a variable. `main.ts` asks the container for the port.
 
 ## Stack

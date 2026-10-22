@@ -22,6 +22,8 @@ type Schema = WagerType.Schema
 type Input = WagerType.Input
 type Mediation = TransactionsType.Mediation
 
+const mediator = new WagerMediator()
+
 const currency = {
   brl: 'BRL',
   usd: 'USD',
@@ -183,7 +185,7 @@ describe('WagerMediator', () => {
       const wallet = MediatorProbe.wallet(amount.hundred, params.currency, params.player)
       const wager = MediatorProbe.open(WagerTransactionKind.BET, undefined, money)
       const mediation = MediatorProbe.mediation(wallet, undefined, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const rejected = wager.status === WagerTransactionStatus.REJECTED
       const sameCode = wager.failureCode === params.code
       const empty = ledger === undefined
@@ -220,7 +222,7 @@ describe('WagerMediator', () => {
         identity.round,
       )
       const mediation = MediatorProbe.mediation(wallet, reference, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const waiting = wager.status === WagerTransactionStatus.PENDING_REFERENCE
       const empty = ledger === undefined
       const reset = wager.attempts === 0 && wager.nextAttemptAt === undefined
@@ -245,7 +247,7 @@ describe('WagerMediator', () => {
         identity.round,
       )
       const mediation = MediatorProbe.mediation(wallet, reference, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const rejected = wager.status === WagerTransactionStatus.REJECTED
       const code = wager.failureCode === FailureCode.REFERENCE_NOT_FOUND
       const empty = ledger === undefined
@@ -270,7 +272,7 @@ describe('WagerMediator', () => {
         'other-round',
       )
       const mediation = MediatorProbe.mediation(wallet, reference, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const rejected = wager.status === WagerTransactionStatus.REJECTED
       const code = wager.failureCode === FailureCode.REFERENCE_SCOPE_MISMATCH
       const empty = ledger === undefined
@@ -295,7 +297,7 @@ describe('WagerMediator', () => {
         identity.round,
       )
       const mediation = MediatorProbe.mediation(wallet, reference, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const rejected = wager.status === WagerTransactionStatus.REJECTED
       const code = wager.failureCode === FailureCode.INVALID_REFERENCE_KIND
       const empty = ledger === undefined
@@ -321,7 +323,7 @@ describe('WagerMediator', () => {
         identity.round,
       )
       const mediation = MediatorProbe.mediation(wallet, reference, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const rejected = wager.status === WagerTransactionStatus.REJECTED
       const code = wager.failureCode === FailureCode.REFERENCE_AMOUNT_MISMATCH
       const empty = ledger === undefined
@@ -346,7 +348,7 @@ describe('WagerMediator', () => {
         identity.round,
       )
       const mediation = MediatorProbe.mediation(wallet, reference, true)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const rejected = wager.status === WagerTransactionStatus.REJECTED
       const code = wager.failureCode === FailureCode.REFERENCE_ALREADY_REVERSED
       const empty = ledger === undefined
@@ -362,7 +364,7 @@ describe('WagerMediator', () => {
     test('bet - WHEN funds are enough SHOULD debit and return a ledger', () => {
       const wager = MediatorProbe.open(WagerTransactionKind.BET, undefined, money)
       const mediation = MediatorProbe.mediation(wallet, undefined, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const processed = wager.status === WagerTransactionStatus.PROCESSED
       const posted = ledger !== undefined
       const debit = ledger?.direction === LedgerDirection.DEBIT
@@ -374,7 +376,7 @@ describe('WagerMediator', () => {
       const poor = MediatorProbe.wallet(amount.five, currency.brl, identity.player)
       const wager = MediatorProbe.open(WagerTransactionKind.BET, undefined, money)
       const mediation = MediatorProbe.mediation(poor, undefined, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const rejected = wager.status === WagerTransactionStatus.REJECTED
       const code = wager.failureCode === FailureCode.INSUFFICIENT_FUNDS
       const empty = ledger === undefined
@@ -385,7 +387,7 @@ describe('WagerMediator', () => {
     test('loss - WHEN loss is mediated SHOULD process without a ledger', () => {
       const wager = MediatorProbe.open(WagerTransactionKind.LOSS, undefined, money)
       const mediation = MediatorProbe.mediation(wallet, undefined, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const processed = wager.status === WagerTransactionStatus.PROCESSED
       const empty = ledger === undefined
 
@@ -395,7 +397,7 @@ describe('WagerMediator', () => {
     test('win - WHEN no reference is passed SHOULD still credit', () => {
       const wager = MediatorProbe.open(WagerTransactionKind.WIN, undefined, money)
       const mediation = MediatorProbe.mediation(wallet, undefined, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const processed = wager.status === WagerTransactionStatus.PROCESSED
       const credit = ledger?.direction === LedgerDirection.CREDIT
 
@@ -419,7 +421,7 @@ describe('WagerMediator', () => {
         identity.round,
       )
       const mediation = MediatorProbe.mediation(wallet, reference, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const processed = wager.status === WagerTransactionStatus.PROCESSED
       const credit = ledger?.direction === LedgerDirection.CREDIT
       const linked = wager.referenceTransactionId === identity.referenceWager
@@ -444,7 +446,7 @@ describe('WagerMediator', () => {
         identity.round,
       )
       const mediation = MediatorProbe.mediation(wallet, reference, false)
-      const ledger = WagerMediator.mediate(wager, mediation)
+      const ledger = mediator.mediate(wager, mediation)
       const processed = wager.status === WagerTransactionStatus.PROCESSED
       const credit = ledger?.direction === LedgerDirection.CREDIT
 

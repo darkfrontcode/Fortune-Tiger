@@ -1,4 +1,5 @@
-import type { MikroORM } from '@mikro-orm/postgresql'
+import { MikroORM } from '@mikro-orm/postgresql'
+import { Inject, Injectable } from '@nestjs/common'
 import { uuidv7 } from 'uuidv7'
 import type { ReferenceGatewayProtocol } from '../../../application/protocols'
 import type { ReferenceType } from '../../../application/references/types'
@@ -17,12 +18,13 @@ type RetryOutput = ReferenceType.RetryOutput
 
 const pending = WagerTransactionStatus.PENDING_REFERENCE
 
+@Injectable()
 export class ReferenceRetryWriter implements ReferenceGatewayProtocol {
-  private readonly mediator = new ReferenceMediator()
-
-  private readonly events = new WagerEventsMapper()
-
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    @Inject(MikroORM) private readonly orm: MikroORM,
+    private readonly mediator: ReferenceMediator,
+    private readonly events: WagerEventsMapper,
+  ) {}
 
   async retry(transactionId: string, at: Date): Promise<RetryOutput | undefined> {
     return this.orm.em.transactional(async (manager) => {

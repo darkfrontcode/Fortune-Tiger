@@ -1,18 +1,25 @@
 import { Module } from '@nestjs/common'
-import { DatabaseReadiness, PersistenceModule } from '../../infrastructure/persistence'
+import type { ReadinessProtocol } from '../../application/protocols'
+import { READINESS } from '../../application/tokens'
 import { MessagingModule, QueueReadiness } from '../../infrastructure/messaging'
+import { DatabaseReadiness, PersistenceModule } from '../../infrastructure/persistence'
 import { HealthController } from './health.controller'
 import { HealthService } from './health.service'
 
-const readinessDependencies = [DatabaseReadiness, QueueReadiness]
 const moduleImports = [PersistenceModule, MessagingModule]
+const readinessDependencies = [DatabaseReadiness, QueueReadiness]
 
-const createHealthService = (database: DatabaseReadiness, queue: QueueReadiness): HealthService =>
-  new HealthService([database, queue])
+const joinReadiness = (database: DatabaseReadiness, queue: QueueReadiness): Array<ReadinessProtocol> => [
+  database,
+  queue,
+]
 
 @Module({
   imports: moduleImports,
   controllers: [HealthController],
-  providers: [{ provide: HealthService, useFactory: createHealthService, inject: readinessDependencies }],
+  providers: [
+    HealthService,
+    { provide: READINESS, useFactory: joinReadiness, inject: readinessDependencies },
+  ],
 })
 export class HealthModule {}

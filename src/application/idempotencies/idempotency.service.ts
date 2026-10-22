@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common'
 import { FailureCode } from '../../domain/wager/enums'
 import { IdempotencyOutcome } from './enums'
 import { IdempotencyHashGuard } from './guards'
@@ -9,6 +10,7 @@ type Payload = IdempotencyType.Payload
 type Input = IdempotencyType.Input
 type Output = IdempotencyType.Output
 
+@Injectable()
 export class IdempotencyService {
   private readonly hashGuard = new IdempotencyHashGuard()
 
