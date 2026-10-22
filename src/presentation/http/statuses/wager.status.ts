@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common'
-import type { TransactionsType } from '../../application/transactions'
+import type { TransactionsType } from '../../../application/transactions'
 import { WagerStatusMap } from '../maps'
 
 type Output = TransactionsType.SubmitOutput

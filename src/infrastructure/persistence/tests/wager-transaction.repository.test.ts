@@ -36,11 +36,11 @@ type WagerOverrides = {
 }
 
 class Suite {
-  static orm!: MikroORM
+  static orm: MikroORM
 
-  static wallets!: WalletRepository
+  static wallets: WalletRepository
 
-  static wagers!: WagerTransactionRepository
+  static wagers: WagerTransactionRepository
 }
 
 const openWallet = (playerId: string) => {
