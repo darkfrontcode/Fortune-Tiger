@@ -52,8 +52,47 @@ Keycloak is out.
 
 `http.module.ts` imports `PersistenceModule`, `TransactionsModule`, `ReconciliationsModule`, and `ObservabilityModule`. It declares `WalletController` and `WagerController`. `AuthGuard` is applied to `WagerController`, and `PROVIDER_IDENTITY` is bound to `AnonymousProviderIdentity`. `WalletController` receives `WALLET_OPENING`, `WALLET_READER`, `LEDGER_READER`, and `CLOCK` by token, plus `ReconciliationService` by class. `WagerController` receives `WagerService` by class and `WAGER_READER` and `CLOCK` by token.
 
-`wallet-body.ts` and `wager-body.ts` read the JSON body, and `ledger-query.ts` reads the query string. A missing field, a wrong type, an invalid money, an unknown kind, and a missing reference for `REFUND` or `ROLLBACK` answer `400` with `INVALID_WALLET_BODY_MESSAGE`, `INVALID_WAGER_BODY_MESSAGE`, or `INVALID_LEDGER_QUERY_MESSAGE`. A missing `Idempotency-Key` answers `400` with `IDEMPOTENCY_KEY_REQUIRED_MESSAGE`.
+`wallet-body.ts` and `wager-body.ts` in `bodies/` read the JSON body, and `ledger-query.ts` in `queries/` reads the query string. A missing field, a wrong type, an invalid money, an unknown kind, and a missing reference for `REFUND` or `ROLLBACK` answer `400` with `INVALID_WALLET_BODY_MESSAGE`, `INVALID_WAGER_BODY_MESSAGE`, or `INVALID_LEDGER_QUERY_MESSAGE`. A missing `Idempotency-Key` answers `400` with `IDEMPOTENCY_KEY_REQUIRED_MESSAGE`.
 
-`mappers/` turns the body into `TransactionsType.SubmitInput`, the wallet into its output, the ledger entry into its output, and the wager into its output. `maps/wager-status.map.ts` holds the status table, and `WagerStatus` answers the HTTP status of one `SubmitOutput`.
+`mappers/` turns the body into `TransactionsType.SubmitInput`, the wallet into its output, the ledger entry into its output, and the wager into its output. `maps/wager-status.map.ts` holds the status table, and `WagerStatus` in `statuses/` answers the HTTP status of one `SubmitOutput`.
+
+`guards/` holds `AuthGuard`, `filters/` holds `HttpFailureFilter`, and `providers/` holds `AnonymousProviderIdentity`.
+
+## Folder structure
+
+```text
+http/
+  bodies/
+    wager.body.ts
+    wallet.body.ts
+  controllers/
+    wager.controller.ts
+    wallet.controller.ts
+  data/
+    messages.data.ts
+  filters/
+    http-failure.filter.ts
+  guards/
+    auth.guard.ts
+  mappers/
+    ledger-output.mapper.ts
+    wager-input.mapper.ts
+    wager-output.mapper.ts
+    wager-submit.mapper.ts
+    wallet-output.mapper.ts
+  maps/
+    wager-status.map.ts
+  providers/
+    anonymous-provider.identity.ts
+  queries/
+    ledger.query.ts
+  statuses/
+    wager.status.ts
+  tests/
+  types.ts
+  http.module.ts
+  index.ts
+  spec.md
+```
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

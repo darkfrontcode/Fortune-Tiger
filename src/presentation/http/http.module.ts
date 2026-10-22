@@ -5,11 +5,10 @@ import { PROVIDER_IDENTITY } from '../../application/tokens'
 import { TransactionsModule } from '../../application/transactions'
 import { ObservabilityModule } from '../../infrastructure/observability'
 import { PersistenceModule } from '../../infrastructure/persistence'
-import { AuthGuard } from './auth.guard'
-import { HttpFailureFilter } from './http-failure.filter'
-import { AnonymousProviderIdentity } from './identity'
-import { WagerController } from './wager.controller'
-import { WalletController } from './wallet.controller'
+import { WagerController, WalletController } from './controllers'
+import { AuthGuard } from './guards'
+import { HttpFailureFilter } from './filters'
+import { AnonymousProviderIdentity } from './providers'
 
 const moduleImports = [
   PersistenceModule,

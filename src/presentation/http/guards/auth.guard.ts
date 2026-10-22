@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { CanActivate, ExecutionContext } from '@nestjs/common'
-import type { ProviderIdentityProtocol } from '../../application/protocols'
-import { PROVIDER_IDENTITY } from '../../application/tokens'
-import type { HttpType } from './types'
+import type { ProviderIdentityProtocol } from '../../../application/protocols'
+import { PROVIDER_IDENTITY } from '../../../application/tokens'
+import type { HttpType } from '../types'
 
 const empty = String()
 const providerHeader = 'x-provider-id'

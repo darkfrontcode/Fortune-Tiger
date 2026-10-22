@@ -99,8 +99,26 @@ src/
     observability/spec.md
   presentation/
     AGENTS.md
-    http/spec.md
-    health/spec.md
+    http/
+      bodies/
+      controllers/
+      data/
+      filters/
+      guards/
+      mappers/
+      maps/
+      providers/
+      queries/
+      statuses/
+      tests/
+      spec.md
+    health/
+      controllers/
+      services/
+      enums/
+      types/
+      tests/
+      spec.md
 ```
 
 `main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` imports the layer modules, and `runtime.service.ts` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.

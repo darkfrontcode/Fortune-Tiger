@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common'
-import { INVALID_LEDGER_QUERY_MESSAGE } from './data'
-import type { HttpType } from './types'
+import { INVALID_LEDGER_QUERY_MESSAGE } from '../data'
+import type { HttpType } from '../types'
 
 type Input = HttpType.Query
 type Output = HttpType.LedgerQuery

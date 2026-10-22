@@ -15,16 +15,16 @@ import type {
   LedgerReaderProtocol,
   WalletOpeningProtocol,
   WalletReaderProtocol,
-} from '../../application/protocols'
-import { ReconciliationService } from '../../application/reconciliations'
-import type { ReconciliationsType } from '../../application/reconciliations'
-import { CLOCK, LEDGER_READER, WALLET_OPENING, WALLET_READER } from '../../application/tokens'
-import type { Ledger } from '../../domain/ledger/ledger'
-import { WALLET_NOT_FOUND_MESSAGE } from './data'
-import { LedgerQuery } from './ledger-query'
-import { LedgerOutputMapper, WalletOutputMapper } from './mappers'
-import type { HttpType } from './types'
-import { WalletBody } from './wallet-body'
+} from '../../../application/protocols'
+import { ReconciliationService } from '../../../application/reconciliations'
+import type { ReconciliationsType } from '../../../application/reconciliations'
+import { CLOCK, LEDGER_READER, WALLET_OPENING, WALLET_READER } from '../../../application/tokens'
+import type { Ledger } from '../../../domain/ledger/ledger'
+import { WALLET_NOT_FOUND_MESSAGE } from '../data'
+import { LedgerQuery } from '../queries'
+import { LedgerOutputMapper, WalletOutputMapper } from '../mappers'
+import type { HttpType } from '../types'
+import { WalletBody } from '../bodies'
 
 type CompareOutput = ReconciliationsType.CompareOutput
 

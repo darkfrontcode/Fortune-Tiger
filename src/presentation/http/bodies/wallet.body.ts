@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common'
-import { Money } from '../../domain/money/money'
-import { INVALID_WALLET_BODY_MESSAGE } from './data'
-import type { HttpType } from './types'
+import { Money } from '../../../domain/money/money'
+import { INVALID_WALLET_BODY_MESSAGE } from '../data'
+import type { HttpType } from '../types'
 
 type Input = unknown
 type Output = HttpType.WalletInput

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { BadRequestException } from '@nestjs/common'
 import { TheoryProtocol } from '../../../application/protocols'
-import { WalletBody } from '../wallet-body'
+import { WalletBody } from '../bodies'
 
 interface WalletBodyTheory<TParams> extends TheoryProtocol<TParams> {
   title: string

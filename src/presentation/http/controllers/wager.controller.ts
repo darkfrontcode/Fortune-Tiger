@@ -13,15 +13,15 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common'
-import type { ClockProtocol, WagerReaderProtocol } from '../../application/protocols'
-import { WagerService } from '../../application/transactions'
-import { CLOCK, WAGER_READER } from '../../application/tokens'
-import { AuthGuard } from './auth.guard'
-import { IDEMPOTENCY_KEY_REQUIRED_MESSAGE, WAGER_NOT_FOUND_MESSAGE } from './data'
-import { WagerInputMapper, WagerOutputMapper, WagerSubmitMapper } from './mappers'
-import type { HttpType } from './types'
-import { WagerBody } from './wager-body'
-import { WagerStatus } from './wager-status'
+import type { ClockProtocol, WagerReaderProtocol } from '../../../application/protocols'
+import { WagerService } from '../../../application/transactions'
+import { CLOCK, WAGER_READER } from '../../../application/tokens'
+import { AuthGuard } from '../guards'
+import { IDEMPOTENCY_KEY_REQUIRED_MESSAGE, WAGER_NOT_FOUND_MESSAGE } from '../data'
+import { WagerInputMapper, WagerOutputMapper, WagerSubmitMapper } from '../mappers'
+import type { HttpType } from '../types'
+import { WagerBody } from '../bodies'
+import { WagerStatus } from '../statuses'
 
 const empty = String()
 

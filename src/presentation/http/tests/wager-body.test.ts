@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { BadRequestException } from '@nestjs/common'
 import { TheoryProtocol } from '../../../application/protocols'
 import { WagerTransactionKind } from '../../../domain/wager/enums'
-import { WagerBody } from '../wager-body'
+import { WagerBody } from '../bodies'
 
 interface WagerBodyTheory<TParams> extends TheoryProtocol<TParams> {
   title: string
