@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { WagerTransactionStatus } from '@domain/wager/enums'
-import type { ReferenceGatewayProtocol, ReferenceReaderProtocol } from '../../protocols'
-import { ReferenceType } from '../types'
-import { ReferenceService } from '../reference.service'
+import type { ReferenceGatewayProtocol, ReferenceReaderProtocol } from '../../../protocols'
+import { ReferenceType } from '../../types'
+import { RetryReferencesUseCase } from '../retry-references.use-case'
 
 type DueInput = {
   at: Date
@@ -52,7 +52,7 @@ const identity = {
   skipped: 'skipped-id',
 }
 
-describe('ReferenceService', () => {
+describe('RetryReferencesUseCase', () => {
   test('WHEN due wagers exist SHOULD retry them in order and report the statuses', async () => {
     const ids = [identity.processed, identity.waiting, identity.rejected]
     const statuses = new Map<string, WagerTransactionStatus | undefined>([
@@ -62,8 +62,8 @@ describe('ReferenceService', () => {
     ])
     const reader = new Reader(ids)
     const gateway = new Gateway(statuses)
-    const service = new ReferenceService(reader, gateway)
-    const output = await service.retry({ at: instant.at, limit })
+    const useCase = new RetryReferencesUseCase(reader, gateway)
+    const output = await useCase.execute({ at: instant.at, limit })
 
     expect(gateway.calls).toEqual(ids)
     expect(reader.calls).toEqual([{ at: instant.at, limit }])
@@ -78,8 +78,8 @@ describe('ReferenceService', () => {
     ])
     const reader = new Reader(ids)
     const gateway = new Gateway(statuses)
-    const service = new ReferenceService(reader, gateway)
-    const output = await service.retry({ at: instant.at, limit })
+    const useCase = new RetryReferencesUseCase(reader, gateway)
+    const output = await useCase.execute({ at: instant.at, limit })
 
     expect(gateway.calls).toEqual(ids)
     expect(output).toEqual({ checked: 2, processed: 1, rejected: 0, waiting: 0 })
@@ -88,8 +88,8 @@ describe('ReferenceService', () => {
   test('WHEN nothing is due SHOULD return an empty report', async () => {
     const reader = new Reader([])
     const gateway = new Gateway(new Map())
-    const service = new ReferenceService(reader, gateway)
-    const output = await service.retry({ at: instant.at, limit })
+    const useCase = new RetryReferencesUseCase(reader, gateway)
+    const output = await useCase.execute({ at: instant.at, limit })
 
     expect(gateway.calls).toEqual([])
     expect(output).toEqual({ checked: 0, processed: 0, rejected: 0, waiting: 0 })

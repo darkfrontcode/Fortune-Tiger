@@ -4,8 +4,6 @@ import {
   Controller,
   Get,
   Headers,
-  HttpException,
-  HttpStatus,
   Inject,
   Param,
   Post,
@@ -13,12 +11,15 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common'
-import type { ClockProtocol, WagerReaderProtocol } from '@application/protocols'
-import { WagerService } from '@application/transactions'
+import type { ClockProtocol } from '@application/protocols'
+import {
+  FindWagerByProviderUseCase,
+  FindWagerUseCase,
+  SubmitWagerUseCase,
+} from '@application/transactions/wager/use-cases'
 import { CLOCK } from '@application/dependencies/tokens'
-import { WAGER_READER } from '@application/transactions/tokens'
 import { AuthGuard } from '../guards'
-import { IDEMPOTENCY_KEY_REQUIRED_MESSAGE, WAGER_NOT_FOUND_MESSAGE } from '../data'
+import { IDEMPOTENCY_KEY_REQUIRED_MESSAGE } from '../data'
 import type { WagerDto } from '../dtos'
 import { WagerDtoMapper, WagerInputMapper, WagerOutputMapper, WagerSubmitMapper } from '../mappers'
 import type { HttpType } from '../types'
@@ -36,8 +37,9 @@ export class WagerController {
   private readonly wagerStatus = new WagerStatus()
 
   constructor(
-    private readonly wagers: WagerService,
-    @Inject(WAGER_READER) private readonly reader: WagerReaderProtocol,
+    private readonly submitWager: SubmitWagerUseCase,
+    private readonly findWager: FindWagerUseCase,
+    private readonly findWagerByProvider: FindWagerByProviderUseCase,
     @Inject(CLOCK) private readonly clock: ClockProtocol,
   ) {}
 
@@ -54,7 +56,7 @@ export class WagerController {
     const providerId = request.provider.providerId
     const mapping = { body: parsed, providerId, idempotencyKey, at }
     const input = this.inputMapper.map(mapping)
-    const output = await this.wagers.submit(input)
+    const output = await this.submitWager.execute(input)
     const status = this.wagerStatus.of(output)
 
     response.status(status)
@@ -64,11 +66,7 @@ export class WagerController {
 
   @Get('wagering/transactions/:transactionId')
   async find(@Param('transactionId') transactionId: string): Promise<HttpType.WagerOutput> {
-    const wager = await this.reader.findById(transactionId)
-    const missing = wager === undefined
-
-    if (missing) { throw new HttpException(WAGER_NOT_FOUND_MESSAGE, HttpStatus.NOT_FOUND) }
-
+    const wager = await this.findWager.execute({ transactionId })
     return this.outputMapper.map(wager)
   }
 
@@ -77,11 +75,7 @@ export class WagerController {
     @Param('providerId') providerId: string,
     @Param('externalTransactionId') externalTransactionId: string,
   ): Promise<HttpType.WagerOutput> {
-    const wager = await this.reader.findByProviderAndExternal(providerId, externalTransactionId)
-    const missing = wager === undefined
-
-    if (missing) { throw new HttpException(WAGER_NOT_FOUND_MESSAGE, HttpStatus.NOT_FOUND) }
-
+    const wager = await this.findWagerByProvider.execute({ providerId, externalTransactionId })
     return this.outputMapper.map(wager)
   }
 

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
 import { IdempotencyService } from '@application/idempotencies/idempotency.service'
-import { ReconciliationService } from '@application/reconciliations/reconciliation.service'
+import { ReconcileWalletUseCase } from '@application/reconciliations/use-cases'
 import type { LoggerProtocol, MetricProtocol } from '@application/protocols'
 import { WagerMediator } from '@application/transactions/wager/mediators/wager.mediator'
 import { Money } from '@domain/money/money'
@@ -35,7 +35,7 @@ class Suite {
 
   static writer: WalletOpeningWriter
 
-  static service: ReconciliationService
+  static useCase: ReconcileWalletUseCase
 }
 
 beforeAll(async () => {
@@ -45,7 +45,7 @@ beforeAll(async () => {
   const logger = new Logger()
   const metric = new Metric()
 
-  Suite.service = new ReconciliationService(gateway, logger, metric)
+  Suite.useCase = new ReconcileWalletUseCase(gateway, logger, metric)
 })
 
 beforeEach(async () => {
@@ -70,7 +70,8 @@ describe('Reconciliation reader', () => {
 
     Suite.orm.em.clear()
 
-    const output = await Suite.service.reconcile(wallet.id)
+    const reconciliationInput = { walletId: wallet.id }
+    const output = await Suite.useCase.execute(reconciliationInput)
 
     expect(output).toEqual({
       walletId: wallet.id,

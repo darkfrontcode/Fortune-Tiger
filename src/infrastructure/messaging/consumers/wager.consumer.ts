@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { WagerService } from '@application/transactions'
+import { SubmitWagerUseCase } from '@application/transactions/wager/use-cases'
 import { WagerRequestMapper } from '../mappers'
 import { WagerRequest } from '../messages'
 import { CONSUMER_NAME } from './consumer-name.token'
@@ -11,7 +11,7 @@ const maxAttempts = 5
 @Injectable()
 export class WagerConsumer {
   constructor(
-    private readonly service: WagerService,
+    private readonly submitWager: SubmitWagerUseCase,
     private readonly mapper: WagerRequestMapper,
     @Inject(CONSUMER_NAME) private readonly consumerName: string,
   ) {}
@@ -34,7 +34,7 @@ export class WagerConsumer {
     try {
       const mapped = this.mapper.map({ request, receivedAt: at, consumerName: this.consumerName })
 
-      await this.service.submit(mapped)
+      await this.submitWager.execute(mapped)
 
       return ConsumerOutcome.ACK
     } catch {

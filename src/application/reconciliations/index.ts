@@ -1,5 +1,5 @@
 export * from './tokens'
 export * from './patterns'
-export * from './reconciliation.service'
+export * from './use-cases'
 export * from './reconciliations.module'
 export * from './types'

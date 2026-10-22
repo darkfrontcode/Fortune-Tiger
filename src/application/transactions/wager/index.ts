@@ -1,3 +1,3 @@
 export * from './mediators'
 export * from './types'
-export * from './wager.service'
+export * from './use-cases'

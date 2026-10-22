@@ -2,7 +2,7 @@ import { SQSClient } from '@aws-sdk/client-sqs'
 import type { ClockProtocol, LoggerProtocol } from '@application/protocols'
 import { IdempotencyService } from '@application/idempotencies'
 import { WagerMediator } from '@application/transactions/wager/mediators'
-import { WagerService } from '@application/transactions'
+import { SubmitWagerUseCase } from '@application/transactions/wager/use-cases'
 import { WagerEventsMapper, WagerRequestMapper } from '../../messaging/mappers'
 import { SqsConsumer, SqsQueue, WagerConsumer } from '../../messaging/consumers'
 import type { ConsumerType } from '../../messaging/consumers'
@@ -66,9 +66,9 @@ const run = async (): Promise<void> => {
     new WagerEventsMapper(),
     new WagerMediator(),
   )
-  const service = new WagerService(writer, idempotency)
+  const useCase = new SubmitWagerUseCase(writer, idempotency)
   const mapper = new WagerRequestMapper()
-  const wager = new WagerConsumer(service, mapper, consumerName)
+  const wager = new WagerConsumer(useCase, mapper, consumerName)
   const clock: ClockProtocol = { now: () => new Date(receivedAt) }
   const logger: LoggerProtocol = { warn: () => undefined }
   const client = new SQSClient({ region })

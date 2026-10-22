@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common'
 import { PersistenceModule } from '@infrastructure/persistence'
-import { ReferenceService } from './reference.service'
+import { RetryReferencesUseCase } from './use-cases'
 
 @Module({
   imports: [PersistenceModule],
-  providers: [ReferenceService],
-  exports: [ReferenceService],
+  providers: [RetryReferencesUseCase],
+  exports: [RetryReferencesUseCase],
 })
 export class ReferencesModule {}

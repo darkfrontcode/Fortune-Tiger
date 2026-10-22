@@ -1,24 +1,22 @@
-import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common'
-import type { ReadinessProtocol } from '@application/protocols'
+import { Inject, Injectable } from '@nestjs/common'
+import type { ReadinessProtocol } from '../../protocols'
 import { READINESS } from '../tokens'
+import { HealthReadinessError } from './health-readiness.error'
 import { HealthStatus } from '../enums'
 import type { HealthType } from '../types'
 
+type Output = Promise<HealthType.Output>
+
 @Injectable()
-export class HealthService {
+export class CheckHealthReadinessUseCase {
   constructor(@Inject(READINESS) private readonly readiness: Array<ReadinessProtocol>) {}
 
-  live(): HealthType.Output {
-    return { status: HealthStatus.LIVE }
-  }
-
-  async ready(): Promise<HealthType.Output> {
-    const states = await Promise.all(this.readiness.map(this.ask))
+  async execute(): Output {
+    const checks = this.readiness.map(this.ask)
+    const states = await Promise.all(checks)
     const ready = states.every(this.answered)
 
-    if (!ready) {
-      throw new ServiceUnavailableException({ status: HealthStatus.UNAVAILABLE })
-    }
+    if (!ready) { throw new HealthReadinessError() }
 
     return { status: HealthStatus.READY }
   }
