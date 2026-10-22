@@ -35,6 +35,7 @@ The application is the coordinator. It gives the same wager rules to requests fr
 - 🔁 Send the same request again with the same key, and it returns the original result instead of charging twice.
 - 🧾 Reuse that key for different details, and the request is flagged as a conflict.
 - 🔎 Missing references can be checked again later; reconciliation compares the wallet with its ledger without silently changing either.
+- 🧩 Injection tokens live with their owning module; shared dependencies live under `application/dependencies/tokens`.
 
 </details>
 

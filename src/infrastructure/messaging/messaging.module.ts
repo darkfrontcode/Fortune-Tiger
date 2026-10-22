@@ -1,6 +1,5 @@
 import { SQSClient } from '@aws-sdk/client-sqs'
 import { Module } from '@nestjs/common'
-import { PUBLISHER } from '@application/tokens'
 import { TransactionsModule } from '@application/transactions'
 import { Environment, EnvironmentModule } from '../environment'
 import { ObservabilityModule } from '../observability'
@@ -9,6 +8,7 @@ import { CONSUMER_NAME, QueueReadiness, SqsConsumer, SqsQueue, WagerConsumer } f
 import { QUEUE_CONFIG, createQueueConfig, createSqsClient } from './factories'
 import { WagerRequestMapper } from './mappers'
 import { OutboxPublisher, OutboxWorker, SqsPublisher } from './publishers'
+import { PUBLISHER } from './tokens'
 
 const consumerName = 'wager'
 

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { ClockProtocol, LoggerProtocol } from '@application/protocols'
-import { CLOCK, LOGGER } from '@application/tokens'
+import { CLOCK, LOGGER } from '@application/dependencies/tokens'
 import { ConsumerOutcome } from './enums'
 import { SqsQueue } from './sqs.queue'
 import type { ConsumerType } from './types'

@@ -4,6 +4,8 @@ The scheduled retry of a wager that is waiting for its reference.
 
 `reference.service.ts` defines `ReferenceService.retry`. It receives `{ at, limit }`, asks `ReferenceReaderProtocol.due` for the due transaction ids, and calls `ReferenceGatewayProtocol.retry` in order. It returns `{ checked, processed, rejected, waiting }`.
 
+`REFERENCE_READER` and `REFERENCE_GATEWAY` live in this context's `tokens/` folder.
+
 `ReferenceMediator.retry` (in `transactions/wager/mediators/`) decides one due wager inside the SQL transaction:
 
 - a reference that is absent or not terminal calls `wager.scheduleRetry(at)`;

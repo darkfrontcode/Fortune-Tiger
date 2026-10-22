@@ -26,7 +26,7 @@ A plug-in contract. The folder is `protocols`, inside `application`. The file ro
 
 `ClockProtocol` is the injectable clock. `now` returns a `Date`. `SystemClock` implements it in `src/infrastructure/observability`.
 
-A protocol carries no runtime value. The container identity of a port is a token, and the tokens live in `src/application/tokens`, one file each, with the `UPPER_SNAKE_CASE` name of the protocol without the suffix. A consumer injects the token and never the adapter class. `tokens/spec.md` lists them.
+A protocol carries no runtime value. The container identity of a port is a token. Each token lives in the `tokens/` folder of its owning module, one file each, with the `UPPER_SNAKE_CASE` name of the protocol without the suffix. Cross-cutting application tokens live in `src/application/dependencies/tokens`. A consumer injects the token and never the adapter class.
 
 `ReadinessProtocol` has one method, `check`, and answers whether one dependency is reachable. `DatabaseReadiness` in `src/infrastructure/persistence` and `QueueReadiness` in `src/infrastructure/messaging` implement it. `HealthService` composes them, and that is how the readiness probe reaches Postgres and SQS.
 

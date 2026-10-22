@@ -17,6 +17,8 @@ The queue URL and the client come from `Environment`. `DATABASE_URL` stays with 
 
 `health.module.ts` imports `PersistenceModule` and `MessagingModule`, declares the controller, and provides `HealthService`. The service is `@Injectable()` and receives `READINESS` by token; the module binds that token with `useFactory` over `DatabaseReadiness` and `QueueReadiness`. The service keeps its `Array<ReadinessProtocol>` constructor and the probes stay out of the controller.
 
+`READINESS` lives in the health module's `tokens/` folder.
+
 ## Boot
 
 `src/main.ts` reads the port from `Environment`, default `3000`, and enables the shutdown hooks, so `SIGTERM` and `SIGINT` close the application.
