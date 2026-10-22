@@ -1,11 +1,11 @@
-import type { GuardProtocol } from '@application/protocols'
+
 import { LedgerDirection } from '../enums'
 import type { LedgerType } from '../types'
 
 type Input = LedgerType.Movement
 type Output = boolean
 
-export class LedgerMovementGuard implements GuardProtocol<Input, Output> {
+export class LedgerMovementGuard {
   guard(input: Input): Output {
     const { direction, money, balanceBefore, balanceAfter } = input
 

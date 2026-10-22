@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '@application/protocols'
+import type { Theory } from '@infrastructure/protocols'
 import { REFERENCE_REQUIRED_MESSAGE } from '../../data'
 import { WagerTransactionKind } from '../../enums'
 import { WagerReferenceGuard } from '../wager-reference.guard'
 
-interface WagerReferenceTheory<TParams> extends TheoryProtocol<TParams> {
+interface WagerReferenceTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

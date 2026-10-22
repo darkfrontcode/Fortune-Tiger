@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { TheoryProtocol } from '../../../protocols'
+import type { Theory } from '@infrastructure/protocols'
 import { Money } from '@domain/money/money'
 import { WagerTransactionKind } from '@domain/wager/enums'
 import { IdempotencyType } from '../../types'
 import { PayloadHashPattern } from '../payload-hash.pattern'
 
-interface PayloadHashTheory<TParams> extends TheoryProtocol<TParams> {
+interface PayloadHashTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

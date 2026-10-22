@@ -9,12 +9,12 @@ Work in progress. Check items off as they land.
 
 ## Application
 
-- [ ] **Application layer refactor** — revisit folder shape and wiring across `transactions`, `reconciliations`, and `idempotencies` (barrels, types placement, gateway vs service boundaries). Today services are plain classes with constructor injection of protocols; when Nest boots, expect `@Injectable()` modules, providers for gateways/logger/metric, and removal of ad hoc `new` in tests where a test module fits. Do not block current phases on this, but treat the layout as provisional until HTTP and DI land. Landed: `@Injectable()` and module wiring for the use cases, gateways, logger, metric, and readers. The folder and type placement stays open, tracked below.
+- [x] **Application layer refactor** — reorganize application ports and tokens by owning capability (`wagers`, `wallets`, `references`, `reconciliations`, `idempotencies`, `health`, `observability`, `time`), eliminate global `protocols` catch-all, move `PublisherProtocol` to infrastructure messaging, `ProviderIdentityProtocol` to HTTP presentation, move `Theory` to root `test-support/`, remove domain dependencies on application, and rename `transactions/wager` to `wagers`.
 - [ ] **Search application transactions** — implement the use case (query/list wager transactions in the application layer).
 
-## Wager (`src/application/transactions/wager`)
+## Wager (`src/application/wagers`)
 
-- [ ] **Types location** — `TransactionsType` lives in `src/application/transactions/types.ts`; it belongs inside the wager folder (per concept-local `types.ts` convention).
+- [x] **Types location** — `WagersType` lives in `src/application/wagers/types.ts` (per concept-local `types.ts` convention).
 - [ ] **File naming** — `wager.move.ts` and `wager.reference.ts` need clearer names aligned with project naming (role suffix, single responsibility).
 
 ## Guards (`src/domain`, `src/application/idempotencies`)

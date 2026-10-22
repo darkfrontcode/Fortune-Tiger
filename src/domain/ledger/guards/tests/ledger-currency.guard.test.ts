@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '@application/protocols'
+import type { Theory } from '@infrastructure/protocols'
 import { Money } from '../../../money/money'
 import { LedgerDirection } from '../../enums'
 import { LedgerCurrencyGuard } from '../ledger-currency.guard'
 
-interface LedgerCurrencyTheory<TParams> extends TheoryProtocol<TParams> {
+interface LedgerCurrencyTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

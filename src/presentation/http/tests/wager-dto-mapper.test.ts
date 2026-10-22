@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import { BadRequestException } from '@nestjs/common'
-import { TheoryProtocol } from '@application/protocols'
+import { Theory } from '@infrastructure/protocols'
 import { WagerTransactionKind } from '@domain/wager/enums'
 import type { WagerDto } from '../dtos'
 import { WagerDtoMapper } from '../mappers'
 
-interface WagerDtoMapperTheory<TParams> extends TheoryProtocol<TParams> {
+interface WagerDtoMapperTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

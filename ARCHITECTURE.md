@@ -14,7 +14,7 @@ The spec sits next to the code it describes. A `spec.md` is written in English b
 
 Clean Architecture is here so an evaluator, or the evaluator's assistant, can open the repository and see what each folder is. Simple names. Few files. Small files.
 
-A folder name is one word, plural, with no hyphen: `transactions`, `reconciliations`, `idempotencies`. Application use cases live in `use-cases/` with one `{action}.use-case.ts` per operation; reusable responsibilities such as idempotency remain services. A Nest role stays as a suffix (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain folders stay the business word: `money`, `wallet`, `ledger`, `wager`.
+A folder name is one word, plural, with no hyphen: `wagers`, `wallets`, `references`, `reconciliations`, `idempotencies`. Application use cases live in `use-cases/` with one `{action}.use-case.ts` per operation; reusable responsibilities such as idempotency remain services. A Nest role stays as a suffix (`health.controller.ts`). A hyphen does not sit in the middle of the concept. Domain folders stay the business word: `money`, `wallet`, `ledger`, `wager`.
 
 Clean code: one responsibility per class. A name is one English word and says what is being checked. A message constant is the exception: `UPPER_SNAKE_CASE` ending with `_MESSAGE`. A string with meaning is a `const` at the top of the file, never loose; the same literal on two lines is one constant. A class name may join the concept, the subject, and the role, as in `MoneyAmountGuard` and `MoneyAmountPattern`. No `BaseManager`, `CommonService`, or `GenericHelper`.
 
@@ -24,7 +24,7 @@ A design pattern is used only when it solves a problem in this challenge. The st
 
 Cross-layer imports use the TypeScript path aliases `@application/*`, `@domain/*`, `@infrastructure/*`, and `@presentation/*`, with subpaths such as `@domain/money`. These aliases are configured in `tsconfig.json` and resolved by Bun.
 
-There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. Plug-in contracts live in `application/protocols`. Domain and presentation do not have a `protocols` folder.
+There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. Application ports live beside the capability that consumes them. Cross-cutting application ports have explicit `observability` and `time` owners. Infrastructure-internal and presentation-specific contracts live beside their consumers. The domain does not import application.
 
 ## Protocols
 
@@ -36,7 +36,7 @@ interface MapperProtocol<Input, Output> {
 }
 ```
 
-`Mapper` is the naming example. It is not a type in this project. A protocol exists only when something is plugged in. The file lives in `application/protocols`. A concept folder does not hold a protocol. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol`, `PatternProtocol`, and `GuardProtocol` live there. `index.ts` reexports that folder. Callers import the folder.
+`MapperProtocol` defines the mapping contract for adapters in presentation and messaging (`mappers/mapper.protocol.ts`). Application ports live in the `protocols/` folder of the capability that consumes them, with a local `index.ts` and `spec.md`. The clock belongs to application `time`; logger and metric belong to application `observability`; readiness belongs to application `health`. Provider identity belongs beside the presentation HTTP provider, and publisher belongs beside its infrastructure messaging consumer. Domain guards and patterns are concrete rules, not application protocols.
 
 The domain is only `money`, `wallet`, `ledger`, and `wager`. Inbox, outbox, and the event envelope are sections of `messaging/spec.md`.
 
@@ -48,11 +48,11 @@ The domain folder is the concept, and the file is the concept: `ledger/ledger.ts
 
 Types of one concept live in `types.ts` beside that concept, in one `export namespace` named `{Concept}Type`. `Schema` is the state. `Input` and `Output` are the other shapes. The word `props` is not a type name and not a parameter name. The file that uses the namespace aliases each name at the top.
 
-Error text of a concept lives in `data/messages.data.ts` inside that concept. One constant per phrase. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports the file with `export *`. Callers import the folder. The domain imports only `application/protocols`, not use cases. An enum lives in `enums/`, one file per enum: `failure-code.enum.ts`. `enums/index.ts` reexports it. A map lives in `maps/`: `transition.map.ts` extends `Map`.
+Error text of a concept lives in `data/messages.data.ts` inside that concept. One constant per phrase. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports the file with `export *`. Callers import the folder. The domain has no application imports. An enum lives in `enums/`, one file per enum: `failure-code.enum.ts`. `enums/index.ts` reexports it. A map lives in `maps/`: `transition.map.ts` extends `Map`.
 
-Two rules that share one contract live in `patterns` inside the concept. Each rule is a class in `{subject}.pattern.ts`, as in `amount.pattern.ts`. The class name ends with `Pattern`, as in `MoneyAmountPattern`. The expression is a `private readonly` property on that class. It is not a method and not a `const` above the class. `patterns/index.ts` reexports the classes with `export *`. The contract is `PatternProtocol`, in `application/protocols`, file `pattern.protocol.ts`. It has an input and an output. A concept folder does not hold a protocol.
+Two rules that share one concept live in `patterns` inside the concept. Each rule is a class in `{subject}.pattern.ts`, as in `amount.pattern.ts`. The class name ends with `Pattern`, as in `MoneyAmountPattern`. The expression is a `private readonly` property on that class. It is not a method and not a `const` above the class. `patterns/index.ts` reexports the classes with `export *`. Patterns are concrete domain rules and do not implement an application protocol.
 
-A rule that refuses or answers lives in `guards` inside the concept or the use case that owns it. One rule per class, in `{subject}.guard.ts`, as in `money-amount.guard.ts`. The class name joins the concept, the subject, and the role, as in `MoneyAmountGuard`. Every class implements `GuardProtocol`, in `application/protocols`, file `guard.protocol.ts`, and the method is `guard`: a guard that refuses returns nothing and throws, and a guard that only answers returns a `boolean`. The owner holds one instance, as a `const` at the top of the concept file or as a `private readonly` property. A guard does not build the entity, and the owner asks it instead of restating the rule. A guard may hold other guards inside when the rule is composed, as `LedgerBalanceGuard` does: it asks the inner guard instead of repeating the inner rule. Each guard stays individual: one rule per class, and no inner rule restated. The input of a composite guard is a type in `types.ts` of that concept. A guard holds no optional field. `guards/index.ts` reexports the classes with `export *`, the concept keeps its own `guards/spec.md`, and each guard has a spec in `guards/tests/{subject}.guard.test.ts`. A concept barrel does not reexport `guards`: the concept uses the guard, and the caller uses the entity.
+A rule that refuses or answers lives in `guards` inside the concept or the use case that owns it. One rule per class, in `{subject}.guard.ts`, as in `money-amount.guard.ts`. The class name joins the concept, the subject, and the role, as in `MoneyAmountGuard`. Its method is `guard`: a guard that refuses returns nothing and throws, and a guard that only answers returns a `boolean`. The owner holds one instance, as a `const` at the top of the concept file or as a `private readonly` property. A guard does not build the entity, and the owner asks it instead of restating the rule. A guard may hold other guards inside when the rule is composed, as `LedgerBalanceGuard` does: it asks the inner guard instead of repeating the inner rule. Each guard stays individual: one rule per class, and no inner rule restated. The input of a composite guard is a type in `types.ts` of that concept. A guard holds no optional field. `guards/index.ts` reexports the classes with `export *`, the concept keeps its own `guards/spec.md`, and each guard has a spec in `guards/tests/{subject}.guard.test.ts`. A concept barrel does not reexport `guards`: the concept uses the guard, and the caller uses the entity.
 
 ## Score
 
@@ -106,6 +106,7 @@ src/
     AGENTS.md
     health/
       enums/
+      protocols/
       tokens/
       use-cases/tests/
     idempotencies/
@@ -113,20 +114,31 @@ src/
       guards/tests/
       patterns/tests/
       tests/
-    wallets/
-      use-cases/
-        tests/
-    protocols/
+    observability/
+      protocols/
+      tokens/
+    references/
+      protocols/
+      tokens/
+      use-cases/tests/
     reconciliations/
       data/
       patterns/
+      protocols/
+      tokens/
       use-cases/tests/
-    references/use-cases/tests/
-    tokens/
-    transactions/wager/
+    time/
+      tokens/
+    wallets/
+      protocols/
+      tokens/
+      use-cases/tests/
+    wagers/
       data/
       mediators/tests/
+      protocols/
       strategies/
+      tokens/
       use-cases/tests/
   infrastructure/
     AGENTS.md
@@ -172,15 +184,15 @@ src/
 
 `main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` imports the layer modules, and `runtime.service.ts` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.
 
-Files follow the Nest name (`health.controller.ts`, `health.module.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, `patterns/` holds the rule classes, and `guards/` holds one class per rule with its own `spec.md`. A protocol stays in `application/protocols`; its token lives in a `tokens/` folder under the owning module, with one `Symbol` per file and an `index.ts` barrel. Unit tests live in `tests/` next to the module they cover. The file is `{subject}.test.ts`. Production barrels do not reexport tests.
+Files follow the Nest name (`health.controller.ts`, `health.module.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, `patterns/` holds concrete rule classes, and `guards/` holds one class per rule with its own `spec.md`. Application ports live in the consuming capability's `protocols/` folder; adapter-internal contracts and presentation-specific extension contracts stay with their consumer. A port token lives in a `tokens/` folder under the owning module, with one `Symbol` per file and an `index.ts` barrel. Unit tests live in `tests/` next to the module they cover. The file is `{subject}.test.ts`. Production barrels do not reexport tests.
 
 ## Composition
 
-A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, and `health.module.ts` build the adapters and the controller. `http.module.ts` provides wallet use cases alongside the HTTP controller and persistence ports. `transactions.module.ts`, `reconciliations.module.ts`, and `references.module.ts` build their use cases.
+A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, and `health.module.ts` build the adapters and the controller. `http.module.ts` provides wallet use cases alongside the HTTP controller and persistence ports. `wagers.module.ts`, `reconciliations.module.ts`, and `references.module.ts` build their use cases.
 
-A port is a protocol plus a token. The protocol is the contract and carries no runtime value. The token is one `Symbol` in `tokens/` under its owning module, one file each, named after the protocol without the suffix. Cross-cutting application tokens live in `application/dependencies/tokens`. The owning module binds the token with `useExisting`, so one instance answers to both names, and the consumer injects only the token.
+A port is a protocol plus a token. The protocol is the contract and carries no runtime value. The token is one `Symbol` in `tokens/` under its owning module, one file each, named after the protocol without the suffix. Cross-cutting application tokens live with their `observability` or `time` contracts. The owning module binds the token with `useExisting`, so one instance answers to both names, and the consumer injects only the token.
 
-`src/app.module.ts` imports the modules and wires only what spans layers: `ReferenceWorker` and `RuntimeService`. It holds no adapter and no use case. A module imports the module whose provider it needs, and that import is the composition edge: the arrow points outward there, and nowhere else. Inside a layer the code imports protocols, never adapters.
+`src/app.module.ts` imports the modules and wires only what spans layers: `ReferenceWorker` and `RuntimeService`. It holds no adapter and no use case. A module imports the module whose provider it needs, and that import is the composition edge: the arrow points outward there, and nowhere else. Inside application, consumers import their owned protocols, never adapters.
 
 ## Injection
 

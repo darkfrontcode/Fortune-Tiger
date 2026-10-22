@@ -1,10 +1,10 @@
-import type { GuardProtocol } from '../../../application/protocols'
+
 import type { IdempotencyType } from '../types'
 
 type Input = IdempotencyType.Hash
 type Output = boolean
 
-export class IdempotencyHashGuard implements GuardProtocol<Input, Output> {
+export class IdempotencyHashGuard {
   guard(input: Input): Output {
     const { stored, incoming } = input
 

@@ -1,3 +1,4 @@
 export * from './use-cases'
+export * from './protocols'
 export * from './wallet-not-found.error'
 export * from './tokens'

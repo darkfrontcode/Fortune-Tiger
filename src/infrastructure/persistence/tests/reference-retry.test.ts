@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
-import { ReferenceMediator } from '@application/transactions/wager/mediators/reference.mediator'
-import { WagerMediator } from '@application/transactions/wager/mediators/wager.mediator'
+import { ReferenceMediator } from '@application/wagers/mediators'
+import { WagerMediator } from '@application/wagers/mediators'
 import { Money } from '@domain/money/money'
 import { Wallet } from '@domain/wallet/wallet'
 import {

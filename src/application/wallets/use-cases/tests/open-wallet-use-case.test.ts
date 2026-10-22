@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import type { ClockProtocol, WalletOpeningInput, WalletOpeningProtocol } from '@application/protocols'
+import type { ClockProtocol } from '@application/time'
+import type { WalletOpeningInput, WalletOpeningProtocol } from '@application/wallets'
 import { Money } from '@domain/money/money'
 import { Wallet } from '@domain/wallet/wallet'
 import { OpenWalletUseCase } from '../open-wallet.use-case'

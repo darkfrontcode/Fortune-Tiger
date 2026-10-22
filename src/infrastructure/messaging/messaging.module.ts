@@ -1,6 +1,6 @@
 import { SQSClient } from '@aws-sdk/client-sqs'
 import { Module } from '@nestjs/common'
-import { TransactionsModule } from '@application/transactions'
+import { WagersModule } from '@application/wagers'
 import { Environment, EnvironmentModule } from '../environment'
 import { ObservabilityModule } from '../observability'
 import { PersistenceModule } from '../persistence'
@@ -12,7 +12,7 @@ import { PUBLISHER } from './tokens'
 
 const consumerName = 'wager'
 
-const moduleImports = [EnvironmentModule, ObservabilityModule, PersistenceModule, TransactionsModule]
+const moduleImports = [EnvironmentModule, ObservabilityModule, PersistenceModule, WagersModule]
 const moduleExports = [OutboxWorker, SqsConsumer, QueueReadiness]
 const clientDependencies = [Environment]
 

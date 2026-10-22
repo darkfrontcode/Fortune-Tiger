@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common'
-import type { MapperProtocol } from '@application/protocols'
 import type { Ledger } from '@domain/ledger/ledger'
 import type { Wallet } from '@domain/wallet/wallet'
 import { WagerTransactionStatus } from '@domain/wager/enums'
@@ -12,6 +11,7 @@ import {
 } from '../events'
 import type { IntegrationEventType } from '../events'
 import { OutboxMessage } from '../messages'
+import type { MapperProtocol } from './mapper.protocol'
 
 type Context = IntegrationEventType.Context
 

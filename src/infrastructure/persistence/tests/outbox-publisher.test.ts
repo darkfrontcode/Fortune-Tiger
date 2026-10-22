@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
-import type { Published, PublisherProtocol } from '@application/protocols'
+import type { Published, PublisherProtocol } from '@infrastructure/messaging/publishers'
 import { OutboxMessage } from '../../messaging/messages'
 import { OutboxPublisher } from '../../messaging/publishers/outbox.publisher'
 import { OutboxMessageEntity } from '../outbox'

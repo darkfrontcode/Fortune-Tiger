@@ -23,7 +23,7 @@ The queue URL and the client come from `Environment`. `DATABASE_URL` stays with 
 
 `src/main.ts` reads the port from `Environment`, default `3000`, and enables the shutdown hooks, so `SIGTERM` and `SIGINT` close the application.
 
-`src/app.module.ts` imports `ObservabilityModule`, `PersistenceModule`, `TransactionsModule`, `ReferencesModule`, `MessagingModule`, and `HealthModule`. It provides only what spans layers: `ReferenceWorker` and `RuntimeService`, both `@Injectable()`. `RuntimeService` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. No migration runs at boot, and no adapter is built at the root.
+`src/app.module.ts` imports `ObservabilityModule`, `PersistenceModule`, `WagersModule`, `ReferencesModule`, `MessagingModule`, and `HealthModule`. It provides only what spans layers: `ReferenceWorker` and `RuntimeService`, both `@Injectable()`. `RuntimeService` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. No migration runs at boot, and no adapter is built at the root.
 
 `LOG_PRETTY` is read once by `Environment` and given to `SimpleLogger` by `ObservabilityModule`. Nest keeps its own startup line; the application log is `SimpleLogger`.
 

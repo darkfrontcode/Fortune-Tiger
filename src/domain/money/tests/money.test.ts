@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import { TheoryProtocol } from '@application/protocols'
+import { Theory } from '@infrastructure/protocols'
 import { Money } from '../money'
 
-interface MoneyTheory<TParams> extends TheoryProtocol<TParams> {
+interface MoneyTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

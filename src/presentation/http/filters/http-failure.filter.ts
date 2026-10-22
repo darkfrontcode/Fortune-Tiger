@@ -1,13 +1,13 @@
 import { Catch, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common'
 import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common'
-import type { LoggerProtocol } from '@application/protocols'
+import type { LoggerProtocol } from '@application/observability'
 import { WalletNotFoundError } from '@application/wallets'
 import { HealthReadinessError, HealthStatus } from '@application/health'
 import {
   WalletReconciliationNotFoundError,
 } from '@application/reconciliations/use-cases'
-import { WagerNotFoundError } from '@application/transactions/wager/use-cases'
-import { LOGGER } from '@application/dependencies/tokens'
+import { WagerNotFoundError } from '@application/wagers/use-cases'
+import { LOGGER } from '@application/observability'
 import { WALLET_PLAYER_CURRENCY_CONFLICT_MESSAGE } from '@infrastructure/persistence/data'
 import { INFRASTRUCTURE_FAILURE_MESSAGE } from '../data'
 import type { HttpType } from '../types'

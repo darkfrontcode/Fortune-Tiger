@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common'
-import type { ReadinessProtocol } from '@application/protocols'
+import type { ReadinessProtocol } from '@application/health'
 import {
   CheckHealthLivenessUseCase,
   CheckHealthReadinessUseCase,

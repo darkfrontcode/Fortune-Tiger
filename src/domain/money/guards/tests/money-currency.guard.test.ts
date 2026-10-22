@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '@application/protocols'
+import type { Theory } from '@infrastructure/protocols'
 import { INVALID_CURRENCY_MESSAGE } from '../../data'
 import { MoneyCurrencyGuard } from '../money-currency.guard'
 
-interface MoneyCurrencyTheory<TParams> extends TheoryProtocol<TParams> {
+interface MoneyCurrencyTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

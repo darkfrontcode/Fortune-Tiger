@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { CanActivate, ExecutionContext } from '@nestjs/common'
-import type { ProviderIdentityProtocol } from '@application/protocols'
+import type { ProviderIdentityProtocol } from '@presentation/http/providers'
 import { PROVIDER_IDENTITY } from '../tokens'
 import type { HttpType } from '../types'
 

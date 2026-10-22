@@ -1,12 +1,12 @@
 import { Money } from '@domain/money/money'
 import { LedgerDirection } from '@domain/ledger/enums'
 import type { Ledger } from '@domain/ledger/ledger'
-import type { PatternProtocol } from '../../protocols'
+
 import { ReconciliationsType } from '../types'
 
 type Input = ReconciliationsType.LedgerBalanceInput
 
-export class LedgerBalancePattern implements PatternProtocol<Input, Money> {
+export class LedgerBalancePattern {
   test(input: Input): Money {
     const zero = Money.zero(input.currency)
     const foldLedger = (balance: Money, ledger: Ledger) => LedgerBalancePattern.fold(balance, ledger)

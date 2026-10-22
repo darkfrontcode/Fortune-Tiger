@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '../../../protocols'
+import type { Theory } from '@infrastructure/protocols'
 import { IdempotencyHashGuard } from '../idempotency-hash.guard'
 
-interface IdempotencyHashTheory<TParams> extends TheoryProtocol<TParams> {
+interface IdempotencyHashTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

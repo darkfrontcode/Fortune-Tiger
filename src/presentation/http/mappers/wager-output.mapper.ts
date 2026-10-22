@@ -1,6 +1,6 @@
-import type { MapperProtocol } from '@application/protocols'
 import type { WagerTransaction } from '@domain/wager/wager'
 import type { HttpType } from '../types'
+import type { MapperProtocol } from './mapper.protocol'
 
 type Input = WagerTransaction
 type Output = HttpType.WagerOutput

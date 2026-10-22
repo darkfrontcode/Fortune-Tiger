@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '@application/protocols'
+import type { Theory } from '@infrastructure/protocols'
 import { WagerTransactionStatus } from '../../enums'
 import { WagerTerminalGuard } from '../wager-terminal.guard'
 
-interface WagerTerminalTheory<TParams> extends TheoryProtocol<TParams> {
+interface WagerTerminalTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

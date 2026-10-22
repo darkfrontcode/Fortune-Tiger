@@ -1,11 +1,11 @@
-import type { GuardProtocol } from '@application/protocols'
+
 import { INVALID_CURRENCY_MESSAGE } from '../data'
 import { MoneyCurrencyPattern } from '../patterns'
 
 type Input = string
 type Output = void
 
-export class MoneyCurrencyGuard implements GuardProtocol<Input, Output> {
+export class MoneyCurrencyGuard {
   private readonly pattern = new MoneyCurrencyPattern()
 
   guard(input: Input): Output {

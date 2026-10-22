@@ -42,7 +42,7 @@ A replay answers `200` even when the stored wager is `REJECTED`: the body is the
 
 ## Auth
 
-Decision: no identity provider. `AuthGuard` is the extension point and allows every request. `ProviderIdentityProtocol`, in `src/application/protocols`, resolves the provider of the request; `AnonymousProviderIdentity` reads the `X-Provider-Id` header and falls back to the `providerId` of the body, so the caller is trusted. A real identity provider replaces that class and the guard starts to refuse.
+Decision: no identity provider. `AuthGuard` is the extension point and allows every request. `ProviderIdentityProtocol`, beside the HTTP provider, resolves the provider of the request; `AnonymousProviderIdentity` reads the `X-Provider-Id` header and falls back to the `providerId` of the body, so the caller is trusted. A real identity provider replaces that class and the guard starts to refuse.
 
 Health stays open. The queue is an internal channel, and the provider identity inside a message still goes through domain rules.
 
@@ -50,11 +50,11 @@ Keycloak is out.
 
 ## Module
 
-`http.module.ts` imports `PersistenceModule`, `TransactionsModule`, `ReconciliationsModule`, and `ObservabilityModule`. It declares `WalletController` and `WagerController`, and provides `OpenWalletUseCase`, `FindWalletUseCase`, and `ListWalletLedgerUseCase`; `ReconcileWalletUseCase` comes from `ReconciliationsModule`. `AuthGuard` is applied to `WagerController`, and `PROVIDER_IDENTITY` is bound to `AnonymousProviderIdentity`; its token lives in this module's `tokens/` folder. `WalletController` receives wallet use cases by class. `WagerController` receives its three route use cases by class and `CLOCK` by token. Cross-cutting `CLOCK` and `LOGGER` tokens live in `application/dependencies/tokens`.
+`http.module.ts` imports `PersistenceModule`, `WagersModule`, `ReconciliationsModule`, and `ObservabilityModule`. It declares `WalletController` and `WagerController`, and provides `OpenWalletUseCase`, `FindWalletUseCase`, and `ListWalletLedgerUseCase`; `ReconcileWalletUseCase` comes from `ReconciliationsModule`. `AuthGuard` is applied to `WagerController`, and `PROVIDER_IDENTITY` is bound to `AnonymousProviderIdentity`; its token lives in this module's `tokens/` folder. `WalletController` receives wallet use cases by class. `WagerController` receives its three route use cases by class and `CLOCK` by token. `CLOCK` lives in `application/time/tokens`; `LOGGER` lives in `application/observability/tokens`.
 
 `wager.dto.ts` and `wallet.dto.ts` in `dtos/` declare the request shape with `class-validator` decorators. The Nest `ValidationPipe` in `main.ts` validates every `@Body()` against the DTO class and answers `400` on mismatch. After validation, `WagerDtoMapper` and `WalletDtoMapper` in `mappers/` convert the validated DTO into `HttpType.WagerInput` and `HttpType.WalletInput` — building domain `Money` and checking cross-field rules (reference required for `REFUND`/`ROLLBACK`). A missing `Idempotency-Key` answers `400` with `IDEMPOTENCY_KEY_REQUIRED_MESSAGE`.
 
-`mappers/` turns the body into `TransactionsType.SubmitInput`, the wallet into its output, the ledger entry into its output, and the wager into its output. `maps/wager-status.map.ts` holds the status table, and `WagerStatus` in `statuses/` answers the HTTP status of one `SubmitOutput`.
+`mappers/` turns the body into `WagersType.SubmitInput`, the wallet into its output, the ledger entry into its output, and the wager into its output. `maps/wager-status.map.ts` holds the status table, and `WagerStatus` in `statuses/` answers the HTTP status of one `SubmitOutput`.
 
 `guards/` holds `AuthGuard`, `filters/` holds `HttpFailureFilter`, and `providers/` holds `AnonymousProviderIdentity`. The global filter translates application errors into HTTP responses; controllers do not need per-route `try/catch` blocks for these errors.
 

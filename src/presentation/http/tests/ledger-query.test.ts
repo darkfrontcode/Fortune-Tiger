@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { BadRequestException } from '@nestjs/common'
-import { TheoryProtocol } from '@application/protocols'
+import { Theory } from '@infrastructure/protocols'
 import { LedgerQuery } from '../queries'
 
-interface LedgerQueryTheory<TParams> extends TheoryProtocol<TParams> {
+interface LedgerQueryTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

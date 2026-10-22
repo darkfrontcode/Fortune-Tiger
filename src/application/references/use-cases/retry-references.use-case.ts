@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { WagerTransactionStatus } from '@domain/wager/enums'
-import type { ReferenceGatewayProtocol, ReferenceReaderProtocol } from '../../protocols'
+import type { ReferenceGatewayProtocol, ReferenceReaderProtocol } from '@application/references'
 import { REFERENCE_GATEWAY, REFERENCE_READER } from '../tokens'
 import { ReferenceType } from '../types'
 

@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '@application/protocols'
+
 import { STATUS_TRANSITION_MESSAGE, TERMINAL_STATUS_MESSAGE } from '../data'
 import { TransitionMap } from '../maps'
 import type { WagerType } from '../types'
@@ -7,7 +7,7 @@ import { WagerTerminalGuard } from './wager-terminal.guard'
 type Input = WagerType.Transition
 type Output = void
 
-export class WagerTransitionGuard implements GuardProtocol<Input, Output> {
+export class WagerTransitionGuard {
   private readonly terminal = new WagerTerminalGuard()
   private readonly transitions = new TransitionMap()
 

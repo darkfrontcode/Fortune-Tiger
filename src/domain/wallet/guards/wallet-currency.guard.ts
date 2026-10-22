@@ -1,11 +1,11 @@
-import type { GuardProtocol } from '@application/protocols'
+
 import { CURRENCY_CONFLICT_MESSAGE } from '../data'
 import type { WalletType } from '../types'
 
 type Input = WalletType.Conflict
 type Output = void
 
-export class WalletCurrencyGuard implements GuardProtocol<Input, Output> {
+export class WalletCurrencyGuard {
   guard(input: Input): Output {
     const { currency, compared } = input
 

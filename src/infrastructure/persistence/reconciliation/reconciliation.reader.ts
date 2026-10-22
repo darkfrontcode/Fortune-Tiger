@@ -1,6 +1,6 @@
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
-import type { ReconciliationGatewayProtocol } from '@application/protocols'
+import type { ReconciliationGatewayProtocol } from '@application/reconciliations'
 import type { ReconciliationsType } from '@application/reconciliations/types'
 import { WalletLedgerRepository } from '../ledger/wallet-ledger.repository'
 import { WalletRepository } from '../wallet/wallet.repository'

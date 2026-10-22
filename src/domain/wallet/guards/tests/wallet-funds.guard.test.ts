@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '@application/protocols'
+import type { Theory } from '@infrastructure/protocols'
 import { Money } from '../../../money/money'
 import { INSUFFICIENT_FUNDS_MESSAGE } from '../../data'
 import { WalletFundsGuard } from '../wallet-funds.guard'
 
-interface WalletFundsTheory<TParams> extends TheoryProtocol<TParams> {
+interface WalletFundsTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

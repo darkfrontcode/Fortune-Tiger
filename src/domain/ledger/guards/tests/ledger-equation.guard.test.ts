@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '@application/protocols'
+import type { Theory } from '@infrastructure/protocols'
 import { Money } from '../../../money/money'
 import { BALANCE_EQUATION_MESSAGE, CURRENCY_CONFLICT_MESSAGE } from '../../data'
 import { LedgerDirection } from '../../enums'
 import type { MoneyType } from '../../../money/types'
 import { LedgerEquationGuard } from '../ledger-equation.guard'
 
-interface LedgerEquationTheory<TParams> extends TheoryProtocol<TParams> {
+interface LedgerEquationTheory<TParams> extends Theory<TParams> {
   title: string
   description: string
 }

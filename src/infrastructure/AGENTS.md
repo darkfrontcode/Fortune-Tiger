@@ -2,7 +2,7 @@
 
 Postgres, SQS, workers, clock, logger, and metrics. It does not decide a wager rule.
 
-There is no `shared` folder here. Plug-in contracts live in `application/protocols`, not in this layer. This layer does not import `presentation`.
+There is no `shared` folder here. Application ports are defined by the consuming application capability. A contract used only inside an infrastructure module stays beside its consumer. This layer does not import `presentation`.
 
 Each folder has an English `spec.md`. The code follows that spec. One adapter, one spec. Inbox and outbox stay inside `messaging/messages`, not in folders of their own. Small files.
 
@@ -12,7 +12,7 @@ History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request
 
 - `persistence` — MikroORM, schema, lock
 - `messaging` — one spec: queue, consumer, inbox, outbox, and the event envelope
-- `observability` — `SimpleLogger`, `ClockProtocol`, and metrics. A plug-in contract ends with `Protocol` and lives in `application/protocols` when it is shared across layers.
+- `observability` — `SimpleLogger`, the application clock adapter, and metrics. The logger and metric contracts are owned by application `observability`; the clock contract is owned by application `time`.
 - `environment` — the only reader of `process.env`. One getter per variable, no business rule.
 
 A module lives inside the folder it wires: `persistence.module.ts`, `messaging.module.ts`, `observability.module.ts`, `environment.module.ts`. It builds the adapters and binds tokens from the owning context's `tokens/` folder with `useExisting`; infrastructure-owned tokens live in the infrastructure module's own `tokens/` folder. A factory receives `Environment` and never reads a variable.

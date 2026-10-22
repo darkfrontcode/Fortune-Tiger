@@ -1,3 +1,4 @@
+export * from './mapper.protocol'
 export * from './ledger-output.mapper'
 export * from './wager-input.mapper'
 export * from './wager-output.mapper'

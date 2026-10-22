@@ -1,6 +1,8 @@
 # Wallets
 
-This context owns the wallet-opening, wallet-reading, and ledger-reading injection tokens used by application and HTTP consumers.
+This context owns the wallet-opening, wallet-reading, and ledger-reading ports and injection tokens used by application and HTTP consumers.
+
+`WalletOpeningProtocol`, `WalletReaderProtocol`, and `LedgerReaderProtocol` live in `protocols/`. `LedgerPage`, `LedgerPageInput`, and `WalletOpeningInput` are part of those application contracts.
 
 Each token has its own file in `tokens/`. `index.ts` reexports the token folder.
 

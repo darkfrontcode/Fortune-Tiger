@@ -8,7 +8,7 @@ Log it, count it in a metric, and return `walletId`, `storedBalance`, `calculate
 
 If the wallet is absent, the use case throws `WalletReconciliationNotFoundError`; the HTTP filter preserves the existing `404` response body.
 
-`RECONCILIATION_GATEWAY` lives in `tokens/` in this context. The cross-cutting `LOGGER` and `METRIC` tokens live in `application/dependencies/tokens`.
+`ReconciliationGatewayProtocol` lives in this context's `protocols/` folder, and `RECONCILIATION_GATEWAY` lives in `tokens/`. The cross-cutting `LoggerProtocol` and `MetricProtocol` and their `LOGGER` and `METRIC` tokens live in `application/observability`.
 
 `reconciliations.module.ts` imports `PersistenceModule` and `ObservabilityModule`, provides `ReconcileWalletUseCase`, and exports it. The HTTP route calls that use case, and the metric counts divergence through `SimpleMetric`.
 

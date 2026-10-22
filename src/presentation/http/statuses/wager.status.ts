@@ -1,8 +1,8 @@
 import { HttpStatus } from '@nestjs/common'
-import type { TransactionsType } from '@application/transactions'
+import type { WagersType } from '@application/wagers'
 import { WagerStatusMap } from '../maps'
 
-type Output = TransactionsType.SubmitOutput
+type Output = WagersType.SubmitOutput
 
 export class WagerStatus {
   private readonly statuses = new WagerStatusMap()

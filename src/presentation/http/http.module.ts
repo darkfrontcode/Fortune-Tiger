@@ -7,7 +7,7 @@ import {
   OpenWalletUseCase,
 } from '@application/wallets/use-cases'
 import { PROVIDER_IDENTITY } from './tokens'
-import { TransactionsModule } from '@application/transactions'
+import { WagersModule } from '@application/wagers'
 import { ObservabilityModule } from '@infrastructure/observability'
 import { PersistenceModule } from '@infrastructure/persistence'
 import { WagerController, WalletController } from './controllers'
@@ -17,7 +17,7 @@ import { AnonymousProviderIdentity } from './providers'
 
 const moduleImports = [
   PersistenceModule,
-  TransactionsModule,
+  WagersModule,
   ReconciliationsModule,
   ObservabilityModule,
 ]

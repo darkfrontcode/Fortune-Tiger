@@ -1,7 +1,7 @@
 import { uuidv7 } from 'uuidv7'
-import type { MapperProtocol } from '@application/protocols'
-import type { TransactionsType } from '@application/transactions'
+import type { WagersType } from '@application/wagers'
 import type { HttpType } from '../types'
+import type { MapperProtocol } from './mapper.protocol'
 
 type Input = {
   body: HttpType.WagerInput
@@ -10,7 +10,7 @@ type Input = {
   at: Date
 }
 
-type Output = TransactionsType.SubmitInput
+type Output = WagersType.SubmitInput
 
 export class WagerInputMapper implements MapperProtocol<Input, Output> {
   map(input: Input): Output {
