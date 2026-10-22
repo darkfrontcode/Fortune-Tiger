@@ -52,7 +52,7 @@ Keycloak is out.
 
 `http.module.ts` imports `PersistenceModule`, `TransactionsModule`, `ReconciliationsModule`, and `ObservabilityModule`. It declares `WalletController` and `WagerController`. `AuthGuard` is applied to `WagerController`, and `PROVIDER_IDENTITY` is bound to `AnonymousProviderIdentity`. `WalletController` receives `WALLET_OPENING`, `WALLET_READER`, `LEDGER_READER`, and `CLOCK` by token, plus `ReconciliationService` by class. `WagerController` receives `WagerService` by class and `WAGER_READER` and `CLOCK` by token.
 
-`wallet-body.ts` and `wager-body.ts` in `bodies/` read the JSON body, and `ledger-query.ts` in `queries/` reads the query string. A missing field, a wrong type, an invalid money, an unknown kind, and a missing reference for `REFUND` or `ROLLBACK` answer `400` with `INVALID_WALLET_BODY_MESSAGE`, `INVALID_WAGER_BODY_MESSAGE`, or `INVALID_LEDGER_QUERY_MESSAGE`. A missing `Idempotency-Key` answers `400` with `IDEMPOTENCY_KEY_REQUIRED_MESSAGE`.
+`wager.dto.ts` and `wallet.dto.ts` in `dtos/` declare the request shape with `class-validator` decorators. The Nest `ValidationPipe` in `main.ts` validates every `@Body()` against the DTO class and answers `400` on mismatch. After validation, `WagerDtoMapper` and `WalletDtoMapper` in `mappers/` convert the validated DTO into `HttpType.WagerInput` and `HttpType.WalletInput` — building domain `Money` and checking cross-field rules (reference required for `REFUND`/`ROLLBACK`). A missing `Idempotency-Key` answers `400` with `IDEMPOTENCY_KEY_REQUIRED_MESSAGE`.
 
 `mappers/` turns the body into `TransactionsType.SubmitInput`, the wallet into its output, the ledger entry into its output, and the wager into its output. `maps/wager-status.map.ts` holds the status table, and `WagerStatus` in `statuses/` answers the HTTP status of one `SubmitOutput`.
 
@@ -62,23 +62,26 @@ Keycloak is out.
 
 ```text
 http/
-  bodies/
-    wager.body.ts
-    wallet.body.ts
   controllers/
     wager.controller.ts
     wallet.controller.ts
   data/
     messages.data.ts
+  dtos/
+    money.dto.ts
+    wager.dto.ts
+    wallet.dto.ts
   filters/
     http-failure.filter.ts
   guards/
     auth.guard.ts
   mappers/
     ledger-output.mapper.ts
+    wager-dto.mapper.ts
     wager-input.mapper.ts
     wager-output.mapper.ts
     wager-submit.mapper.ts
+    wallet-dto.mapper.ts
     wallet-output.mapper.ts
   maps/
     wager-status.map.ts

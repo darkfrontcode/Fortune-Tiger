@@ -18,9 +18,9 @@ import { WagerService } from '../../../application/transactions'
 import { CLOCK, WAGER_READER } from '../../../application/tokens'
 import { AuthGuard } from '../guards'
 import { IDEMPOTENCY_KEY_REQUIRED_MESSAGE, WAGER_NOT_FOUND_MESSAGE } from '../data'
-import { WagerInputMapper, WagerOutputMapper, WagerSubmitMapper } from '../mappers'
+import type { WagerDto } from '../dtos'
+import { WagerDtoMapper, WagerInputMapper, WagerOutputMapper, WagerSubmitMapper } from '../mappers'
 import type { HttpType } from '../types'
-import { WagerBody } from '../bodies'
 import { WagerStatus } from '../statuses'
 
 const empty = String()
@@ -28,7 +28,7 @@ const empty = String()
 @Controller()
 @UseGuards(AuthGuard)
 export class WagerController {
-  private readonly body = new WagerBody()
+  private readonly dtoMapper = new WagerDtoMapper()
   private readonly inputMapper = new WagerInputMapper()
   private readonly submitMapper = new WagerSubmitMapper()
   private readonly outputMapper = new WagerOutputMapper()
@@ -43,23 +43,22 @@ export class WagerController {
   @Post('wagering/transactions')
   async submit(
     @Headers('idempotency-key') key: string | undefined,
-    @Body() body: unknown,
+    @Body() dto: WagerDto,
     @Req() request: HttpType.Request,
     @Res({ passthrough: true }) response: HttpType.Response,
   ): Promise<HttpType.WagerSubmitOutput> {
     const idempotencyKey = this.idempotencyKey(key)
-    const parsed = this.body.read(body)
+    const parsed = this.dtoMapper.map(dto)
     const at = this.clock.now()
     const providerId = request.provider.providerId
     const mapping = { body: parsed, providerId, idempotencyKey, at }
     const input = this.inputMapper.map(mapping)
     const output = await this.wagers.submit(input)
     const status = this.wagerStatus.of(output)
-    const currency = parsed.money.currency
 
     response.status(status)
 
-    return this.submitMapper.map({ output, currency })
+    return this.submitMapper.map({ output, currency: parsed.money.currency })
   }
 
   @Get('wagering/transactions/:transactionId')

@@ -1,6 +1,6 @@
-export * from './bodies'
 export * from './controllers'
 export * from './data'
+export * from './dtos'
 export * from './filters'
 export * from './guards'
 export * from './http.module'

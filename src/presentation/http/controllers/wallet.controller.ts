@@ -21,16 +21,16 @@ import type { ReconciliationsType } from '../../../application/reconciliations'
 import { CLOCK, LEDGER_READER, WALLET_OPENING, WALLET_READER } from '../../../application/tokens'
 import type { Ledger } from '../../../domain/ledger/ledger'
 import { WALLET_NOT_FOUND_MESSAGE } from '../data'
+import type { WalletDto } from '../dtos'
+import { WalletDtoMapper, LedgerOutputMapper, WalletOutputMapper } from '../mappers'
 import { LedgerQuery } from '../queries'
-import { LedgerOutputMapper, WalletOutputMapper } from '../mappers'
 import type { HttpType } from '../types'
-import { WalletBody } from '../bodies'
 
 type CompareOutput = ReconciliationsType.CompareOutput
 
 @Controller('wallets')
 export class WalletController {
-  private readonly body = new WalletBody()
+  private readonly dtoMapper = new WalletDtoMapper()
   private readonly query = new LedgerQuery()
   private readonly walletMapper = new WalletOutputMapper()
   private readonly ledgerMapper = new LedgerOutputMapper()
@@ -44,8 +44,8 @@ export class WalletController {
   ) {}
 
   @Post()
-  async open(@Body() body: unknown): Promise<HttpType.WalletOutput> {
-    const parsed = this.body.read(body)
+  async open(@Body() dto: WalletDto): Promise<HttpType.WalletOutput> {
+    const parsed = this.dtoMapper.map(dto)
     const openedAt = this.clock.now()
     const input = { ...parsed, openedAt }
     const wallet = await this.opening.open(input)
