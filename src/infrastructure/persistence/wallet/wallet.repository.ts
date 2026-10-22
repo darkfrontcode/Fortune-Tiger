@@ -1,6 +1,6 @@
 import { LockMode } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/postgresql'
-import { Wallet } from '../../../domain/wallet/wallet'
+import { Wallet } from '@domain/wallet/wallet'
 import { WalletEntity } from './wallet.entity'
 import { WalletMapper } from './wallet.mapper'
 

@@ -1,17 +1,17 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
-import { ReferenceMediator } from '../../../application/transactions/wager/mediators/reference.mediator'
-import { WagerMediator } from '../../../application/transactions/wager/mediators/wager.mediator'
-import { Money } from '../../../domain/money/money'
-import { Wallet } from '../../../domain/wallet/wallet'
+import { ReferenceMediator } from '@application/transactions/wager/mediators/reference.mediator'
+import { WagerMediator } from '@application/transactions/wager/mediators/wager.mediator'
+import { Money } from '@domain/money/money'
+import { Wallet } from '@domain/wallet/wallet'
 import {
   FailureCode,
   WagerTransactionKind,
   WagerTransactionStatus,
-} from '../../../domain/wager/enums'
-import { WagerType } from '../../../domain/wager/types'
-import { WagerTransaction } from '../../../domain/wager/wager'
+} from '@domain/wager/enums'
+import { WagerType } from '@domain/wager/types'
+import { WagerTransaction } from '@domain/wager/wager'
 import { WagerEventsMapper } from '../../messaging/mappers'
 import { OutboxMessageEntity } from '../outbox/outbox-message.entity'
 import { WalletLedgerEntity } from '../ledger/wallet-ledger.entity'

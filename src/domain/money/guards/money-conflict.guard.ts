@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '../../../application/protocols'
+import type { GuardProtocol } from '@application/protocols'
 import { CURRENCY_CONFLICT_MESSAGE } from '../data'
 import type { MoneyType } from '../types'
 

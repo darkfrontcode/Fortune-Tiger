@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import { LedgerDirection } from '../../../../domain/ledger/enums'
-import { Ledger } from '../../../../domain/ledger/ledger'
-import { Money } from '../../../../domain/money/money'
-import { Wallet } from '../../../../domain/wallet/wallet'
+import { LedgerDirection } from '@domain/ledger/enums'
+import { Ledger } from '@domain/ledger/ledger'
+import { Money } from '@domain/money/money'
+import { Wallet } from '@domain/wallet/wallet'
 import {
   FailureCode,
   WagerTransactionKind,
   WagerTransactionStatus,
-} from '../../../../domain/wager/enums'
-import type { WagerTransaction } from '../../../../domain/wager/wager'
+} from '@domain/wager/enums'
+import type { WagerTransaction } from '@domain/wager/wager'
 import type { OutboxMessage } from '../../messages'
 import { WagerEventsMapper } from '../wager-events.mapper'
 

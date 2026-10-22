@@ -1,9 +1,9 @@
-import type { MoneyType } from '../../../../domain/money/types'
+import type { MoneyType } from '@domain/money/types'
 import type {
   FailureCode,
   WagerTransactionKind,
   WagerTransactionStatus,
-} from '../../../../domain/wager/enums'
+} from '@domain/wager/enums'
 
 export namespace WagerEventType {
   export type ProcessedData = {

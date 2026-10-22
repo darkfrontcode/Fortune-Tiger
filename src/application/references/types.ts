@@ -1,4 +1,4 @@
-import type { WagerTransactionStatus } from '../../domain/wager/enums'
+import type { WagerTransactionStatus } from '@domain/wager/enums'
 
 export namespace ReferenceType {
   export type Input = {

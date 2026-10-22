@@ -22,6 +22,8 @@ A design pattern is used only when it solves a problem in this challenge. The st
 
 `src` has four folders: `domain`, `application`, `infrastructure`, and `presentation`. `src/main.ts` and `src/app.module.ts` are files beside them. There is no `src/modules` folder.
 
+Cross-layer imports use the TypeScript path aliases `@application/*`, `@domain/*`, `@infrastructure/*`, and `@presentation/*`, with subpaths such as `@domain/money`. These aliases are configured in `tsconfig.json` and resolved by Bun.
+
 There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. Plug-in contracts live in `application/protocols`. Domain and presentation do not have a `protocols` folder.
 
 ## Protocols

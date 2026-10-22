@@ -3,7 +3,7 @@ import {
   FailureCode,
   WagerTransactionKind,
   WagerTransactionStatus,
-} from '../../../domain/wager/enums'
+} from '@domain/wager/enums'
 import { WalletEntity } from '../wallet/wallet.entity'
 
 @Entity({ tableName: 'wager_transactions' })

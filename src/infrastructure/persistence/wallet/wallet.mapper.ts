@@ -1,5 +1,5 @@
-import { Money } from '../../../domain/money/money'
-import { Wallet } from '../../../domain/wallet/wallet'
+import { Money } from '@domain/money/money'
+import { Wallet } from '@domain/wallet/wallet'
 import { WalletEntity } from './wallet.entity'
 
 export class WalletMapper {

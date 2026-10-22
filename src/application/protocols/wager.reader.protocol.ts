@@ -1,4 +1,4 @@
-import type { WagerTransaction } from '../../domain/wager/wager'
+import type { WagerTransaction } from '@domain/wager/wager'
 
 export interface WagerReaderProtocol {
   findById(id: string): Promise<WagerTransaction | undefined>

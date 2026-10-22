@@ -1,6 +1,6 @@
 import { QueryOrder } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/postgresql'
-import { Ledger } from '../../../domain/ledger/ledger'
+import { Ledger } from '@domain/ledger/ledger'
 import { WalletEntity } from '../wallet/wallet.entity'
 import { WalletLedgerEntity } from './wallet-ledger.entity'
 import { WalletLedgerMapper } from './wallet-ledger.mapper'

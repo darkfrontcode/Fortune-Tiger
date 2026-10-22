@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common'
-import type { ReadinessProtocol } from '../../application/protocols'
-import { READINESS } from '../../application/tokens'
-import { MessagingModule, QueueReadiness } from '../../infrastructure/messaging'
-import { DatabaseReadiness, PersistenceModule } from '../../infrastructure/persistence'
+import type { ReadinessProtocol } from '@application/protocols'
+import { READINESS } from '@application/tokens'
+import { MessagingModule, QueueReadiness } from '@infrastructure/messaging'
+import { DatabaseReadiness, PersistenceModule } from '@infrastructure/persistence'
 import { HealthController } from './controllers'
 import { HealthService } from './services'
 

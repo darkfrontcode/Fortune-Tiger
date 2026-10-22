@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '../../../../application/protocols'
+import type { TheoryProtocol } from '@application/protocols'
 import { INVALID_CURRENCY_MESSAGE } from '../../data'
 import { MoneyCurrencyGuard } from '../money-currency.guard'
 

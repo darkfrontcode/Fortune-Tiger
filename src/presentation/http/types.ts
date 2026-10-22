@@ -1,11 +1,11 @@
-import type { ProviderIdentity } from '../../application/protocols'
-import type { LedgerDirection } from '../../domain/ledger/enums'
-import type { Money } from '../../domain/money/money'
+import type { ProviderIdentity } from '@application/protocols'
+import type { LedgerDirection } from '@domain/ledger/enums'
+import type { Money } from '@domain/money/money'
 import type {
   FailureCode,
   WagerTransactionKind,
   WagerTransactionStatus,
-} from '../../domain/wager/enums'
+} from '@domain/wager/enums'
 
 export namespace HttpType {
   export type MoneyOutput = {

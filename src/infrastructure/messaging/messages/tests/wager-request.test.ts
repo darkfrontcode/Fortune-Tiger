@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { WagerTransactionKind } from '../../../../domain/wager/enums'
+import { WagerTransactionKind } from '@domain/wager/enums'
 import { WagerRequest } from '../wager-request'
 
 const identity = {

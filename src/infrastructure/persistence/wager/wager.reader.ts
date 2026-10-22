@@ -1,7 +1,7 @@
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
-import type { WagerReaderProtocol } from '../../../application/protocols'
-import type { WagerTransaction } from '../../../domain/wager/wager'
+import type { WagerReaderProtocol } from '@application/protocols'
+import type { WagerTransaction } from '@domain/wager/wager'
 import { WagerTransactionRepository } from './wager-transaction.repository'
 
 @Injectable()

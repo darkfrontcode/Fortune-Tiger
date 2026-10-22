@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { BadRequestException } from '@nestjs/common'
-import { TheoryProtocol } from '../../../application/protocols'
+import { TheoryProtocol } from '@application/protocols'
 import type { WalletDto } from '../dtos'
 import { WalletDtoMapper } from '../mappers'
 

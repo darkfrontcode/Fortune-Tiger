@@ -1,5 +1,5 @@
-import { Money } from '../../../domain/money/money'
-import { WagerTransactionKind } from '../../../domain/wager/enums'
+import { Money } from '@domain/money/money'
+import { WagerTransactionKind } from '@domain/wager/enums'
 import { INVALID_WAGER_REQUEST_MESSAGE } from './data'
 import type { WagerRequestType } from './types'
 

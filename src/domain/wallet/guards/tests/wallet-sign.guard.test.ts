@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { TheoryProtocol } from '../../../../application/protocols'
+import type { TheoryProtocol } from '@application/protocols'
 import { Money } from '../../../money/money'
 import { NEGATIVE_AMOUNT_MESSAGE } from '../../data'
 import { WalletSignGuard } from '../wallet-sign.guard'

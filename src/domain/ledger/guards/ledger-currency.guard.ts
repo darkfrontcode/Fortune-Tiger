@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '../../../application/protocols'
+import type { GuardProtocol } from '@application/protocols'
 import type { LedgerType } from '../types'
 
 type Input = LedgerType.Movement

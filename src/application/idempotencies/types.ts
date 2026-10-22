@@ -1,6 +1,6 @@
-import type { Money } from '../../domain/money/money'
-import type { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '../../domain/wager/enums'
-import type { WagerTransaction } from '../../domain/wager/wager'
+import type { Money } from '@domain/money/money'
+import type { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
+import type { WagerTransaction } from '@domain/wager/wager'
 
 import { IdempotencyOutcome } from './enums'
 

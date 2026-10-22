@@ -1,6 +1,6 @@
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
-import type { ReadinessProtocol } from '../../application/protocols'
+import type { ReadinessProtocol } from '@application/protocols'
 
 const ping = 'select 1'
 

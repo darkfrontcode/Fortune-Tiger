@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common'
-import { PersistenceModule } from '../../infrastructure/persistence'
+import { PersistenceModule } from '@infrastructure/persistence'
 import { ReferenceService } from './reference.service'
 
 @Module({

@@ -1,5 +1,5 @@
-import type { MapperProtocol } from '../../../application/protocols'
-import type { Ledger } from '../../../domain/ledger/ledger'
+import type { MapperProtocol } from '@application/protocols'
+import type { Ledger } from '@domain/ledger/ledger'
 import type { HttpType } from '../types'
 
 type Input = Ledger

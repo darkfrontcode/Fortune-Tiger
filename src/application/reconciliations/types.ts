@@ -1,7 +1,7 @@
-import type { Money } from '../../domain/money/money'
-import type { MoneyType } from '../../domain/money/types'
-import type { Ledger } from '../../domain/ledger/ledger'
-import type { FailureCode } from '../../domain/wager/enums'
+import type { Money } from '@domain/money/money'
+import type { MoneyType } from '@domain/money/types'
+import type { Ledger } from '@domain/ledger/ledger'
+import type { FailureCode } from '@domain/wager/enums'
 
 type MoneyOutput = MoneyType.Output
 

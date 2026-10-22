@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { HttpStatus } from '@nestjs/common'
-import { TheoryProtocol } from '../../../application/protocols'
-import type { TransactionsType } from '../../../application/transactions'
-import { FailureCode, WagerTransactionStatus } from '../../../domain/wager/enums'
+import { TheoryProtocol } from '@application/protocols'
+import type { TransactionsType } from '@application/transactions'
+import { FailureCode, WagerTransactionStatus } from '@domain/wager/enums'
 import { WagerStatus } from '../statuses'
 
 interface WagerStatusTheory<TParams> extends TheoryProtocol<TParams> {

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import type { Ledger } from '../../../../domain/ledger'
-import { FailureCode } from '../../../../domain/wager/enums'
-import type { WagerTransaction } from '../../../../domain/wager/wager'
+import type { Ledger } from '@domain/ledger'
+import { FailureCode } from '@domain/wager/enums'
+import type { WagerTransaction } from '@domain/wager/wager'
 import { TransactionsType } from '../types'
 import { WagerMediator } from './wager.mediator'
 

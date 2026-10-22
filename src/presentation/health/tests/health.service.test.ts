@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { ServiceUnavailableException } from '@nestjs/common'
-import type { ReadinessProtocol, TheoryProtocol } from '../../../application/protocols'
+import type { ReadinessProtocol, TheoryProtocol } from '@application/protocols'
 import { HealthStatus } from '../enums'
 import { HealthService } from '../services'
 

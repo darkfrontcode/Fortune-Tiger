@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common'
-import type { MapperProtocol } from '../../../application/protocols'
-import { Money } from '../../../domain/money/money'
+import type { MapperProtocol } from '@application/protocols'
+import { Money } from '@domain/money/money'
 import type { WalletDto } from '../dtos'
 import { INVALID_WALLET_BODY_MESSAGE } from '../data'
 import type { HttpType } from '../types'

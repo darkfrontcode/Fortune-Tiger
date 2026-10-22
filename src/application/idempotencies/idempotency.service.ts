@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { FailureCode } from '../../domain/wager/enums'
+import { FailureCode } from '@domain/wager/enums'
 import { IdempotencyOutcome } from './enums'
 import { IdempotencyHashGuard } from './guards'
 import { IdempotencyReplay } from './idempotency.replay'

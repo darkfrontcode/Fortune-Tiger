@@ -1,4 +1,4 @@
-import type { WagerTransaction } from '../../domain/wager/wager'
+import type { WagerTransaction } from '@domain/wager/wager'
 import type { TransactionsType } from '../transactions/wager'
 
 type SubmitOutput = TransactionsType.SubmitOutput

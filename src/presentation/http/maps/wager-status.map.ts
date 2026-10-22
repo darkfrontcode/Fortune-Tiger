@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common'
-import { WagerTransactionStatus } from '../../../domain/wager/enums'
+import { WagerTransactionStatus } from '@domain/wager/enums'
 
 type Status = WagerTransactionStatus
 type Code = HttpStatus

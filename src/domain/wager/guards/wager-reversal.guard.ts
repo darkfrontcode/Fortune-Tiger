@@ -1,4 +1,4 @@
-import type { GuardProtocol } from '../../../application/protocols'
+import type { GuardProtocol } from '@application/protocols'
 import { WagerTransactionKind } from '../enums'
 
 type Input = WagerTransactionKind
