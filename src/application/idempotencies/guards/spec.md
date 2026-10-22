@@ -10,6 +10,6 @@ The class name joins the concept, the subject, and the role: `IdempotencyHashGua
 
 `IdempotencyService` holds one instance as a `private readonly` property. `outcome` calls it before replaying the stored result or reporting `IDEMPOTENCY_PAYLOAD_CONFLICT`. A different hash is not a replay, and a new key is not a duplicate. A guard may hold other guards inside when the rule is composed: it asks the inner guard instead of repeating the inner rule, and each guard stays individual.
 
-Unit tests live in `__tests__/`, as `{subject}.guard.spec.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
+Unit tests live in `tests/`, as `{subject}.guard.test.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
 
 All project text is English, including the root `README.md`.

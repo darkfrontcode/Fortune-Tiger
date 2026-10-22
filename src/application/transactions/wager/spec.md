@@ -8,6 +8,6 @@ Mediation, strategies, and wallet moves for one `WagerTransaction` inside the tr
 
 Application error text for a missing strategy lives in `data/messages.data.ts`.
 
-Unit tests live in `__tests__/` next to the module they cover. `mediators/__tests__/wager.mediator.spec.ts` covers `WagerMediator`. `mediators/__tests__/reference.mediator.spec.ts` covers `ReferenceMediator`.
+Unit tests live in `tests/` next to the module they cover. `mediators/tests/wager.mediator.test.ts` covers `WagerMediator`. `mediators/tests/reference.mediator.test.ts` covers `ReferenceMediator`.
 
 `types.ts` defines `TransactionsType`. `wager.service.ts` is the Nest entry for this use case.

@@ -17,6 +17,6 @@ A guard may hold other guards inside when the rule is composed. Each one stays i
 
 `Ledger` holds one instance of `LedgerBalanceGuard` and one of `LedgerEquationGuard` as a `const` at the top of `ledger.ts`, and `Ledger.create` calls `LedgerEquationGuard`. `Ledger.isBalanced` calls `LedgerBalanceGuard` and never throws.
 
-Unit tests live in `__tests__/`, as `{subject}.guard.spec.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
+Unit tests live in `tests/`, as `{subject}.guard.test.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
 
 All project text is English, including the root `README.md`.

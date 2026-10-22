@@ -14,6 +14,6 @@ The guard only checks. The pattern stays in `patterns/`, and the guard calls `te
 
 `Money` holds one instance of each as a `const` at the top of `money.ts`. `from` calls `MoneyAmountGuard` and `MoneyCurrencyGuard`, `zero` calls `MoneyCurrencyGuard`, and `add`, `subtract`, and `isLessThan` call `MoneyConflictGuard` through the private `assertCurrency`.
 
-Unit tests live in `__tests__/`, as `{subject}.guard.spec.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
+Unit tests live in `tests/`, as `{subject}.guard.test.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
 
 All project text is English, including the root `README.md`.

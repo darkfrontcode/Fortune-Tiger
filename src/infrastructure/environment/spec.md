@@ -18,6 +18,6 @@ One file reads `process.env`. `environment.ts` holds `Environment`, a plain clas
 
 The fallback for the queue URL is the empty string on purpose: the client fails at the probe, not at the import.
 
-Unit tests live in `__tests__/environment.spec.ts`.
+Unit tests live in `tests/environment.test.ts`.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

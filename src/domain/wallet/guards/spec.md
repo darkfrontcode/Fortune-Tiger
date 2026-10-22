@@ -14,6 +14,6 @@ The guard only checks. It reads the `Money` it receives and it does not build on
 
 `Wallet` holds one instance of each as a `const` at the top of `wallet.ts`. `open` calls `WalletSignGuard`, `debit` and `credit` call `WalletSignGuard` and `WalletCurrencyGuard` through the private `assertCurrency`, and `debit` calls `WalletFundsGuard` on the balance it computed.
 
-Unit tests live in `__tests__/`, as `{subject}.guard.spec.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
+Unit tests live in `tests/`, as `{subject}.guard.test.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
 
 All project text is English, including the root `README.md`.

@@ -16,7 +16,7 @@ The worker ticks every 2 seconds. The limit per tick is 20. The worker stops on 
 
 No retry repairs a divergence. No retry applies a terminal wager again. A retry that is still missing does not enqueue a second `WagerTransactionPendingReference`.
 
-Unit tests live in `__tests__/reference.service.spec.ts`.
+Unit tests live in `tests/reference.service.test.ts`.
 
 ## Module
 

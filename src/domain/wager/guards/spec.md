@@ -19,6 +19,6 @@ The text comes from `data/`. The status table comes from `maps/transition.map.ts
 
 The application asks the entity (`requiresReference`), not the guard: the use case does not import this folder.
 
-Unit tests live in `__tests__/`, as `{subject}.guard.spec.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
+Unit tests live in `tests/`, as `{subject}.guard.test.ts`, in the `TheoryProtocol` shape, with copy in `WHEN` / `SHOULD`.
 
 All project text is English, including the root `README.md`.
