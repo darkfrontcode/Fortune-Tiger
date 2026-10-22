@@ -18,11 +18,13 @@ import { Money } from '@domain/money'
 import { Wallet } from '@domain/wallet'
 import { WagerTransaction, WagerTransactionKind, WagerTransactionStatus } from '@domain/wager'
 import { WagerEventsMapper, WagerRequestMapper } from '../../messaging/mappers'
+import { OutboxMessage } from '../../messaging/messages'
 import { SqsConsumer, SqsQueue, WagerConsumer } from '../../messaging/consumers'
 import type { ConsumerType } from '../../messaging/consumers'
 import { Environment } from '../../environment'
 import { createSqsClient } from '../../messaging/factories'
 import { InboxMessageRepository } from '../inbox'
+import { OutboxMessageRepository } from '../outbox'
 import { WalletLedgerRepository } from '../ledger'
 import { ReferenceRetryWriter, WagerSubmitWriter, WagerTransactionRepository } from '../wager'
 import { WalletRepository } from '../wallet'
@@ -76,6 +78,9 @@ const provider = {
 const game = 'fortune-tiger'
 const separator = ':'
 const requestType = 'WagerTransactionRequested'
+const event = {
+  type: 'WagerTransactionProcessed',
+}
 const consumerName = 'wager'
 const acknowledgement = 'ACK_PENDING'
 const successfulExitCode = 0
@@ -382,6 +387,89 @@ describe('Crash recovery', () => {
     await reopen()
 
     const manager = persistence().em.fork()
+    const storedWallet = await new WalletRepository(manager).findById(wallet.id)
+    const ledgers = await new WalletLedgerRepository(manager).listByWalletId(wallet.id)
+    const toDirection = (ledger: Ledger) => ledger.direction
+    const toBalance = (ledger: Ledger) => ledger.balanceAfter.amount
+    const finalLedger = ledgers[ledgers.length - one]
+
+    expect(waiting.status).toBe(WagerTransactionStatus.PENDING_REFERENCE)
+    expect(processed.status).toBe(WagerTransactionStatus.PROCESSED)
+    expect(retried?.status).toBe(WagerTransactionStatus.PROCESSED)
+    expect(ledgers.map(toDirection)).toEqual([LedgerDirection.DEBIT, LedgerDirection.CREDIT])
+    expect(ledgers.map(toBalance)).toEqual([amount.ninety, amount.hundred])
+    expect(finalLedger?.balanceAfter.amount).toBe(storedWallet?.balance.amount)
+  }, timeout)
+
+  test('WHEN outbox row is written but publisher crashes before marking published SHOULD retry after restart', async () => {
+    const orm = persistence()
+    const messageId = uuidv7()
+    const aggregateId = uuidv7()
+    const payload = { eventId: messageId, eventType: event.type }
+    const schema = {
+      id: messageId,
+      aggregateId,
+      eventType: event.type,
+      payload,
+      occurredAt: instant.open,
+      attempts: 0,
+      nextAttemptAt: instant.open,
+      publishedAt: null,
+    }
+    const message = OutboxMessage.rehydrate(schema)
+
+    await orm.em.transactional(async (manager) => {
+      const outbox = new OutboxMessageRepository(manager)
+      outbox.saveMany([message])
+    })
+
+    await reopen()
+
+    const restartManager = persistence().em.fork()
+    const restartOutbox = new OutboxMessageRepository(restartManager)
+    const pending = await restartOutbox.findDueForUpdate(instant.retry, 20)
+
+    expect(pending).toHaveLength(1)
+    expect(pending[0].id).toBe(messageId)
+    expect(pending[0].isPending()).toBe(true)
+  }, timeout)
+
+  test('WHEN a refund arrives before its bet SHOULD reconcile without restart', async () => {
+    const orm = persistence()
+    const wallet = openWallet()
+    const roundId = uuidv7()
+    const betExternalTransactionId = uuidv7()
+    const refund = createWager({
+      wallet,
+      externalTransactionId: uuidv7(),
+      kind: WagerTransactionKind.REFUND,
+      referenceExternalTransactionId: betExternalTransactionId,
+      roundId,
+      createdAt: instant.open,
+    })
+    const repository = new WalletRepository(orm.em)
+    const submitter = writer(orm, new IdempotencyService())
+
+    await repository.save(wallet)
+
+    const waiting = await submitter.submit(refund, instant.open)
+    const bet = createWager({
+      wallet,
+      externalTransactionId: betExternalTransactionId,
+      kind: WagerTransactionKind.BET,
+      referenceExternalTransactionId: undefined,
+      roundId,
+      createdAt: instant.processed,
+    })
+    const processed = await submitter.submit(bet, instant.processed)
+    const reference = new ReferenceRetryWriter(
+      orm,
+      new ReferenceMediator(new WagerMediator()),
+      new WagerEventsMapper(),
+    )
+    const retried = await reference.retry(refund.id, instant.retry)
+
+    const manager = orm.em.fork()
     const storedWallet = await new WalletRepository(manager).findById(wallet.id)
     const ledgers = await new WalletLedgerRepository(manager).listByWalletId(wallet.id)
     const toDirection = (ledger: Ledger) => ledger.direction

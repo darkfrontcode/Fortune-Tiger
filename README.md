@@ -205,9 +205,10 @@ bun run start:dev
 bun run test:unit
 bun run test:int
 bun run test:concurrency
+bun run test:e2e
 ```
 
-`start:dev` restarts the app when files change. `test:unit` checks the rules quickly. The integration and concurrency tests use the PostgreSQL and LocalStack services configured in `.env`.
+`start:dev` restarts the app when files change. `test:unit` checks the rules quickly. The integration and concurrency tests use the PostgreSQL and LocalStack services configured in `.env`. `test:e2e` runs HTTP endpoint tests with Supertest.
 
 ### Pick a log style
 

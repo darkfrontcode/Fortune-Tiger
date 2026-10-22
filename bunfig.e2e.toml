@@ -1,4 +1,3 @@
 [test]
 root = "./"
-testMatch = ["**/*.e2e-spec.ts"]
-pathIgnorePatterns = ["**/persistence/**"]
+testMatch = ["src/presentation/**/tests/*.e2e.test.ts"]
