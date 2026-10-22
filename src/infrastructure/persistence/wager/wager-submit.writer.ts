@@ -1,3 +1,4 @@
+import { UniqueConstraintViolationException } from '@mikro-orm/core'
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
 import { uuidv7 } from 'uuidv7'
@@ -21,6 +22,8 @@ import { WagerTransactionRepository } from './wager-transaction.repository'
 type SubmitOutput = WagersType.SubmitOutput
 type QueueInbox = WagersType.QueueInbox
 
+const idempotencyConstraint = 'wager_transactions_idempotency_key_unique'
+
 @Injectable()
 export class WagerSubmitWriter implements WagerGatewayProtocol {
   constructor(
@@ -31,7 +34,7 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
   ) {}
 
   async submit(wager: WagerTransaction, at: Date, inbox?: QueueInbox): Promise<SubmitOutput> {
-    const run = async () => {
+    const commit = async () => {
       return this.orm.em.transactional(async (manager) => {
         const wallets = new WalletRepository(manager)
         const wagers = new WagerTransactionRepository(manager)
@@ -87,7 +90,36 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
       })
     }
 
-    return run()
+    try {
+      return await commit()
+    } catch (error) {
+      const raced = WagerSubmitWriter.isIdempotencyRace(error)
+
+      if (!raced) { throw error }
+
+      return await this.resolveIdempotencyRace(wager, error)
+    }
+  }
+
+  private async resolveIdempotencyRace(wager: WagerTransaction, error: unknown): Promise<SubmitOutput> {
+    return this.orm.em.transactional(async (manager) => {
+      const wagers = new WagerTransactionRepository(manager)
+      const stored = await wagers.findStoredByIdempotencyKey(wager.idempotencyKey)
+
+      if (stored === undefined) { throw error }
+
+      const replay = WagerSubmitWriter.replay(this.idempotency, wager, stored)
+
+      if (replay === undefined) { throw error }
+
+      return replay
+    })
+  }
+
+  private static isIdempotencyRace(error: unknown): boolean {
+    if (!(error instanceof UniqueConstraintViolationException)) { return false }
+
+    return error.message.includes(idempotencyConstraint)
   }
 
   private static async inbox(

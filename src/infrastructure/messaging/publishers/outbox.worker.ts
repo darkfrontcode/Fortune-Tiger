@@ -10,7 +10,9 @@ const limit = 20
 
 @Injectable()
 export class OutboxWorker {
+  protected readonly periodMs: number = intervalMs
   private timer: ReturnType<typeof setInterval> | undefined
+  private inFlight: Promise<void> | undefined
 
   constructor(
     private readonly publisher: OutboxPublisher,
@@ -24,13 +26,21 @@ export class OutboxWorker {
     if (started) { return }
 
     const tick = () => {
+      const busy = this.inFlight !== undefined
+
+      if (busy) { return }
+
       const at = this.clock.now()
       const batch = this.publisher.publish({ at, limit })
+      const settled = batch.catch(this.fail)
+      const finished = settled.then(() => {
+        this.inFlight = undefined
+      })
 
-      batch.catch(this.fail)
+      this.inFlight = finished
     }
 
-    this.timer = setInterval(tick, intervalMs)
+    this.timer = setInterval(tick, this.periodMs)
   }
 
   close(): void {

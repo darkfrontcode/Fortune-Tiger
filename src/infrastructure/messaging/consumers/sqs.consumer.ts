@@ -11,18 +11,30 @@ import { WagerConsumer } from './wager.consumer'
 const retryBaseSeconds = 1
 const retryCapSeconds = 60
 const noExponent = 0
+const millisecond = 1_000
 
-const delay = (receiveCount: number): number => {
-  const exponent = Math.max(receiveCount - 1, noExponent)
+export const consumerBackoffSeconds = (attempt: number): number => {
+  const exponent = Math.max(attempt - 1, noExponent)
   const seconds = retryBaseSeconds * 2 ** exponent
 
   return Math.min(seconds, retryCapSeconds)
+}
+
+const delay = (receiveCount: number): number => consumerBackoffSeconds(receiveCount)
+
+const pause = (seconds: number): Promise<void> => {
+  const milliseconds = seconds * millisecond
+
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds)
+  })
 }
 
 @Injectable()
 export class SqsConsumer {
   private running: Promise<void> | undefined
   private stopped = false
+  private pollFailures = noExponent
 
   constructor(
     private readonly queue: SqsQueue,
@@ -87,9 +99,12 @@ export class SqsConsumer {
       try {
         const messages = await this.queue.receive()
 
+        this.pollFailures = noExponent
         await this.consumeBatch(messages)
       } catch (error) {
+        this.pollFailures += 1
         this.fail(error)
+        await pause(consumerBackoffSeconds(this.pollFailures))
       }
     }
   }
