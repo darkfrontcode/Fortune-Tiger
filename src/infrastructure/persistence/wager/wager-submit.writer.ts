@@ -45,6 +45,15 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
 
         if (deduped !== undefined) { return deduped }
 
+        const locked = await wallets.findByIdForUpdate(wager.walletId)
+
+        if (locked === undefined) {
+          wager.reject(FailureCode.WALLET_NOT_FOUND)
+
+          const observed = '0.00'
+          return WagerSubmitWriter.fromWager(wager, observed, false)
+        }
+
         const stored = await wagers.findStoredByIdempotencyKey(wager.idempotencyKey)
 
         if (stored !== undefined) {
@@ -55,15 +64,6 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
 
             return replay
           }
-        }
-
-        const locked = await wallets.findByIdForUpdate(wager.walletId)
-
-        if (locked === undefined) {
-          wager.reject(FailureCode.WALLET_NOT_FOUND)
-
-          const observed = '0.00'
-          return WagerSubmitWriter.fromWager(wager, observed, false)
         }
 
         const reference = await WagerSubmitWriter.reference(wagers, wager)

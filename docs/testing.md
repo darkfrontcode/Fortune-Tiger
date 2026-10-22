@@ -20,12 +20,12 @@ Planned command: `test:int`.
 
 ## Concurrency
 
-Real parallelism.
+Real parallelism against PostgreSQL. The race suite starts three independent HTTP application processes against the same database.
 
-1. The same bet 50 times in parallel → one debit.
-2. Balance 100, two bets of 80 at the same time → one `PROCESSED`, one `REJECTED`, balance 20, one `DEBIT`.
-3. Distinct wallets in parallel.
-4. Three or more app processes.
+1. The same bet 50 times in parallel across three processes → one processed wager and one debit; the other 49 responses are idempotent replays.
+2. Balance 100, two bets of 80 at the same time across processes → one `PROCESSED`, one `REJECTED`, balance 20, one `DEBIT`.
+3. Bets for distinct wallets in parallel across all three processes → each wager is processed independently.
+4. Three or more application processes.
 5. Process killed after commit and before ack.
 6. Two publishers on the same outbox.
 7. `ROLLBACK` or `REFUND` before the `BET`.
@@ -33,7 +33,7 @@ Real parallelism.
 
 In every scenario: `wallet.balance` equals the balance reconstructed from the ledger.
 
-Planned command: `test:concurrency`.
+`bun run test:concurrency` runs the multi-process race scenarios. PostgreSQL and LocalStack must be running, and `.env` must point to them.
 
 ## API
 
