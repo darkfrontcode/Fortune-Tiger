@@ -1,4 +1,6 @@
+export * from './logger.service'
 export * from './observability.module'
 export * from './simple-logger'
+export * from './simple.metric'
 export * from './system-clock'
 export * from './types'

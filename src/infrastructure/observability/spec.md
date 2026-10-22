@@ -6,11 +6,15 @@
 
 A line carries `time`, `level`, `message`, and the context of the child. JSON is one object per line. Pretty is one text line with `key=value` pairs. An absent field is not written. `child` returns another logger and does not change the parent.
 
+`LoggerService` is the Nest adapter: `log`, `error`, `warn`, `debug`, `verbose`, and `fatal` write one `SimpleLogger` line with the matching level. The message starts with `[FortuneTiger]:` and the emoji of the level: `💬` log, `❌` error, `⚠️` warn, `🐞` debug, `🔎` verbose, and `💀` fatal. `src/main.ts` hands it to `useLogger`, so Nest writes through the same logger as the application.
+
+`SimpleMetric` is the metric adapter. `increment` counts one name in memory, and `count` reads it. A real exporter is out of scope; the counters stay in the process.
+
 Metrics cover transactions by status, duplicates, retries, DLQ messages, lock conflicts, outbox lag, and processing latency.
 
 ## Module
 
-`observability.module.ts` imports `EnvironmentModule` and provides two tokens. `CLOCK` is `SystemClock`. `LOGGER` is `SimpleLogger.open` with the clock and `pretty` from `Environment`. Both tokens are exported, so no other module builds a clock or a logger.
+`observability.module.ts` imports `EnvironmentModule` and provides three tokens. `CLOCK` is `SystemClock`. `LOGGER` is `SimpleLogger.open` with the clock and `pretty` from `Environment`. `METRIC` is `SimpleMetric`. The tokens are exported, so no other module builds a clock, a logger, or a metric. `SimpleLogger` answers to its class token through `useExisting`, `LoggerService` is provided and exported, and `src/main.ts` hands it to `useLogger`.
 
 OpenTelemetry and a dashboard are out.
 

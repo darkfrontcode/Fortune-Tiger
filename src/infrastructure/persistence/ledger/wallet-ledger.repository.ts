@@ -1,8 +1,18 @@
+import { QueryOrder } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { Ledger } from '../../../domain/ledger/ledger'
 import { WalletEntity } from '../wallet/wallet.entity'
 import { WalletLedgerEntity } from './wallet-ledger.entity'
 import { WalletLedgerMapper } from './wallet-ledger.mapper'
+
+const relation = 'wallet'
+
+type PageQuery = {
+  walletId: string
+  after: string | undefined
+  limit: number
+}
+
 
 export class WalletLedgerRepository {
   private readonly mapper = new WalletLedgerMapper()
@@ -34,7 +44,7 @@ export class WalletLedgerRepository {
     const entity = await this.manager.findOne(
       WalletLedgerEntity,
       { transactionId },
-      { populate: ['wallet'] },
+      { populate: [relation] },
     )
 
     if (entity === null) { return undefined }
@@ -46,8 +56,24 @@ export class WalletLedgerRepository {
     const entities = await this.manager.find(
       WalletLedgerEntity,
       { wallet: { id: walletId } },
-      { populate: ['wallet'], orderBy: { createdAt: 'ASC' } },
+      { populate: [relation], orderBy: { createdAt: QueryOrder.ASC } },
     )
+
+    const mapDomain = (entity: WalletLedgerEntity) => this.mapper.toDomain(entity)
+
+    return entities.map(mapDomain)
+  }
+
+  async pageByWalletId(input: PageQuery): Promise<Ledger[]> {
+    const wallet = { id: input.walletId }
+    const filter = input.after === undefined
+      ? { wallet }
+      : { wallet, id: { $gt: input.after } }
+    const entities = await this.manager.find(WalletLedgerEntity, filter, {
+      populate: [relation],
+      orderBy: { id: QueryOrder.ASC },
+      limit: input.limit,
+    })
 
     const mapDomain = (entity: WalletLedgerEntity) => this.mapper.toDomain(entity)
 

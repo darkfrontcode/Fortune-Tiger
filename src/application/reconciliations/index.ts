@@ -1,3 +1,4 @@
 export * from './patterns'
 export * from './reconciliation.service'
+export * from './reconciliations.module'
 export * from './types'

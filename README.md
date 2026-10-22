@@ -65,7 +65,7 @@ One word, plural, no hyphen in the middle of the name.
 
 `persistence` is in place for `wallets` and `wallet_ledger_entries`. Migrations are versioned and reversible. Money columns are `numeric(20, 2)` with `currency char(3)`. `migration:*` reads `DATABASE_URL`.
 
-`observability` is in place for `SimpleLogger` and `SystemClock`. A child logger attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. The line is JSON, or pretty when `open` receives `pretty`; the Nest adapter will read `LOG_PRETTY`. No financial payload enters the log.
+`observability` is in place for `SimpleLogger`, `SystemClock`, `SimpleMetric`, and the `LoggerService` adapter. A child logger attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. The line is JSON, or pretty when `Environment` reads `LOG_PRETTY` as true. `LoggerService` writes one line per Nest level with `[FortuneTiger]:` and the emoji of the level. No financial payload enters the log.
 
 `messaging` is in place for the event envelope, the inbox, the outbox, the publisher, and the consumer. `OutboxPublisher` claims due rows with `FOR UPDATE SKIP LOCKED`, and `SqsPublisher` sends them to `wager-transactions.fifo` with the aggregate as the message group and the event id as the deduplication id. A failed send schedules the row for retry. `SqsConsumer` long-polls the main queue; `WagerConsumer` parses the request, calls `WagerService` with the inbox row, and acks after the commit. A business failure is acked, a transient failure retries with backoff, and the fifth receive or a malformed request goes to `wager-transactions-dlq.fifo`.
 
@@ -79,9 +79,16 @@ PostgreSQL 16 stores `numeric(20, 2)`. The queue runs on LocalStack.
 - `http` — wallet and wager routes. Identity plugs in through `ProviderIdentityProtocol`.
 - `health` — liveness and readiness. `GET /health/live` answers `200` with `{"status":"live"}`. `GET /health/ready` asks Postgres and SQS at the same time; one failed probe answers `503` with `{"status":"unavailable"}`.
 
-`src/main.ts` reads `PORT`, default `3000`, and enables the shutdown hooks. `src/app.module.ts` wires one instance of the ORM, the clock, the logger, the SQS client, the queue, the publisher, the outbox worker, the reference worker, and the consumer. `RuntimeService` starts the three workers on boot and closes them on shutdown. No migration runs at boot.
+`http` is in place:
 
-The controller stays thin. The balance rule stays in the domain.
+- `POST /wallets` opens the wallet and its `OPENING` credit in one SQL transaction. `GET /wallets/:walletId` reads one wallet.
+- `GET /wallets/:walletId/ledger` pages the entries by `id`, `limit` 50 by default and 100 at most. A bad cursor or limit answers `400`.
+- `POST /wallets/:walletId/reconciliation` compares the stored balance with the ledger.
+- `POST /wagering/transactions` requires `Idempotency-Key` and answers `202` while pending, `200` when processed or replayed, `422` for a business rejection, and `503` for a `FAILED` wager. `GET /wagering/transactions/:id` and `GET /providers/:providerId/wagering/transactions/:externalId` read one wager.
+
+A thin controller parses the body, calls the use case, maps the output, and chooses the status. The balance rule stays in the domain. `AuthGuard` allows every request today, and `AnonymousProviderIdentity` trusts the `X-Provider-Id` header over the body; a real identity provider replaces that class.
+
+`src/main.ts` reads `PORT`, default `3000`, and enables the shutdown hooks. `src/app.module.ts` wires one instance of the ORM, the clock, the logger, the SQS client, the queue, the publisher, the outbox worker, the reference worker, and the consumer. `RuntimeService` starts the three workers on boot and closes them on shutdown. No migration runs at boot.
 
 </details>
 

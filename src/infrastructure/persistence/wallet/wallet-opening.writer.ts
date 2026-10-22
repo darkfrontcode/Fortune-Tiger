@@ -2,9 +2,9 @@ import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
 import { uuidv7 } from 'uuidv7'
 import { IdempotencyService } from '../../../application/idempotencies/idempotency.service'
+import type { WalletOpeningInput, WalletOpeningProtocol } from '../../../application/protocols'
 import { WagerMediator } from '../../../application/transactions/wager/mediators/wager.mediator'
 import type { Ledger } from '../../../domain/ledger/ledger'
-import type { Money } from '../../../domain/money/money'
 import { Money as MoneyValue } from '../../../domain/money/money'
 import { Wallet } from '../../../domain/wallet/wallet'
 import { WagerTransactionKind } from '../../../domain/wager/enums'
@@ -14,19 +14,14 @@ import { WalletLedgerRepository } from '../ledger/wallet-ledger.repository'
 import { WagerTransactionRepository } from '../wager/wager-transaction.repository'
 import { WalletRepository } from './wallet.repository'
 
+const platform = 'fortune-tiger'
 const scope = {
-  provider: 'fortune-tiger',
-  game: 'fortune-tiger',
-}
-
-export type WalletOpeningInput = {
-  playerId: string
-  initialBalance: Money
-  openedAt: Date
+  provider: platform,
+  game: platform,
 }
 
 @Injectable()
-export class WalletOpeningWriter {
+export class WalletOpeningWriter implements WalletOpeningProtocol {
   constructor(
     @Inject(MikroORM) private readonly orm: MikroORM,
     private readonly idempotency: IdempotencyService,
