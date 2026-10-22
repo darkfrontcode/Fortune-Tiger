@@ -11,88 +11,176 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
   <img alt="SQS" src="https://img.shields.io/badge/SQS-LocalStack-FF9900?style=for-the-badge&logo=amazonsqs&logoColor=white" />
 </p>
 
-A provider sends a bet, a win, a loss, a refund, and a rollback. The wallet stays at zero or above. Every balance change has a ledger entry. The same key does not move the balance again.
-
-## Folders
-
-- 🎯 **domain** — the rule
-- ⚙️ **application** — the use case
-- 🗄️ **infrastructure** — database, queue, and log
-- 🌐 **presentation** — HTTP
-
-`src` has these four folders. `src/main.ts` boots Nest. `src/app.module.ts` wires them. A plug-in contract lives in `protocols`, inside application or infrastructure.
-
-This file follows each phase as it lands.
+A provider can send a bet, a win, a loss, a refund, or a rollback. Fortune Tiger keeps the wallet safe, remembers every balance change, and recognizes a repeated request.
 
 <details>
-<summary>🎯 Domain</summary>
+<summary>🎯 Domain — the money and wager rules</summary>
 
-`money`, `wallet`, `ledger`, and `wager`.
+This is the game's rulebook:
 
-`money` is in place. The amount is a decimal string with scale 2. `from` and `zero` build it. `decimal.js` does the math. A different currency throws.
+- 💰 **Money** keeps amounts precise, so cents do not disappear in calculations.
+- 👛 **Wallet** keeps the balance at zero or above.
+- 📒 **Ledger** remembers each balance change and never edits history.
+- 🎲 **Wager** tracks a bet from its arrival to its final result.
 
-`wallet` is in place. `open` starts `version` at 1. `debit` and `credit` write the balance. A debit that would pass below zero throws. `version` increases only when the balance changes. `rehydrate` rebuilds and does not revalidate.
-
-`ledger` is in place. `create` keeps a debit or a credit only when `balanceBefore` and `money` produce `balanceAfter`. A debit subtracts. A credit adds. `rehydrate` rebuilds and does not recheck. The entry does not update or delete.
-
-`wager` is in place. `WagerTransaction` is born `PENDING`. It can move to `PENDING_REFERENCE`, `PROCESSED`, `REJECTED`, or `FAILED`. `PENDING_REFERENCE` can move to `PROCESSED`, `REJECTED`, or `FAILED`. A terminal status does not change. `reject` and `fail` store a `failureCode`. `create` requires a reference for `REFUND` and `ROLLBACK`. `rehydrate` rebuilds and does not recheck. `PENDING_REFERENCE` carries `attempts` and `nextAttemptAt`; the backoff is `1s × 2^(attempts - 1)`, capped at 60 seconds, and the 12th missing retry rejects with `REFERENCE_NOT_FOUND`.
-
-An entity has an `id`. A value object has no `id` and is compared by value. The folder is the concept, and the file is the concept: `ledger/ledger.ts`. `entities/` and `values/` appear inside a concept only when that concept needs both.
-
-The private constructor receives a `schema`. A getter reads it. A rule method writes it. Types of a concept live in `types.ts`, in a namespace `{Concept}Type`.
+Think of it as a scorekeeper that never loses count.
 
 </details>
 
 <details>
-<summary>⚙️ Application</summary>
+<summary>⚙️ Application — turning requests into decisions</summary>
 
-- `transactions` — `WagerService` hashes the payload and calls `WagerGatewayProtocol`. `WagerMediator` and strategies run inside the SQL transaction (`WagerSubmitWriter`). HTTP and the queue call the same service.
-- `references` — `ReferenceService` retries a `PENDING_REFERENCE` wager with backoff and stops after 12 attempts.
-- `reconciliations` — `reconciliation.service.ts` compares the wallet with the ledger.
-- `idempotencies` — `idempotency.service.ts` hashes the canonical business payload. `outcome` replays with `observedBalance`, or returns `IDEMPOTENCY_PAYLOAD_CONFLICT` when the key repeats with a different body.
+The application is the coordinator. It gives the same wager rules to requests from the HTTP API and the message queue.
 
-One word, plural, no hyphen in the middle of the name.
-
-</details>
-
-<details>
-<summary>🗄️ Infrastructure</summary>
-
-- `persistence` — MikroORM, schema, and the wallet lock
-- `messaging` — queue, inbox, outbox, the publisher, the consumer, and the event envelope
-- `observability` — `SimpleLogger`, `ClockProtocol`, and metrics
-- `protocols` — `TheoryProtocol`, the contract a unit theory plugs in
-
-`persistence` is in place for `wallets` and `wallet_ledger_entries`. Migrations are versioned and reversible. Money columns are `numeric(20, 2)` with `currency char(3)`. `migration:*` reads `DATABASE_URL`.
-
-`observability` is in place for `SimpleLogger`, `SystemClock`, `SimpleMetric`, and the `LoggerService` adapter. A child logger attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. The line is JSON, or pretty when `Environment` reads `LOG_PRETTY` as true. `LoggerService` writes one line per Nest level with `[FortuneTiger]:` and the emoji of the level. No financial payload enters the log.
-
-`messaging` is in place for the event envelope, the inbox, the outbox, the publisher, and the consumer. `OutboxPublisher` claims due rows with `FOR UPDATE SKIP LOCKED`, and `SqsPublisher` sends them to `wager-transactions.fifo` with the aggregate as the message group and the event id as the deduplication id. A failed send schedules the row for retry. `SqsConsumer` long-polls the main queue; `WagerConsumer` parses the request, calls `WagerService` with the inbox row, and acks after the commit. A business failure is acked, a transient failure retries with backoff, and the fifth receive or a malformed request goes to `wager-transactions-dlq.fifo`.
-
-PostgreSQL 16 stores `numeric(20, 2)`. The queue runs on LocalStack.
+- 🔁 Send the same request again with the same key, and it returns the original result instead of charging twice.
+- 🧾 Reuse that key for different details, and the request is flagged as a conflict.
+- 🔎 Missing references can be checked again later; reconciliation compares the wallet with its ledger without silently changing either.
 
 </details>
 
 <details>
-<summary>🌐 Presentation</summary>
+<summary>🗄️ Infrastructure — where data and messages live</summary>
 
-- `http` — wallet and wager routes. Identity plugs in through `ProviderIdentityProtocol`.
-- `health` — liveness and readiness. `GET /health/live` answers `200` with `{"status":"live"}`. `GET /health/ready` asks Postgres and SQS at the same time; one failed probe answers `503` with `{"status":"unavailable"}`.
+The behind-the-scenes layer keeps the service dependable:
 
-`http` is in place:
-
-- `POST /wallets` opens the wallet and its `OPENING` credit in one SQL transaction. `GET /wallets/:walletId` reads one wallet.
-- `GET /wallets/:walletId/ledger` pages the entries by `id`, `limit` 50 by default and 100 at most. A bad cursor or limit answers `400`.
-- `POST /wallets/:walletId/reconciliation` compares the stored balance with the ledger.
-- `POST /wagering/transactions` requires `Idempotency-Key` and answers `202` while pending, `200` when processed or replayed, `422` for a business rejection, and `503` for a `FAILED` wager. `GET /wagering/transactions/:id` and `GET /providers/:providerId/wagering/transactions/:externalId` read one wager.
-
-A thin controller parses the body, calls the use case, maps the output, and chooses the status. The balance rule stays in the domain. `AuthGuard` allows every request today, and `AnonymousProviderIdentity` trusts the `X-Provider-Id` header over the body; a real identity provider replaces that class.
-
-`src/main.ts` reads `PORT`, default `3000`, and enables the shutdown hooks. `src/app.module.ts` wires one instance of the ORM, the clock, the logger, the SQS client, the queue, the publisher, the outbox worker, the reference worker, and the consumer. `RuntimeService` starts the three workers on boot and closes them on shutdown. No migration runs at boot.
+- 🐘 **PostgreSQL** stores wallets, wagers, and the ledger together.
+- 📬 **Inbox and outbox** help the service handle repeated messages and publish events after a successful save.
+- ☁️ **LocalStack SQS** lets the queue run locally, including retries and a dead-letter queue.
+- 🔎 **Logs and metrics** help explain what happened without putting financial payloads in the logs.
 
 </details>
 
-## Run
+<details>
+<summary>🌐 Presentation — the front door</summary>
+
+Providers use the HTTP API to open wallets, submit wagers, check results, browse a wallet's ledger, and compare a wallet with its ledger. Health checks answer a simpler question: “Is the service alive, and can it reach what it needs?”
+
+The front door checks and translates requests. The money rules stay in the rulebook, not in the controller.
+
+</details>
+
+<details>
+<summary>🗺️ Flowcharts — follow a wager through the system</summary>
+
+### One request, two ways in
+
+```mermaid
+flowchart TD
+    Provider["🎮 Game provider"] --> HTTP["🌐 HTTP API"]
+    Provider --> Queue["📨 SQS queue"]
+    HTTP --> Service["⚙️ Shared wager service"]
+    Queue --> Consumer["📥 Queue consumer"]
+    Consumer --> Service
+    Service --> Hash["🔑 Check request key and details"]
+    Hash --> Transaction["🔒 Start one database transaction"]
+    Transaction --> Wallet["👛 Lock wallet and apply the wager"]
+    Wallet --> Records["🧾 Save the wager and wallet result"]
+    Records --> Ledger{"Did the balance change?"}
+    Ledger -->|Yes| Entry["📒 Add a ledger entry"]
+    Ledger -->|No| Skip["⏭️ No balance entry needed"]
+    Records --> Inbox["📬 Save queue receipt, when from SQS"]
+    Entry --> Outbox["📤 Record events to publish"]
+    Skip --> Outbox
+    Inbox --> Outbox
+    Records --> Outbox
+    Outbox --> Commit["✅ Commit everything together"]
+    Commit -->|HTTP request| Response["📨 Return the HTTP result"]
+    Commit -->|SQS request| Ack["✅ Acknowledge the queue message"]
+```
+
+The wallet, wager, ledger entry, queue receipt (when applicable), and outgoing events share the save. If the balance does not change — for example, for a loss — no balance entry is added.
+
+### When a reference has not arrived yet
+
+```mermaid
+flowchart LR
+    Request["🔄 Refund or rollback arrives"] --> Found{"Is its original wager here?"}
+    Found -->|Yes| Apply["✅ Apply the request"]
+    Found -->|Not yet| Hold["⏳ Keep it pending"]
+    Hold --> Worker["🔎 Background worker checks again"]
+    Worker --> Found
+    Worker -->|12 checks with no match| Reject["🛑 Reject as reference not found"]
+```
+
+### Sending saved events
+
+```mermaid
+flowchart LR
+    Commit["✅ Business change commits"] --> Outbox["📤 Event waits in the outbox"]
+    Outbox --> Worker["⏱️ Publisher checks every two seconds"]
+    Worker --> SQS["📨 Send event to SQS FIFO"]
+    SQS --> Delivered["📬 Event is ready for its receiver"]
+    Worker -->|Temporary send problem| Retry["🔁 Schedule another attempt"]
+    Retry --> Worker
+```
+
+</details>
+
+<details>
+<summary>🧭 Architecture — the ideas behind the code</summary>
+
+Three ideas guide how this project is built:
+
+- 📝 **Specification-Driven Development (SDD):** write down what a feature should do before building it; tests check that behavior.
+- 🎲 **Domain-Driven Design (DDD):** organize the business around familiar concepts — money, wallet, ledger, and wager — and keep their rules together.
+- 🧱 **Clean Architecture:** give each layer one job, and keep technical details such as databases and queues from deciding business rules.
+
+### How the pieces fit
+
+```mermaid
+flowchart LR
+    Provider["🎮 Provider"] --> Presentation["🌐 Presentation<br/>receives and checks requests"]
+    Presentation --> Application["⚙️ Application<br/>coordinates the work"]
+    Queue["📨 SQS"] --> MessagingAdapter["📬 Messaging adapter"]
+    MessagingAdapter --> Application
+    Application --> Domain["🎯 Domain<br/>applies business rules"]
+    Application --> Ports["🔌 Protocols<br/>describe what it needs"]
+    Persistence["🗄️ Persistence adapter"] --> Database["🐘 PostgreSQL"]
+    Persistence -. "answers the protocols" .-> Ports
+    MessagingAdapter -. "publishes through a protocol" .-> Ports
+```
+
+The domain is the rulebook. Application is the coordinator. Presentation is the front door. Infrastructure connects those parts to PostgreSQL, SQS, logs, and metrics. The application asks for capabilities through protocols; infrastructure supplies the technical adapters. Changing a database or queue should not rewrite the business rules.
+
+</details>
+
+<details>
+<summary>🤖 AI co-builders — tools and models remembered so far</summary>
+
+These are the coding assistants and model names used to build Fortune Tiger:
+
+- 🖱️ **Cursor** — Composer 2.5 and Grok 4.7.
+- 🧰 **OpenCode** — DeepSeek V4.1 Flash.
+- 🦆 **CLIXAD** (terminal assistant) — DeepSeek V4.1 Flash.
+- 💻 **GitHub Copilot in VS Code** — GPT-5.3-Codex.
+
+</details>
+
+<details>
+<summary>🎨 Stack — the tools under the hood</summary>
+
+- 🟠 **Bun** runs the app, installs packages, and runs tests.
+- 🧱 **NestJS** organizes the HTTP service and its background workers.
+- 🟦 **TypeScript** helps catch mistakes while building.
+- 🐘 **PostgreSQL 16** keeps the financial records.
+- 🧩 **MikroORM** connects the code to the database.
+- 📨 **SQS on LocalStack** provides a queue that works on a developer's machine.
+
+</details>
+
+<details>
+<summary>🌿 History — how changes are shared</summary>
+
+Work is grouped into a focused branch, one clear commit, and a pull request. In plain terms: make one small change, name it clearly, and ask for a review before it reaches `main`.
+
+Branch names and commits follow the same pattern, such as `feat/docs/readme`. The allowed change types are `feat`, `fix`, `docs`, `refactor`, `test`, and `chore`.
+
+</details>
+
+<details>
+<summary>🚀 Run — get the game running locally</summary>
+
+### Start the app
 
 ```bash
 bun install
@@ -102,43 +190,22 @@ bun run migration:up
 bun run start
 ```
 
-`docker compose` starts PostgreSQL 16 and LocalStack, and the ready script creates `wager-transactions.fifo` and `wager-transactions-dlq.fifo`. `bun run start:dev` restarts on change. `bun run test:unit` runs the unit suite, `bun run test:int` covers persistence, publisher concurrency, process-crash redelivery, out-of-order reversals, and restart consistency, and `bun run test:concurrency` exercises race scenarios across three application processes. Both integration commands use the services configured in `.env`.
+The first three steps install the tools, prepare local settings, and start PostgreSQL and LocalStack. The migration creates the database tables; the last command starts the service.
 
-`LOG_PRETTY=true` writes one text line per log. A missing value or `false` writes JSON.
+### Try the commands
 
-<details>
-<summary>🧩 Shape</summary>
-
-Clean Architecture, domain-driven design, and a spec before the code.
-
-A plug-in contract ends with `Protocol`, as in Swift. The file is `mapper.protocol.ts`. Inside, the TypeScript interface takes an input and returns an output.
-
-```ts
-interface MapperProtocol<Input, Output> {
-  map(input: Input): Output
-}
+```bash
+bun run start:dev
+bun run test:unit
+bun run test:int
+bun run test:concurrency
 ```
 
-`Mapper` is the naming example. The file lives in `application/protocols`. The clock is `ClockProtocol`. Provider identity is `ProviderIdentityProtocol`. The logger implements `LoggerProtocol`. `TheoryProtocol` and `PatternProtocol` are there too.
+`start:dev` restarts the app when files change. `test:unit` checks the rules quickly. The integration and concurrency tests use the PostgreSQL and LocalStack services configured in `.env`.
 
-</details>
+### Pick a log style
 
-<details>
-<summary>🎨 Stack</summary>
-
-- ⬛ Bun 1.x
-- 🟥 NestJS
-- 🟦 TypeScript, strict
-- 🟦 PostgreSQL 16
-- 🟩 MikroORM
-- 🟧 SQS on LocalStack
-
-</details>
-
-<details>
-<summary>🌿 History</summary>
-
-A branch leaves `main` as `<type>/<area>/<subject>`. The type is `feat`, `fix`, `docs`, `refactor`, `test`, or `chore`. The area is where the work sits. The subject names the functionality, as in `feat/docs/readme`. The commit uses that same type. One Conventional Commit per pull request. `main` changes only through a pull request.
+Set `LOG_PRETTY=true` in `.env` for readable, one-line text output. Leave it unset or set it to `false` for JSON logs.
 
 </details>
 
