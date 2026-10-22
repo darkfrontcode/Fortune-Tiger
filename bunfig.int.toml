@@ -1,2 +1,2 @@
 [test]
-root = "./src/infrastructure/persistence/__tests__"
+root = "./src/infrastructure/persistence/tests"

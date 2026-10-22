@@ -32,10 +32,11 @@ Nest names, Angular style. The file is `kebab-case` with the role as a suffix. T
 | `transition.map.ts` | `Transition.Map.ts` |
 | `theory.protocol.ts` | `Theory.Protocol.ts` |
 | `health.controller.ts` | `Health.Controller.ts` |
+| `health.module.ts` | `Health.Module.ts` |
 | `wager.service.ts` | `Wager.Service.ts` |
 | `app.module.ts` | `App.Module.ts` |
 
-The concept file stays the business word: `money.ts`, `wallet.ts`, `ledger.ts`, `wager.ts`. Types stay in `types.ts`. A unit test stays in `__tests__/`, named `{subject}.spec.ts`, beside the code it covers.
+The concept file stays the business word: `money.ts`, `wallet.ts`, `ledger.ts`, `wager.ts`. Types stay in `types.ts`. A unit test stays in `tests/`, named `{subject}.test.ts`, beside the code it covers.
 
 Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. Those two files sit beside the layers. They are not folders.
 
@@ -44,6 +45,16 @@ Nest boots at `src/main.ts`. The root module is `src/app.module.ts`. Those two f
 There is no folder named `shared`, `common`, or `utils`, at `src` or inside a layer. That name is a junk drawer. A plug-in contract lives in `protocols`, inside `application`. Domain does not have that folder. Presentation does not have that folder. The domain imports only `application/protocols`, not use cases. `TheoryProtocol`, `PatternProtocol`, and `GuardProtocol` live there.
 
 A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder, not the file. `src/domain/index.ts` reexports `money`, `wallet`, `ledger`, and `wager`. A folder with code and no barrel is incomplete.
+
+## Composition
+
+A Nest module sits inside the boundary it wires, as `health.module.ts` or `persistence.module.ts`. It is the only file that knows both sides of a port. `src/app.module.ts` imports the modules and wires only what spans layers: `ReferenceWorker` and `RuntimeService`.
+
+A class that receives a collaborator is `@Injectable()` and receives it in the constructor. `application` and `infrastructure` use the Nest decorator; the domain does not. A port arrives by token, as `@Inject(WAGER_GATEWAY)`. A collaborator with one implementation arrives by class, as `IdempotencyService`. `new` inside a class stays for the factory that builds its own type, the pure helper with no I/O, the repository tied to the transaction `EntityManager`, and the third-party client built by a factory. `WagerService`, the mediators, the writers, the workers, the publisher, the consumer, and the readiness probes arrive through the constructor.
+
+A port is a protocol plus a token. The protocol lives in `application/protocols` and carries no runtime value. The token is one `Symbol` in `application/tokens`, one file each, named after the protocol without the suffix: `CLOCK`, `LOGGER`, `PUBLISHER`, `WAGER_GATEWAY`, `REFERENCE_READER`, `REFERENCE_GATEWAY`. The module that owns the adapter binds the token with `useExisting`, so one instance answers to both names, and the consumer injects the token.
+
+`Environment`, in `infrastructure/environment`, is the only reader of `process.env`.
 
 ## Simplicity
 
@@ -55,7 +66,7 @@ Clean code: one responsibility per class. No `BaseManager`, `CommonService`, or 
 
 A design pattern needs a real problem. The factories the statement asks for are `create`, `from`, `rehydrate`, and `open`. No protocol per class. A section that fits in the parent spec does not become a new folder. Three exceptions live inside the concept: `data` for error text, `patterns` when two rules share one contract, and `guards` when a rule is a class of its own. Error text is one constant per phrase in `data/messages.data.ts`, inside the concept that throws. The name is `UPPER_SNAKE_CASE` and ends with `_MESSAGE`, as in `CURRENCY_CONFLICT_MESSAGE`. `data/index.ts` reexports it with `export *`. Callers import the folder. The domain does not import `application` to read it. An enum lives in `enums/`, one enum per file: `failure-code.enum.ts`. A map lives in `maps/`, a class that extends `Map`: `transition.map.ts`.
 
-A guard checks one rule and refuses it by throwing, or answers it with a `boolean`. One rule per class, in `guards/` inside the concept or the use case that owns it, with `index.ts`, `spec.md`, and `__tests__/`. The file is `{subject}.guard.ts`, as in `money-amount.guard.ts`. Every class implements `GuardProtocol`, and the method is `guard`. The owner holds one instance, as a `const` at the top of the concept file or as a `private readonly` property. A guard does not build the entity, and the owner asks it instead of restating the rule. A guard may hold other guards inside when the rule is composed, as `LedgerBalanceGuard` does: it asks the inner guard instead of repeating the inner rule. Each guard stays individual. A guard holds no optional field: the input of a composite guard is a type in `types.ts` of that concept, as in `MoneyType.Conflict`. Every guard has a spec in `guards/__tests__/{subject}.guard.spec.ts`, and `guards/spec.md` says what each one checks. A concept barrel does not reexport `guards`: the concept uses the guard, and the caller uses the entity.
+A guard checks one rule and refuses it by throwing, or answers it with a `boolean`. One rule per class, in `guards/` inside the concept or the use case that owns it, with `index.ts`, `spec.md`, and `tests/`. The file is `{subject}.guard.ts`, as in `money-amount.guard.ts`. Every class implements `GuardProtocol`, and the method is `guard`. The owner holds one instance, as a `const` at the top of the concept file or as a `private readonly` property. A guard does not build the entity, and the owner asks it instead of restating the rule. A guard may hold other guards inside when the rule is composed, as `LedgerBalanceGuard` does: it asks the inner guard instead of repeating the inner rule. Each guard stays individual. A guard holds no optional field: the input of a composite guard is a type in `types.ts` of that concept, as in `MoneyType.Conflict`. Every guard has a spec in `guards/tests/{subject}.guard.test.ts`, and `guards/spec.md` says what each one checks. A concept barrel does not reexport `guards`: the concept uses the guard, and the caller uses the entity.
 
 ## Protocol
 

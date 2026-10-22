@@ -10,6 +10,16 @@ PostgreSQL 16. Section 4 of the statement excludes Prisma. This project uses Mik
 
 `OutboxMessageRepository.findDueForUpdate` selects due `outbox_messages` with `FOR UPDATE SKIP LOCKED`, ordered by `occurred_at`, limited by the caller. The statement lives in `outbox/queries/find-due-for-update.query.ts`. `updateMany` writes `attempts`, `next_attempt_at`, and `published_at` for the batch in the same SQL transaction.
 
+## Module
+
+`persistence.module.ts` imports `EnvironmentModule` and `IdempotenciesModule`, and builds `MikroORM` from `environment.databaseUrl` with `useFactory`. The writers, the readers, and `DatabaseReadiness` are `@Injectable()` and receive `MikroORM` by its class token. `WagerSubmitWriter` also receives `IdempotencyService`, `WagerEventsMapper`, and `WagerMediator`. `ReferenceRetryWriter` receives `ReferenceMediator` and `WagerEventsMapper`. `WalletOpeningWriter` receives `IdempotencyService` and `WagerMediator`. The module provides those pure collaborators itself, because the SQL adapter calls them and `PersistenceModule` cannot import `TransactionsModule` without a cycle.
+
+Three tokens are bound with `useExisting`, so one instance answers to the port and to the class: `WAGER_GATEWAY` is `WagerSubmitWriter`, `REFERENCE_READER` is `ReferenceReader`, and `REFERENCE_GATEWAY` is `ReferenceRetryWriter`. `MikroORM`, `DatabaseReadiness`, `WalletOpeningWriter`, and those three tokens are exported. `WalletOpeningWriter` is exported for the wallet route.
+
+`ReconciliationReader` stays unbound until `ReconciliationService` has a metric adapter and a route. `WagerBetWriter` is not part of the delivery: it only repeated `WagerSubmitWriter.submit`, and `WagerSubmitWriter` is the adapter.
+
+A repository is built with the `EntityManager` of the transaction it serves, which is the Unit of Work. Its mapper is a pure helper, so the repository builds it with `new`.
+
 Tables: `wallets`, `wager_transactions`, `wallet_ledger_entries`, `inbox_messages`, `outbox_messages`.
 
 - `wallets`: unique `(player_id, currency)`; balance `>= 0`; `version >= 1`

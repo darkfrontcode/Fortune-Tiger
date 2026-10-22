@@ -3,8 +3,11 @@ import {
   DeleteMessageCommand,
   ReceiveMessageCommand,
   SendMessageCommand,
+  SQSClient,
 } from '@aws-sdk/client-sqs'
-import type { Message, SQSClient } from '@aws-sdk/client-sqs'
+import type { Message } from '@aws-sdk/client-sqs'
+import { Inject, Injectable } from '@nestjs/common'
+import { QUEUE_CONFIG } from '../factories'
 import type { ConsumerType } from './types'
 
 type Config = ConsumerType.Config
@@ -64,10 +67,11 @@ const message = (source: Message): QueueMessage | undefined => {
   }
 }
 
+@Injectable()
 export class SqsQueue {
   constructor(
-    private readonly client: SQSClient,
-    private readonly config: Config,
+    @Inject(SQSClient) private readonly client: SQSClient,
+    @Inject(QUEUE_CONFIG) private readonly config: Config,
   ) {}
 
   async receive(): Promise<Array<QueueMessage>> {

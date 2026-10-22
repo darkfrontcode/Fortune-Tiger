@@ -20,8 +20,12 @@ Wager mediation, strategies, and moves live in `wager/`. See `wager/spec.md`.
 
 A business failure rejects the wager. The balance, the version, and the ledger stay as they were. `WagerMediator.mediate` does not throw for a business failure.
 
-`wager.service.ts` builds the wager, hashes the payload, rejects `OPENING`, and calls `WagerGatewayProtocol`. The adapter runs `WagerMediator` inside the SQL transaction. Unit tests live in `__tests__/` next to the file they cover, as `{subject}.spec.ts`.
+`wager.service.ts` builds the wager, hashes the payload, rejects `OPENING`, and calls `WagerGatewayProtocol`. The adapter runs `WagerMediator` inside the SQL transaction. Unit tests live in `tests/` next to the file they cover, as `{subject}.test.ts`.
 
 `wager/types.ts` defines `TransactionsType` for submit, mediation, and reference holds.
+
+## Module
+
+`transactions.module.ts` imports `PersistenceModule` and `IdempotenciesModule`, provides `WagerService`, and exports it. `WagerService` is `@Injectable()` and receives `WAGER_GATEWAY` by token and `IdempotencyService` by class. The module only lists the provider: the service keeps importing the protocol, never `WagerSubmitWriter`.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

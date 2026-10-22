@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common'
 import type { MapperProtocol } from '../../../application/protocols'
 import type { Ledger } from '../../../domain/ledger/ledger'
 import type { Wallet } from '../../../domain/wallet/wallet'
@@ -23,6 +24,7 @@ type Input = {
 
 type Output = Array<OutboxMessage>
 
+@Injectable()
 export class WagerEventsMapper implements MapperProtocol<Input, Output> {
   map(input: Input): Output {
     const { wager, wallet, ledger, context } = input

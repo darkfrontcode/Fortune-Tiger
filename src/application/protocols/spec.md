@@ -26,6 +26,10 @@ A plug-in contract. The folder is `protocols`, inside `application`. The file ro
 
 `ClockProtocol` is the injectable clock. `now` returns a `Date`. `SystemClock` implements it in `src/infrastructure/observability`.
 
-The files are `theory.protocol.ts`, `pattern.protocol.ts`, `guard.protocol.ts`, `mapper.protocol.ts`, `publisher.protocol.ts`, `logger.protocol.ts`, `metric.protocol.ts`, `clock.protocol.ts`, `reconciliation.gateway.protocol.ts`, `reference.gateway.protocol.ts`, `reference.reader.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
+A protocol carries no runtime value. The container identity of a port is a token, and the tokens live in `src/application/tokens`, one file each, with the `UPPER_SNAKE_CASE` name of the protocol without the suffix. A consumer injects the token and never the adapter class. `tokens/spec.md` lists them.
+
+`ReadinessProtocol` has one method, `check`, and answers whether one dependency is reachable. `DatabaseReadiness` in `src/infrastructure/persistence` and `QueueReadiness` in `src/infrastructure/messaging` implement it. `HealthService` composes them, and that is how the readiness probe reaches Postgres and SQS.
+
+The files are `theory.protocol.ts`, `pattern.protocol.ts`, `guard.protocol.ts`, `mapper.protocol.ts`, `publisher.protocol.ts`, `logger.protocol.ts`, `metric.protocol.ts`, `clock.protocol.ts`, `readiness.protocol.ts`, `reconciliation.gateway.protocol.ts`, `reference.gateway.protocol.ts`, `reference.reader.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
 
 All project text is English, including the root `README.md`.

@@ -10,6 +10,6 @@ Double-entry is out.
 
 The stored balance equals the balance reconstructed from these entries.
 
-Unit tests live in `__tests__/ledger.spec.ts`. Each guard has its own spec, in `guards/__tests__/{subject}.guard.spec.ts`.
+Unit tests live in `tests/ledger.test.ts`. Each guard has its own spec, in `guards/tests/{subject}.guard.test.ts`.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

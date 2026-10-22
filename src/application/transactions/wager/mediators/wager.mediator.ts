@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common'
 import type { Ledger } from '../../../../domain/ledger'
 import { FailureCode } from '../../../../domain/wager/enums'
 import type { WagerTransaction } from '../../../../domain/wager/wager'
@@ -7,8 +8,9 @@ import { WagerStrategy } from '../strategies'
 
 type Mediation = TransactionsType.Mediation
 
+@Injectable()
 export class WagerMediator {
-  static mediate(wager: WagerTransaction, mediation: Mediation): Ledger | undefined {
+  mediate(wager: WagerTransaction, mediation: Mediation): Ledger | undefined {
     const owned = WagerReference.owner(wager, mediation.wallet)
 
     if (!owned) {

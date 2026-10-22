@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common'
 import { uuidv7 } from 'uuidv7'
 import type { MapperProtocol } from '../../../application/protocols'
 import type { TransactionsType } from '../../../application/transactions'
@@ -11,6 +12,7 @@ type Input = {
 
 type Output = TransactionsType.SubmitInput
 
+@Injectable()
 export class WagerRequestMapper implements MapperProtocol<Input, Output> {
   map(input: Input): Output {
     const { request, receivedAt, consumerName } = input

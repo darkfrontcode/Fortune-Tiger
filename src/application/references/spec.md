@@ -16,6 +16,10 @@ The worker ticks every 2 seconds. The limit per tick is 20. The worker stops on 
 
 No retry repairs a divergence. No retry applies a terminal wager again. A retry that is still missing does not enqueue a second `WagerTransactionPendingReference`.
 
-Unit tests live in `__tests__/reference.service.spec.ts`.
+Unit tests live in `tests/reference.service.test.ts`.
+
+## Module
+
+`references.module.ts` imports `PersistenceModule`, provides `ReferenceService`, and exports it. `ReferenceService` is `@Injectable()` and receives `REFERENCE_READER` and `REFERENCE_GATEWAY` by token. `ReferenceWorker` stays out of this module: the root provides it, because it joins the service with the clock, the logger, and a process loop. The worker is `@Injectable()` too.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

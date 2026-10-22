@@ -1,15 +1,18 @@
+import { Inject, Injectable } from '@nestjs/common'
 import { WagerTransactionStatus } from '../../domain/wager/enums'
 import type { ReferenceGatewayProtocol, ReferenceReaderProtocol } from '../protocols'
+import { REFERENCE_GATEWAY, REFERENCE_READER } from '../tokens'
 import { ReferenceType } from './types'
 
 type Input = ReferenceType.Input
 type Output = ReferenceType.Output
 type RetryOutput = ReferenceType.RetryOutput
 
+@Injectable()
 export class ReferenceService {
   constructor(
-    private readonly reader: ReferenceReaderProtocol,
-    private readonly gateway: ReferenceGatewayProtocol,
+    @Inject(REFERENCE_READER) private readonly reader: ReferenceReaderProtocol,
+    @Inject(REFERENCE_GATEWAY) private readonly gateway: ReferenceGatewayProtocol,
   ) {}
 
   async retry(input: Input): Promise<Output> {

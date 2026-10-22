@@ -50,7 +50,7 @@ Error text of a concept lives in `data/messages.data.ts` inside that concept. On
 
 Two rules that share one contract live in `patterns` inside the concept. Each rule is a class in `{subject}.pattern.ts`, as in `amount.pattern.ts`. The class name ends with `Pattern`, as in `MoneyAmountPattern`. The expression is a `private readonly` property on that class. It is not a method and not a `const` above the class. `patterns/index.ts` reexports the classes with `export *`. The contract is `PatternProtocol`, in `application/protocols`, file `pattern.protocol.ts`. It has an input and an output. A concept folder does not hold a protocol.
 
-A rule that refuses or answers lives in `guards` inside the concept or the use case that owns it. One rule per class, in `{subject}.guard.ts`, as in `money-amount.guard.ts`. The class name joins the concept, the subject, and the role, as in `MoneyAmountGuard`. Every class implements `GuardProtocol`, in `application/protocols`, file `guard.protocol.ts`, and the method is `guard`: a guard that refuses returns nothing and throws, and a guard that only answers returns a `boolean`. The owner holds one instance, as a `const` at the top of the concept file or as a `private readonly` property. A guard does not build the entity, and the owner asks it instead of restating the rule. A guard may hold other guards inside when the rule is composed, as `LedgerBalanceGuard` does: it asks the inner guard instead of repeating the inner rule. Each guard stays individual: one rule per class, and no inner rule restated. The input of a composite guard is a type in `types.ts` of that concept. A guard holds no optional field. `guards/index.ts` reexports the classes with `export *`, the concept keeps its own `guards/spec.md`, and each guard has a spec in `guards/__tests__/{subject}.guard.spec.ts`. A concept barrel does not reexport `guards`: the concept uses the guard, and the caller uses the entity.
+A rule that refuses or answers lives in `guards` inside the concept or the use case that owns it. One rule per class, in `{subject}.guard.ts`, as in `money-amount.guard.ts`. The class name joins the concept, the subject, and the role, as in `MoneyAmountGuard`. Every class implements `GuardProtocol`, in `application/protocols`, file `guard.protocol.ts`, and the method is `guard`: a guard that refuses returns nothing and throws, and a guard that only answers returns a `boolean`. The owner holds one instance, as a `const` at the top of the concept file or as a `private readonly` property. A guard does not build the entity, and the owner asks it instead of restating the rule. A guard may hold other guards inside when the rule is composed, as `LedgerBalanceGuard` does: it asks the inner guard instead of repeating the inner rule. Each guard stays individual: one rule per class, and no inner rule restated. The input of a composite guard is a type in `types.ts` of that concept. A guard holds no optional field. `guards/index.ts` reexports the classes with `export *`, the concept keeps its own `guards/spec.md`, and each guard has a spec in `guards/tests/{subject}.guard.test.ts`. A concept barrel does not reexport `guards`: the concept uses the guard, and the caller uses the entity.
 
 ## Score
 
@@ -76,6 +76,7 @@ Type names, kinds, statuses, and `failureCode` follow the statement. The field s
 src/
   main.ts
   app.module.ts
+  runtime.service.ts
   domain/
     AGENTS.md
     money/spec.md
@@ -85,11 +86,14 @@ src/
   application/
     AGENTS.md
     protocols/spec.md
+    tokens/spec.md
     transactions/spec.md
+    references/spec.md
     reconciliations/spec.md
     idempotencies/spec.md
   infrastructure/
     AGENTS.md
+    environment/spec.md
     persistence/spec.md
     messaging/spec.md
     observability/spec.md
@@ -99,9 +103,36 @@ src/
     health/spec.md
 ```
 
-`main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` wires the layers. There is no `src/modules` folder. There is no `shared` folder.
+`main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` imports the layer modules, and `runtime.service.ts` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.
 
-Files follow the Nest name (`health.controller.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, `patterns/` holds the rule classes, and `guards/` holds one class per rule with its own `spec.md`. A protocol stays in `application/protocols`. Unit tests live in `__tests__/` next to the module they cover. The file is `{subject}.spec.ts`. Production barrels do not reexport tests.
+Files follow the Nest name (`health.controller.ts`, `health.module.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, `patterns/` holds the rule classes, and `guards/` holds one class per rule with its own `spec.md`. A protocol stays in `application/protocols`, and its token stays in `application/tokens`. Unit tests live in `tests/` next to the module they cover. The file is `{subject}.test.ts`. Production barrels do not reexport tests.
+
+## Composition
+
+A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, and `health.module.ts` build the adapters and the controller. `transactions.module.ts` and `references.module.ts` build the use cases.
+
+A port is a protocol plus a token. The protocol is the contract and carries no runtime value. The token is one `Symbol` in `application/tokens`, one file each, named after the protocol without the suffix. The module that owns the adapter binds the token with `useExisting`, so one instance answers to both names, and the consumer injects only the token.
+
+`src/app.module.ts` imports the modules and wires only what spans layers: `ReferenceWorker` and `RuntimeService`. It holds no adapter and no use case. A module imports the module whose provider it needs, and that import is the composition edge: the arrow points outward there, and nowhere else. Inside a layer the code imports protocols, never adapters.
+
+## Injection
+
+Nest builds the graph. `application` and `infrastructure` declare `@Injectable()` on the class and receive a collaborator through the constructor. The domain does not: a concept holds its guard and its pattern as a `const` at the top of its own file.
+
+A port arrives by its token, as `@Inject(WAGER_GATEWAY)`. A collaborator with one implementation arrives by its class, as `IdempotencyService`, `WagerMediator`, or `WagerEventsMapper`. A protocol exists only when something is plugged in, so a class with one implementation carries no token.
+
+`new` inside a class is allowed in four places, and nowhere else:
+
+- a factory that builds its own type: `Money.from`, `WagerRequest.from`, `SimpleLogger.open`, the event `enqueue` and `from`;
+- a pure helper with no I/O and no configuration, held by its owner: `WalletMapper` inside its repository, `PayloadHashPattern` inside `IdempotencyService`;
+- a repository tied to the transaction `EntityManager`: `new WalletRepository(manager)` is the Unit of Work;
+- a third-party client at the edge: `createOrm` and `createSqsClient` in a factory.
+
+A service with a collaborator is not built with `new`. `WagerService`, `IdempotencyService`, the mediators, the writers, the readers, the workers, the publisher, the consumer, and the readiness probes arrive through the constructor.
+
+A factory provider stays for a value the container builds from `Environment` (`MikroORM`, `SQSClient`, `QUEUE_CONFIG`) and for the array the health module joins (`READINESS`). A pure collaborator used by two layers is provided by the module that consumes it, so the layer arrow does not become a module cycle.
+
+`Environment` is the only reader of `process.env`. `environment.module.ts` provides it and exports it, so every factory receives it instead of reading a variable. `main.ts` asks the container for the port.
 
 ## Stack
 

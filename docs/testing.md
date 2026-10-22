@@ -4,7 +4,7 @@ A test proves the property. It does not replace Postgres or SQS with a mock when
 
 ## Unit
 
-Unit tests sit in `__tests__/` beside the module they cover. The file name is `{subject}.spec.ts`.
+Unit tests sit in `tests/` beside the module they cover. The file name is `{subject}.test.ts`.
 
 `Money`: scale, invalid input, currency conflict. `Wallet`: balance and version. `BET`, `WIN`, `LOSS`, `REFUND`, `ROLLBACK`. Same key with a different payload. Factories `create` and `rehydrate`.
 

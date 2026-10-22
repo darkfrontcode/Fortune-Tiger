@@ -1,16 +1,19 @@
+import { Inject, Injectable } from '@nestjs/common'
 import type { ClockProtocol, LoggerProtocol } from '../../../application/protocols'
-import { ReferenceService } from '../../../application/references'
+import { ReferenceService } from '../../../application/references/reference.service'
+import { CLOCK, LOGGER } from '../../../application/tokens'
 
 const intervalMs = 2_000
 const limit = 20
 
+@Injectable()
 export class ReferenceWorker {
   private timer: ReturnType<typeof setInterval> | undefined
 
   constructor(
     private readonly service: ReferenceService,
-    private readonly clock: ClockProtocol,
-    private readonly logger: LoggerProtocol,
+    @Inject(CLOCK) private readonly clock: ClockProtocol,
+    @Inject(LOGGER) private readonly logger: LoggerProtocol,
   ) {}
 
   open(): void {

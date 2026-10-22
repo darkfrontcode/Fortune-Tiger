@@ -1,4 +1,6 @@
+export * from './consumer-name.token'
 export * from './enums'
+export * from './queue.readiness'
 export * from './sqs.consumer'
 export * from './sqs.queue'
 export * from './types'

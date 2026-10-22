@@ -9,7 +9,7 @@ FIFO is an optimization. Uniqueness and the inbox live in Postgres.
 
 ## Layout
 
-`messaging` has five folders. `events/` holds the integration event contract in `integration-event.ts` and `types.ts`, plus one folder per concept that records an event: `events/wager` and `events/wallet`. Each concept folder holds its events, its `types.ts` with `{Concept}EventType`, and an `index.ts`. `messages/` holds the inbox row, the outbox row, the inbound wager request, its guard, and its error text. `mappers/` holds the projection from a wager to outbox rows and the projection from a wager request to a transaction input. `publishers/` holds the outbox publisher, the SQS adapter, and the worker. `consumers/` holds the SQS queue adapter, the SQS consumer, the wager consumer, its outcome enum, and its types. A namespace lives in the `types.ts` of the concept that owns it. `index.ts` reexports the child folders with `export *`.
+`messaging` has six folders. `events/` holds the integration event contract in `integration-event.ts` and `types.ts`, plus one folder per concept that records an event: `events/wager` and `events/wallet`. Each concept folder holds its events, its `types.ts` with `{Concept}EventType`, and an `index.ts`. `messages/` holds the inbox row, the outbox row, the inbound wager request, its guard, and its error text. `mappers/` holds the projection from a wager to outbox rows and the projection from a wager request to a transaction input. `publishers/` holds the outbox publisher, the SQS adapter, and the worker. `consumers/` holds the SQS queue adapter, the SQS consumer, the wager consumer, its outcome enum, its types, and the queue readiness probe. `factories/` builds the SQS client and the `ConsumerType.Config` from the environment. A namespace lives in the `types.ts` of the concept that owns it. `index.ts` reexports the child folders with `export *`.
 
 ## Inbox
 
@@ -87,5 +87,23 @@ Redelivery does not duplicate the effect.
 The publisher reads due outbox rows with `FOR UPDATE SKIP LOCKED`. Several publishers do not lose an event and do not republish forever without control. Death after commit and before publish: another instance publishes. A duplicate publish stays safe for the consumer.
 
 Events are not published before the financial commit.
+
+## Module
+
+`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `TransactionsModule`, and `ObservabilityModule`, and it provides the whole channel. `SQSClient` and the `QUEUE_CONFIG` token are built once from `Environment`; the token lives beside `createQueueConfig` in `factories/queue.factory.ts`.
+
+`SqsQueue`, `SqsPublisher`, `QueueReadiness`, `OutboxPublisher`, `OutboxWorker`, `WagerConsumer`, and `SqsConsumer` are `@Injectable()`. They receive `SQSClient` and `MikroORM` by class token, `CLOCK`, `LOGGER`, and `PUBLISHER` by their tokens, and `QUEUE_CONFIG` for the queue URLs and the poll limits. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`.
+
+The consumer name is `wager`. It is the `CONSUMER_NAME` token in `consumers/consumer-name.token.ts`, bound with `useValue`, and `WagerConsumer` receives it in the constructor.
+
+`OutboxWorker`, `SqsConsumer`, and `QueueReadiness` are exported. `RuntimeService` is not: the root provides it, because it starts all three workers.
+
+## Environment
+
+`Environment` is the only reader of the variables below. `AWS_REGION` defaults to `us-east-1`, and `AWS_ENDPOINT_URL` points to LocalStack. `SQS_QUEUE_URL` and `SQS_DEAD_LETTER_QUEUE_URL` carry the absolute queue URLs. The consumer name is `wager`. `factories/sqs.factory.ts` builds the client with `maxAttempts` 1, and `factories/queue.factory.ts` builds the `ConsumerType.Config`: `maxMessages` 10, `waitTimeSeconds` 20, `visibilityTimeout` 30.
+
+Compose starts Postgres 16 and LocalStack, and the ready script in `docker/localstack` creates `wager-transactions.fifo` and `wager-transactions-dlq.fifo`. The queue is FIFO, and the deduplication id is the event id.
+
+The boot starts `OutboxWorker`, `ReferenceWorker`, and `SqsConsumer` once, and the shutdown closes them in that order. A close that throws goes to the logger as a warning, and the shutdown continues.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.
