@@ -31,11 +31,11 @@ class Metric implements MetricProtocol {
 }
 
 class Suite {
-  static orm!: MikroORM
+  static orm: MikroORM
 
-  static writer!: WalletOpeningWriter
+  static writer: WalletOpeningWriter
 
-  static service!: ReconciliationService
+  static service: ReconciliationService
 }
 
 beforeAll(async () => {

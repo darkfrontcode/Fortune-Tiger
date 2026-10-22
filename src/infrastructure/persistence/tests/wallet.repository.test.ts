@@ -31,11 +31,11 @@ const revision = {
 }
 
 class Suite {
-  static orm!: MikroORM
+  static orm: MikroORM
 
-  static wallets!: WalletRepository
+  static wallets: WalletRepository
 
-  static ledger!: WalletLedgerRepository
+  static ledger: WalletLedgerRepository
 }
 
 const openWallet = (playerId: string) => {

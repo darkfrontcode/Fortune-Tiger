@@ -37,13 +37,13 @@ const consumer = {
 }
 
 class Suite {
-  static orm!: MikroORM
+  static orm: MikroORM
 
-  static wallets!: WalletRepository
+  static wallets: WalletRepository
 
-  static inbox!: InboxMessageRepository
+  static inbox: InboxMessageRepository
 
-  static writer!: WagerSubmitWriter
+  static writer: WagerSubmitWriter
 }
 
 const openWallet = (playerId: string) => {

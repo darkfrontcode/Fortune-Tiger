@@ -54,11 +54,11 @@ const events = {
 }
 
 class Suite {
-  static orm!: MikroORM
+  static orm: MikroORM
 
-  static wallets!: WalletRepository
+  static wallets: WalletRepository
 
-  static writer!: WagerSubmitWriter
+  static writer: WagerSubmitWriter
 }
 
 const openWallet = (playerId: string) => {

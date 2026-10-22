@@ -36,15 +36,15 @@ const revision = {
 }
 
 class Suite {
-  static orm!: MikroORM
+  static orm: MikroORM
 
-  static wallets!: WalletRepository
+  static wallets: WalletRepository
 
-  static wagers!: WagerTransactionRepository
+  static wagers: WagerTransactionRepository
 
-  static ledger!: WalletLedgerRepository
+  static ledger: WalletLedgerRepository
 
-  static writer!: WalletOpeningWriter
+  static writer: WalletOpeningWriter
 }
 
 beforeAll(async () => {
