@@ -10,13 +10,13 @@ Unit tests sit in `tests/` beside the module they cover. The file name is `{subj
 
 A unit case is a theory. `TheoryProtocol` lives in `src/application/protocols`. The case carries `params`, `expected`, and a description `WHEN` … `SHOULD`. The test compares the actual boolean with `expected`. The domain file under test does not import it.
 
-Planned command: `bun test src` through `test:unit`.
+`bun run test:unit` runs the unit suite.
 
 ## Integration
 
-Real containers. Migrations and constraints. Atomicity of wallet, ledger, inbox, and outbox. Inbox redelivery. Concurrent publishers. Retry and DLQ. Consistency after a restart.
+Real PostgreSQL and LocalStack. Migrations and constraints. Atomicity of wallet, ledger, inbox, and outbox. Inbox redelivery after process termination. Concurrent publishers. Retry and DLQ. Reversals that arrive before their references. Consistency after a restart.
 
-Planned command: `test:int`.
+`bun run test:int` runs these integration scenarios.
 
 ## Concurrency
 
