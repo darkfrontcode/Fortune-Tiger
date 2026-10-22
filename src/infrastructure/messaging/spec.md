@@ -94,6 +94,8 @@ Events are not published before the financial commit.
 
 `SqsQueue`, `SqsPublisher`, `QueueReadiness`, `OutboxPublisher`, `OutboxWorker`, `WagerConsumer`, and `SqsConsumer` are `@Injectable()`. They receive `SQSClient` and `MikroORM` by class token, `CLOCK`, `LOGGER`, and `PUBLISHER` by their tokens, and `QUEUE_CONFIG` for the queue URLs and the poll limits. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`.
 
+`PUBLISHER` is owned by messaging and lives in `tokens/`. `CLOCK` and `LOGGER` are cross-cutting tokens from `application/dependencies/tokens`.
+
 The consumer name is `wager`. It is the `CONSUMER_NAME` token in `consumers/consumer-name.token.ts`, bound with `useValue`, and `WagerConsumer` receives it in the constructor.
 
 `OutboxWorker`, `SqsConsumer`, and `QueueReadiness` are exported. `RuntimeService` is not: the root provides it, because it starts all three workers.

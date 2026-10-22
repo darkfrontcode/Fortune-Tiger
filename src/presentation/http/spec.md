@@ -50,7 +50,7 @@ Keycloak is out.
 
 ## Module
 
-`http.module.ts` imports `PersistenceModule`, `TransactionsModule`, `ReconciliationsModule`, and `ObservabilityModule`. It declares `WalletController` and `WagerController`. `AuthGuard` is applied to `WagerController`, and `PROVIDER_IDENTITY` is bound to `AnonymousProviderIdentity`. `WalletController` receives `WALLET_OPENING`, `WALLET_READER`, `LEDGER_READER`, and `CLOCK` by token, plus `ReconciliationService` by class. `WagerController` receives `WagerService` by class and `WAGER_READER` and `CLOCK` by token.
+`http.module.ts` imports `PersistenceModule`, `TransactionsModule`, `ReconciliationsModule`, and `ObservabilityModule`. It declares `WalletController` and `WagerController`. `AuthGuard` is applied to `WagerController`, and `PROVIDER_IDENTITY` is bound to `AnonymousProviderIdentity`; its token lives in this module's `tokens/` folder. `WalletController` receives `WALLET_OPENING`, `WALLET_READER`, `LEDGER_READER`, and `CLOCK` by token, plus `ReconciliationService` by class. `WagerController` receives `WagerService` by class and `WAGER_READER` and `CLOCK` by token. Cross-cutting `CLOCK` and `LOGGER` tokens live in `application/dependencies/tokens`.
 
 `wager.dto.ts` and `wallet.dto.ts` in `dtos/` declare the request shape with `class-validator` decorators. The Nest `ValidationPipe` in `main.ts` validates every `@Body()` against the DTO class and answers `400` on mismatch. After validation, `WagerDtoMapper` and `WalletDtoMapper` in `mappers/` convert the validated DTO into `HttpType.WagerInput` and `HttpType.WalletInput` — building domain `Money` and checking cross-field rules (reference required for `REFUND`/`ROLLBACK`). A missing `Idempotency-Key` answers `400` with `IDEMPOTENCY_KEY_REQUIRED_MESSAGE`.
 

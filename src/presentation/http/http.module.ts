@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { APP_FILTER } from '@nestjs/core'
 import { ReconciliationsModule } from '@application/reconciliations'
-import { PROVIDER_IDENTITY } from '@application/tokens'
+import { PROVIDER_IDENTITY } from './tokens'
 import { TransactionsModule } from '@application/transactions'
 import { ObservabilityModule } from '@infrastructure/observability'
 import { PersistenceModule } from '@infrastructure/persistence'

@@ -4,7 +4,7 @@ import { WagerTransaction } from '@domain/wager/wager'
 import { IdempotencyService } from '../../idempotencies/idempotency.service'
 import type { IdempotencyType } from '../../idempotencies/types'
 import type { WagerGatewayProtocol } from '../../protocols'
-import { WAGER_GATEWAY } from '../../tokens'
+import { WAGER_GATEWAY } from '../tokens'
 import { TransactionsType } from './types'
 
 type SubmitInput = TransactionsType.SubmitInput

@@ -1,16 +1,10 @@
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Module } from '@nestjs/common'
 import { IdempotenciesModule } from '@application/idempotencies/idempotencies.module'
-import {
-  LEDGER_READER,
-  RECONCILIATION_GATEWAY,
-  REFERENCE_GATEWAY,
-  REFERENCE_READER,
-  WAGER_GATEWAY,
-  WAGER_READER,
-  WALLET_OPENING,
-  WALLET_READER,
-} from '@application/tokens'
+import { RECONCILIATION_GATEWAY } from '@application/reconciliations/tokens'
+import { REFERENCE_GATEWAY, REFERENCE_READER } from '@application/references/tokens'
+import { WAGER_GATEWAY, WAGER_READER } from '@application/transactions/tokens'
+import { LEDGER_READER, WALLET_OPENING, WALLET_READER } from '@application/wallets/tokens'
 import { ReferenceMediator } from '@application/transactions/wager/mediators/reference.mediator'
 import { WagerMediator } from '@application/transactions/wager/mediators/wager.mediator'
 import { Environment, EnvironmentModule } from '../environment'

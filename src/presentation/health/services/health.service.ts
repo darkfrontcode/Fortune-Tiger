@@ -1,6 +1,6 @@
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import type { ReadinessProtocol } from '@application/protocols'
-import { READINESS } from '@application/tokens'
+import { READINESS } from '../tokens'
 import { HealthStatus } from '../enums'
 import type { HealthType } from '../types'
 

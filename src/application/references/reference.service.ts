@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { WagerTransactionStatus } from '@domain/wager/enums'
 import type { ReferenceGatewayProtocol, ReferenceReaderProtocol } from '../protocols'
-import { REFERENCE_GATEWAY, REFERENCE_READER } from '../tokens'
+import { REFERENCE_GATEWAY, REFERENCE_READER } from './tokens'
 import { ReferenceType } from './types'
 
 type Input = ReferenceType.Input
