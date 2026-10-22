@@ -1,4 +1,5 @@
-import type { MikroORM } from '@mikro-orm/postgresql'
+import { MikroORM } from '@mikro-orm/postgresql'
+import { Inject, Injectable } from '@nestjs/common'
 import type { ReconciliationGatewayProtocol } from '../../../application/protocols'
 import type { ReconciliationsType } from '../../../application/reconciliations/types'
 import { WalletLedgerRepository } from '../ledger/wallet-ledger.repository'
@@ -6,8 +7,9 @@ import { WalletRepository } from '../wallet/wallet.repository'
 
 type Snapshot = ReconciliationsType.Snapshot
 
+@Injectable()
 export class ReconciliationReader implements ReconciliationGatewayProtocol {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(@Inject(MikroORM) private readonly orm: MikroORM) {}
 
   async load(walletId: string): Promise<Snapshot | undefined> {
     const manager = this.orm.em.fork()

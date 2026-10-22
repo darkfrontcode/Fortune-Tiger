@@ -1,4 +1,5 @@
 export * from './inbox'
+export * from './data'
 export * from './ledger'
 export * from './database.readiness'
 export * from './orm.factory'

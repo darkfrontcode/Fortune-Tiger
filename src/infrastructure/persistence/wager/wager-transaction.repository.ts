@@ -7,6 +7,8 @@ import { WalletEntity } from '../wallet/wallet.entity'
 import { WagerTransactionEntity } from './wager-transaction.entity'
 import { WagerTransactionMapper } from './wager-transaction.mapper'
 
+const relation = 'wallet'
+
 type Stored = IdempotencyType.Stored
 
 export class WagerTransactionRepository {
@@ -32,7 +34,7 @@ export class WagerTransactionRepository {
     const entity = await this.manager.findOne(
       WagerTransactionEntity,
       { idempotencyKey },
-      { populate: ['wallet'] },
+      { populate: [relation] },
     )
 
     if (entity === null) { return undefined }
@@ -58,7 +60,7 @@ export class WagerTransactionRepository {
     const entity = await this.manager.findOne(
       WagerTransactionEntity,
       { id },
-      { populate: ['wallet'] },
+      { populate: [relation] },
     )
 
     if (entity === null) { return undefined }
@@ -88,7 +90,7 @@ export class WagerTransactionRepository {
       {
         limit,
         orderBy: { nextAttemptAt: QueryOrder.ASC },
-        populate: ['wallet'],
+        populate: [relation],
       },
     )
     const toDomain = (entity: WagerTransactionEntity) => this.mapper.toDomain(entity)
@@ -100,7 +102,7 @@ export class WagerTransactionRepository {
     const entity = await this.manager.findOne(
       WagerTransactionEntity,
       { idempotencyKey },
-      { populate: ['wallet'] },
+      { populate: [relation] },
     )
 
     if (entity === null) { return undefined }
@@ -115,7 +117,7 @@ export class WagerTransactionRepository {
     const entity = await this.manager.findOne(
       WagerTransactionEntity,
       { providerId, externalTransactionId },
-      { populate: ['wallet'] },
+      { populate: [relation] },
     )
 
     if (entity === null) { return undefined }

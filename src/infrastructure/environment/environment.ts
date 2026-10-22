@@ -1,7 +1,6 @@
 const defaultPort = 3000
 const defaultRegion = 'us-east-1'
-const defaultAccessKey = 'test'
-const defaultSecretKey = 'test'
+const defaultCredential = 'test'
 const empty = String()
 
 export class Environment {
@@ -26,11 +25,11 @@ export class Environment {
   }
 
   get accessKeyId(): string {
-    return process.env.AWS_ACCESS_KEY_ID ?? defaultAccessKey
+    return process.env.AWS_ACCESS_KEY_ID ?? defaultCredential
   }
 
   get secretAccessKey(): string {
-    return process.env.AWS_SECRET_ACCESS_KEY ?? defaultSecretKey
+    return process.env.AWS_SECRET_ACCESS_KEY ?? defaultCredential
   }
 
   get queueUrl(): string {

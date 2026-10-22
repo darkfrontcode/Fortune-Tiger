@@ -1,4 +1,5 @@
 export * from './wallet.entity'
 export * from './wallet.mapper'
 export * from './wallet-opening.writer'
+export * from './wallet.reader'
 export * from './wallet.repository'

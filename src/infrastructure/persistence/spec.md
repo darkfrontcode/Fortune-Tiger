@@ -8,15 +8,17 @@ PostgreSQL 16. Section 4 of the statement excludes Prisma. This project uses Mik
 
 `ReferenceReader.due` selects `PENDING_REFERENCE` rows whose `next_attempt_at` is null or not after now, ordered by `next_attempt_at`, limited by the caller. `ReferenceRetryWriter.retry` locks the wager row and the wallet row with `SELECT FOR UPDATE`, then writes the wager, the wallet, the ledger, and the outbox in one SQL transaction. A retry that is still waiting writes only `attempts` and `next_attempt_at`.
 
+`WalletReader.findById` opens a forked `EntityManager` and reads one wallet. `LedgerReader.page` reads the entries of one wallet ordered by `id`, which is UUIDv7, after the `id` in the cursor, up to the limit plus one row, so the page knows whether another row exists. The cursor is the base64url of the last `id`; a cursor that is not the base64url of a UUID answers nothing. `WagerReader` reads one wager by `id` or by `(provider_id, external_transaction_id)`. All three read only, and none of them locks a row.
+
 `OutboxMessageRepository.findDueForUpdate` selects due `outbox_messages` with `FOR UPDATE SKIP LOCKED`, ordered by `occurred_at`, limited by the caller. The statement lives in `outbox/queries/find-due-for-update.query.ts`. `updateMany` writes `attempts`, `next_attempt_at`, and `published_at` for the batch in the same SQL transaction.
 
 ## Module
 
 `persistence.module.ts` imports `EnvironmentModule` and `IdempotenciesModule`, and builds `MikroORM` from `environment.databaseUrl` with `useFactory`. The writers, the readers, and `DatabaseReadiness` are `@Injectable()` and receive `MikroORM` by its class token. `WagerSubmitWriter` also receives `IdempotencyService`, `WagerEventsMapper`, and `WagerMediator`. `ReferenceRetryWriter` receives `ReferenceMediator` and `WagerEventsMapper`. `WalletOpeningWriter` receives `IdempotencyService` and `WagerMediator`. The module provides those pure collaborators itself, because the SQL adapter calls them and `PersistenceModule` cannot import `TransactionsModule` without a cycle.
 
-Three tokens are bound with `useExisting`, so one instance answers to the port and to the class: `WAGER_GATEWAY` is `WagerSubmitWriter`, `REFERENCE_READER` is `ReferenceReader`, and `REFERENCE_GATEWAY` is `ReferenceRetryWriter`. `MikroORM`, `DatabaseReadiness`, `WalletOpeningWriter`, and those three tokens are exported. `WalletOpeningWriter` is exported for the wallet route.
+Seven tokens are bound with `useExisting`, so one instance answers to the port and to the class: `WAGER_GATEWAY` is `WagerSubmitWriter`, `REFERENCE_READER` is `ReferenceReader`, `REFERENCE_GATEWAY` is `ReferenceRetryWriter`, `RECONCILIATION_GATEWAY` is `ReconciliationReader`, `WALLET_READER` is `WalletReader`, `WAGER_READER` is `WagerReader`, and `WALLET_OPENING` is `WalletOpeningWriter`. `LEDGER_READER` is bound to `LedgerReader` the same way. `MikroORM`, `DatabaseReadiness`, and the writers are exported. `WALLET_OPENING`, `WAGER_READER`, `WALLET_READER`, and `LEDGER_READER` are exported for the HTTP module.
 
-`ReconciliationReader` stays unbound until `ReconciliationService` has a metric adapter and a route. `WagerBetWriter` is not part of the delivery: it only repeated `WagerSubmitWriter.submit`, and `WagerSubmitWriter` is the adapter.
+`WagerBetWriter` is not part of the delivery: it only repeated `WagerSubmitWriter.submit`, and `WagerSubmitWriter` is the adapter.
 
 A repository is built with the `EntityManager` of the transaction it serves, which is the Unit of Work. Its mapper is a pure helper, so the repository builds it with `new`.
 

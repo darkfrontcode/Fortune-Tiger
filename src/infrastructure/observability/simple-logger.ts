@@ -14,6 +14,11 @@ const text = {
 }
 
 const levels = {
+  debug: 'DEBUG',
+  error: 'ERROR',
+  fatal: 'FATAL',
+  info: 'INFO',
+  verbose: 'VERBOSE',
   warn: 'WARN',
 }
 
@@ -37,9 +42,33 @@ export class SimpleLogger implements LoggerProtocol {
   }
 
   warn(message: string): void {
+    this.write(levels.warn, message)
+  }
+
+  error(message: string): void {
+    this.write(levels.error, message)
+  }
+
+  log(message: string): void {
+    this.write(levels.info, message)
+  }
+
+  debug(message: string): void {
+    this.write(levels.debug, message)
+  }
+
+  verbose(message: string): void {
+    this.write(levels.verbose, message)
+  }
+
+  fatal(message: string): void {
+    this.write(levels.fatal, message)
+  }
+
+  private write(level: string, message: string): void {
     const time = this.schema.clock.now().toISOString()
     const context = this.schema.context
-    const output: Output = { time, level: levels.warn, message, ...context }
+    const output: Output = { time, level, message, ...context }
     const line = this.schema.pretty ? this.toPretty(output) : this.toJSON(output)
 
     process.stdout.write(line + text.line)

@@ -30,6 +30,10 @@ A protocol carries no runtime value. The container identity of a port is a token
 
 `ReadinessProtocol` has one method, `check`, and answers whether one dependency is reachable. `DatabaseReadiness` in `src/infrastructure/persistence` and `QueueReadiness` in `src/infrastructure/messaging` implement it. `HealthService` composes them, and that is how the readiness probe reaches Postgres and SQS.
 
-The files are `theory.protocol.ts`, `pattern.protocol.ts`, `guard.protocol.ts`, `mapper.protocol.ts`, `publisher.protocol.ts`, `logger.protocol.ts`, `metric.protocol.ts`, `clock.protocol.ts`, `readiness.protocol.ts`, `reconciliation.gateway.protocol.ts`, `reference.gateway.protocol.ts`, `reference.reader.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
+`WalletReaderProtocol` has one method, `findById`, and returns the wallet or nothing. `WalletOpeningProtocol` has one method, `open`, receives `playerId`, `initialBalance`, and `openedAt`, and returns the wallet. `LedgerReaderProtocol` has one method, `page`, receives `walletId`, `cursor`, and `limit`, and returns `{ items, nextCursor }`. `WagerReaderProtocol` has `findById` and `findByProviderAndExternal`, and each returns the wager or nothing. The MikroORM adapters are `WalletReader`, `WalletOpeningWriter`, `LedgerReader`, and `WagerReader` in `src/infrastructure/persistence`.
+
+`ProviderIdentityProtocol` has one method, `identify`, receives the `X-Provider-Id` header and the `providerId` of the body, and returns the provider of the request. `AnonymousProviderIdentity` in `src/presentation/http` trusts the caller and is the extension point for a real identity provider.
+
+The files are `theory.protocol.ts`, `pattern.protocol.ts`, `guard.protocol.ts`, `mapper.protocol.ts`, `publisher.protocol.ts`, `logger.protocol.ts`, `metric.protocol.ts`, `clock.protocol.ts`, `readiness.protocol.ts`, `provider.identity.protocol.ts`, `wallet.reader.protocol.ts`, `ledger.reader.protocol.ts`, `wager.reader.protocol.ts`, `reconciliation.gateway.protocol.ts`, `reference.gateway.protocol.ts`, `reference.reader.protocol.ts`, `wager.gateway.protocol.ts`, and `wager.strategy.protocol.ts`. `index.ts` reexports them with `export *`. Callers import the folder.
 
 All project text is English, including the root `README.md`.

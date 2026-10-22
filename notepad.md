@@ -2,9 +2,14 @@
 
 Work in progress. Check items off as they land.
 
+## Presentation (`src/presentation/http`)
+
+- [x] **HTTP routes and the logger adapter** — wallet, ledger, reconciliation, and wager routes are in place, with `HttpFailureFilter`, `AuthGuard`, `AnonymousProviderIdentity`, `WagerStatusMap`, and `LoggerService`. Unit specs cover the body readers, the ledger query, the status table, and the identity seam.
+- [ ] **Route tests** — the controllers are exercised only through the parser and status unit tests. Add a Nest test module for the five routes once the persistence harness is stable.
+
 ## Application
 
-- [ ] **Application layer refactor** — revisit folder shape and wiring across `transactions`, `reconciliations`, and `idempotencies` (barrels, types placement, gateway vs service boundaries). Today services are plain classes with constructor injection of protocols; when Nest boots, expect `@Injectable()` modules, providers for gateways/logger/metric, and removal of ad hoc `new` in tests where a test module fits. Do not block current phases on this, but treat the layout as provisional until HTTP and DI land.
+- [ ] **Application layer refactor** — revisit folder shape and wiring across `transactions`, `reconciliations`, and `idempotencies` (barrels, types placement, gateway vs service boundaries). Today services are plain classes with constructor injection of protocols; when Nest boots, expect `@Injectable()` modules, providers for gateways/logger/metric, and removal of ad hoc `new` in tests where a test module fits. Do not block current phases on this, but treat the layout as provisional until HTTP and DI land. Landed: `@Injectable()` and module wiring for the use cases, gateways, logger, metric, and readers. The folder and type placement stays open, tracked below.
 - [ ] **Search application transactions** — implement the use case (query/list wager transactions in the application layer).
 
 ## Wager (`src/application/transactions/wager`)
