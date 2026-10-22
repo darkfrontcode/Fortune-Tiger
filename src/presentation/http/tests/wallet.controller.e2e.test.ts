@@ -45,6 +45,72 @@ describe('WalletController (e2e)', () => {
       expect(response.body).toHaveProperty('balance')
       expect(response.body).toHaveProperty('version')
     })
+
+    it('should reject invalid amount scale', async () => {
+      const body = {
+        playerId: 'player-test-' + Date.now(),
+        initialBalance: {
+          amount: '500.001',
+          currency: 'BRL',
+        },
+      }
+
+      await request(app.getHttpServer())
+        .post('/wallets')
+        .send(body)
+        .expect(400)
+    })
+
+    it('should reject invalid currency case', async () => {
+      const body = {
+        playerId: 'player-test-' + Date.now(),
+        initialBalance: {
+          amount: '500.00',
+          currency: 'brl',
+        },
+      }
+
+      await request(app.getHttpServer())
+        .post('/wallets')
+        .send(body)
+        .expect(400)
+    })
+
+    it('should reject negative amount', async () => {
+      const body = {
+        playerId: 'player-test-' + Date.now(),
+        initialBalance: {
+          amount: '-100.00',
+          currency: 'BRL',
+        },
+      }
+
+      await request(app.getHttpServer())
+        .post('/wallets')
+        .send(body)
+        .expect(400)
+    })
+
+    it('should reject duplicate wallet for same player and currency', async () => {
+      const playerId = 'player-duplicate-' + Date.now()
+      const body = {
+        playerId,
+        initialBalance: {
+          amount: '500.00',
+          currency: 'BRL',
+        },
+      }
+
+      await request(app.getHttpServer())
+        .post('/wallets')
+        .send(body)
+        .expect(201)
+
+      await request(app.getHttpServer())
+        .post('/wallets')
+        .send(body)
+        .expect(409)
+    })
   })
 
   describe('GET /wallets/:walletId', () => {
@@ -85,12 +151,26 @@ describe('WalletController (e2e)', () => {
   })
 
   describe('POST /wallets/:walletId/reconciliation', () => {
-    it('should reconcile a wallet', async () => {
+    it('should reconcile a wallet and return consistent when ledger matches', async () => {
       const response = await request(app.getHttpServer())
         .post(`/wallets/${walletId}/reconciliation`)
         .expect(200)
 
-      expect(response.body).toBeDefined()
+      expect(response.body).toHaveProperty('walletId')
+      expect(response.body).toHaveProperty('storedBalance')
+      expect(response.body).toHaveProperty('calculatedBalance')
+      expect(response.body).toHaveProperty('difference')
+      expect(response.body).toHaveProperty('consistent')
+      expect(response.body).toHaveProperty('checkedEntries')
+      expect(response.body.consistent).toBe(true)
+    })
+
+    it('should return 404 for non-existent wallet', async () => {
+      const fakeWalletId = '00000000-0000-0000-0000-000000000000'
+
+      await request(app.getHttpServer())
+        .post(`/wallets/${fakeWalletId}/reconciliation`)
+        .expect(404)
     })
   })
 })
