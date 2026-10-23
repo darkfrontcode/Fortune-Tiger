@@ -43,3 +43,50 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+
+  migrate:
+    profiles: ['app']
+    image: fortune-tiger:local
+    build: .
+    command: ['bun', 'run', 'migration:up']
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/fortune_tiger
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  app:
+    profiles: ['app']
+    image: fortune-tiger:local
+    build: .
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/fortune_tiger
+      PORT: 3000
+      LOG_PRETTY: 'true'
+      METRICS_BACKEND: prometheus
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      SQS_QUEUE_URL: http://localstack:4566/000000000000/wager-transactions.fifo
+      SQS_DEAD_LETTER_QUEUE_URL: http://localstack:4566/000000000000/wager-transactions-dlq.fifo
+      AUTH_MODE: anonymous
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - bun
+        - -e
+        - "fetch('http://127.0.0.1:3000/health/live').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 20
