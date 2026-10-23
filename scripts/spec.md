@@ -57,6 +57,14 @@ The boot needs the same `.env`, PostgreSQL, LocalStack, and applied migrations a
 
 The boot needs PostgreSQL, LocalStack, the applied migrations, and the `auth` profile. When Keycloak does not answer, the script stops with the `docker compose --profile auth up -d` hint. The token is never printed, and the script writes no file.
 
+## openapi:export
+
+`scripts/openapi.ts` turns the route metadata into the contract a client reads without booting the stack. It boots `AppModule` with the same validation pipe as `src/main.ts`, builds the document through `createDocument`, and writes `docs/api/openapi.json` with two-space indentation and a trailing newline.
+
+`--check` compares the file with the code instead of writing it, and answers exit code `1` when the file is missing or stale. The pipeline runs that mode after the end-to-end suite, so a route, a DTO, or a header that changes without the checked-in document fails the build.
+
+The export needs PostgreSQL, because `AppModule` builds the ORM; the boot opens no listener and starts no worker, because the lifecycle hooks that start them run only on `listen`. The script takes no other argument and prints the path it wrote.
+
 ## load
 
 `scripts/load.ts` measures the HTTP path under concurrency. It calls a running API, so the client and the server do not share one event loop and the latency belongs to the server. `bun run test:load` is the entry.

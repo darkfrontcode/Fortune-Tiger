@@ -4,6 +4,8 @@ The HTTP contract of Fortune Tiger. The route rules live in [`src/presentation/h
 
 Open [`requests.http`](../requests.http) beside this file, or run `bun run demo` for the same happy path without a client.
 
+The machine-readable contract is checked in at [`docs/api/openapi.json`](api/openapi.json). `bun run openapi:export` rewrites it from the running application, and `bun run openapi:export --check` compares the file with the code; the pipeline runs the check, so the document cannot drift from the routes.
+
 ## Conventions
 
 - Base URL: `http://localhost:3000` (`PORT` from `.env`). The queue is an internal channel and has no route.
