@@ -19,25 +19,4 @@ export const createQueueConfig = (environment: Environment): ConsumerType.Config
 export const createPublishConfig = (environment: Environment): PublisherType.Config => ({
   eventsQueueUrl: environment.eventsQueueUrl,
 })
-import type { Environment } from '../../environment'
-import type { ConsumerType } from '../consumers'
-import type { PublisherType } from '../publishers'
-
-const maxMessages = 10
-const waitTimeSeconds = 20
-const visibilityTimeout = 30
-
-export const QUEUE_CONFIG = Symbol('QueueConfig')
-
-export const createQueueConfig = (environment: Environment): ConsumerType.Config => ({
-  queueUrl: environment.queueUrl,
-  deadLetterQueueUrl: environment.deadLetterQueueUrl,
-  maxMessages,
-  waitTimeSeconds,
-  visibilityTimeout,
-})
-
-export const createPublishConfig = (environment: Environment): PublisherType.Config => ({
-  eventsQueueUrl: environment.eventsQueueUrl,
-})
 
