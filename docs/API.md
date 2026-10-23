@@ -279,10 +279,10 @@ GET /metrics
 
 ## Queue
 
-The queue is an internal channel: `wager-transactions.fifo`, with `wager-transactions-dlq.fifo` as the dead-letter queue. After the financial commit, the outbox publishes `WagerTransactionProcessed`, `WagerTransactionRejected`, `WagerTransactionPendingReference`, and `WalletBalanceChanged` when the balance changed. Read them locally with:
+The queue is an internal channel with two directions. `wager-transactions.fifo` carries requests into the consumer, and `wager-transactions-dlq.fifo` holds a request the consumer gave up on. After the financial commit, the outbox publishes `WagerTransactionProcessed`, `WagerTransactionRejected`, `WagerTransactionPendingReference`, and `WalletBalanceChanged` when the balance changed to `wager-events.fifo`. Read the events locally with:
 
 ```bash
 docker exec fortune-tiger-localstack-1 awslocal sqs receive-message \
-  --queue-url http://localhost:4566/000000000000/wager-transactions.fifo \
+  --queue-url http://localhost:4566/000000000000/wager-events.fifo \
   --max-number-of-messages 10
 ```

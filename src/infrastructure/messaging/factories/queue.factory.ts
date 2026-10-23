@@ -1,5 +1,6 @@
 import type { Environment } from '../../environment'
 import type { ConsumerType } from '../consumers'
+import type { PublisherType } from '../publishers'
 
 const maxMessages = 10
 const waitTimeSeconds = 20
@@ -13,4 +14,8 @@ export const createQueueConfig = (environment: Environment): ConsumerType.Config
   maxMessages,
   waitTimeSeconds,
   visibilityTimeout,
+})
+
+export const createPublishConfig = (environment: Environment): PublisherType.Config => ({
+  eventsQueueUrl: environment.eventsQueueUrl,
 })

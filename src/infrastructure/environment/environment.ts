@@ -46,6 +46,10 @@ export class Environment {
     return process.env.SQS_DEAD_LETTER_QUEUE_URL ?? empty
   }
 
+  get eventsQueueUrl(): string {
+    return process.env.SQS_EVENTS_QUEUE_URL ?? empty
+  }
+
   get authMode(): string {
     return process.env.AUTH_MODE ?? defaultAuthMode
   }

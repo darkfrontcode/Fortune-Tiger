@@ -22,6 +22,6 @@ The image holds the HTTP API, the outbox publisher, the reference worker, and th
 
 ## Queues
 
-`docker/localstack/01-queues.sh` runs on the LocalStack ready hook and creates `wager-transactions.fifo` and `wager-transactions-dlq.fifo`. Creating a queue twice is a no-op for LocalStack, so a restart is safe.
+`docker/localstack/01-queues.sh` runs on the LocalStack ready hook and creates `wager-transactions.fifo` for requests, `wager-transactions-dlq.fifo` behind it, and `wager-events.fifo` for integration events. Creating a queue twice is a no-op for LocalStack, so a restart is safe.
 
 All project text is English. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`.
