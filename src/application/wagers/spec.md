@@ -10,10 +10,10 @@ The use case decides which fact is recorded. `LOSS` records `WagerTransactionPro
 
 `WagerMediator` applies the strategy for one transaction kind. Strategies live in `strategies/` and implement `WagerStrategyProtocol` from `protocols/`. `WagerReference` and `WagerMove` are pure wager helpers. `ReferenceMediator` schedules a retry while the reference is absent or nonterminal, rejects an exhausted wager, and delegates terminal references to `WagerMediator`.
 
-`use-cases/submit-wager.use-case.ts` builds the wager, hashes the payload, rejects `OPENING`, and calls `WagerGatewayProtocol`. The persistence adapter runs `WagerMediator` inside the SQL transaction. HTTP and the queue use this same case. Read routes each have their own use case in `use-cases/`.
+`use-cases/submit-wager.use-case.ts` builds the wager, hashes the payload, rejects `OPENING`, and calls `WagerGatewayProtocol`. It counts the result by its final status, counts a replay, and observes the processing duration, always with the names from `application/observability/data`. The persistence adapter runs `WagerMediator` inside the SQL transaction. HTTP and the queue use this same case. Read routes each have their own use case in `use-cases/`.
 
 `WagerGatewayProtocol` and `WagerReaderProtocol` live in `protocols/`; `WAGER_GATEWAY` and `WAGER_READER` live in `tokens/`. The use cases import ports, never persistence adapters. `WagersType` in `types.ts` defines submit, mediation, and reference-hold shapes.
 
-`wagers.module.ts` imports `PersistenceModule` and `IdempotenciesModule`, provides the wager use cases, and exports them. The use cases receive ports by token and `IdempotencyService` by class.
+`wagers.module.ts` imports `PersistenceModule`, `IdempotenciesModule`, and `ObservabilityModule`, provides the wager use cases, and exports them. The use cases receive ports by token, `IdempotencyService` by class, and `METRIC` and `CLOCK` by token.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

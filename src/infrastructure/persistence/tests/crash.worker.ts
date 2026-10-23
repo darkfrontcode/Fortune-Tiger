@@ -5,6 +5,7 @@ import { IdempotencyService } from '@application/idempotencies'
 import { WagerMediator } from '@application/wagers/mediators'
 import { SubmitWagerUseCase } from '@application/wagers/use-cases'
 import { WagerEventsMapper, WagerRequestMapper } from '../../messaging/mappers'
+import { SimpleMetric, SystemClock } from '../../observability'
 import { SqsConsumer, SqsQueue, WagerConsumer } from '../../messaging/consumers'
 import type { ConsumerType } from '../../messaging/consumers'
 import { createOrm } from '..'
@@ -66,15 +67,16 @@ const run = async (): Promise<void> => {
     idempotency,
     new WagerEventsMapper(),
     new WagerMediator(),
+    new SimpleMetric(),
   )
-  const useCase = new SubmitWagerUseCase(writer, idempotency)
+  const useCase = new SubmitWagerUseCase(writer, idempotency, new SimpleMetric(), new SystemClock())
   const mapper = new WagerRequestMapper()
   const wager = new WagerConsumer(useCase, mapper, consumerName)
   const clock: ClockProtocol = { now: () => new Date(receivedAt) }
   const logger: LoggerProtocol = { warn: () => undefined }
   const client = new SQSClient({ region })
   const queue = new AckBarrier(client, queueConfig)
-  const consumer = new SqsConsumer(queue, wager, clock, logger)
+  const consumer = new SqsConsumer(queue, wager, clock, logger, new SimpleMetric())
   const message: ConsumerType.QueueMessage = {
     sqsMessageId,
     receiptHandle,

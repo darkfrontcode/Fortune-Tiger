@@ -8,16 +8,20 @@ A line carries `time`, `level`, `message`, and the context of the child. JSON is
 
 `LoggerService` is the Nest adapter: `log`, `error`, `warn`, `debug`, `verbose`, and `fatal` write one `SimpleLogger` line with the matching level. The message starts with `[FortuneTiger]:` and the emoji of the level: `💬` log, `❌` error, `⚠️` warn, `🐞` debug, `🔎` verbose, and `💀` fatal. `src/main.ts` hands it to `useLogger`, so Nest writes through the same logger as the application.
 
-`SimpleMetric` is the metric adapter. `increment` counts one name in memory, and `count` reads it. A real exporter is out of scope; the counters stay in the process.
+## Metric
 
-Metrics cover transactions by status, duplicates, retries, DLQ messages, lock conflicts, outbox lag, and processing latency.
+`PrometheusMetric` is the default adapter. It implements `MetricProtocol`, holds one private `Registry`, and creates a `Counter` on the first `increment` and a `Summary` on the first `observe`, with the help text from `MetricDescriptionMap` in `application/observability/maps`. `render` returns `registry.metrics()`, the text Prometheus scrapes. The counters stay in the process, so a scrape reads the instance that served the request.
+
+`SimpleMetric` is the memory adapter, chosen by `METRICS_BACKEND=memory`. `increment` counts one name, `count` reads it, `observe` sums one name, and `render` writes the same exposition shape without the percentiles. It serves unit tests and a run with no Prometheus client.
+
+The names come from `application/observability/data`: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing latency. No adapter invents a name.
 
 ## Module
 
-`observability.module.ts` imports `EnvironmentModule` and provides three tokens. `CLOCK` is `SystemClock`. `LOGGER` is `SimpleLogger.open` with the clock and `pretty` from `Environment`. `METRIC` is `SimpleMetric`. The tokens are exported, so no other module builds a clock, a logger, or a metric. `SimpleLogger` answers to its class token through `useExisting`, `LoggerService` is provided and exported, and `src/main.ts` hands it to `useLogger`.
+`observability.module.ts` imports `EnvironmentModule` and provides three tokens. `CLOCK` is `SystemClock`. `LOGGER` is `SimpleLogger.open` with the clock and `pretty` from `Environment`. `METRIC` is built by a factory: `SimpleMetric` when `METRICS_BACKEND` is `memory`, `PrometheusMetric` otherwise. The tokens are exported, so no other module builds a clock, a logger, or a metric. `SimpleLogger` answers to its class token through `useExisting`, `LoggerService` is provided and exported, and `src/main.ts` hands it to `useLogger`.
 
 The cross-cutting `LOGGER` and `METRIC` tokens are declared in `application/observability/tokens`. `CLOCK` is declared in `application/time/tokens`.
 
-OpenTelemetry and a dashboard are out.
+OpenTelemetry and a dashboard stay out. The Prometheus exposition is in.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

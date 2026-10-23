@@ -5,6 +5,7 @@ import { SubmitWagerUseCase } from '@application/wagers/use-cases'
 import type { WagersType } from '@application/wagers'
 import { WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
 import type { WagerTransaction } from '@domain/wager/wager'
+import { SimpleMetric, SystemClock } from '@infrastructure/observability'
 import { WagerRequestMapper } from '../../mappers'
 import { ConsumerOutcome } from '../enums'
 import type { ConsumerType } from '../types'
@@ -95,7 +96,7 @@ const message = (value: unknown, receiveCount = 1): ConsumerType.QueueMessage =>
 
 const consumer = (gateway: WagerGatewayProtocol) =>
   new WagerConsumer(
-    new SubmitWagerUseCase(gateway, new IdempotencyService()),
+    new SubmitWagerUseCase(gateway, new IdempotencyService(), new SimpleMetric(), new SystemClock()),
     new WagerRequestMapper(),
     identity.consumerName,
   )

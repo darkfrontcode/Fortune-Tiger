@@ -18,6 +18,7 @@ import { Money } from '@domain/money'
 import { Wallet } from '@domain/wallet'
 import { WagerTransaction, WagerTransactionKind, WagerTransactionStatus } from '@domain/wager'
 import { WagerEventsMapper, WagerRequestMapper } from '../../messaging/mappers'
+import { SimpleMetric, SystemClock } from '../../observability'
 import { OutboxMessage } from '../../messaging/messages'
 import { OutboxPublisher } from '../../messaging/publishers/outbox.publisher'
 import type { Published, PublisherProtocol } from '../../messaging/publishers'
@@ -205,12 +206,13 @@ const writer = (
   idempotency,
   new WagerEventsMapper(),
   new WagerMediator(),
+  new SimpleMetric(),
 )
 
 const consumer = (orm: MikroORM): WagerConsumer => {
   const idempotency = new IdempotencyService()
   const gateway = writer(orm, idempotency)
-  const useCase = new SubmitWagerUseCase(gateway, idempotency)
+  const useCase = new SubmitWagerUseCase(gateway, idempotency, new SimpleMetric(), new SystemClock())
   const mapper = new WagerRequestMapper()
 
   return new WagerConsumer(useCase, mapper, consumerName)
@@ -344,7 +346,7 @@ describe('Crash recovery', () => {
 
       const clock: ClockProtocol = { now: () => instant.received }
       const logger: LoggerProtocol = { warn: () => undefined }
-      const restarted = new SqsConsumer(queue, consumer(persistence()), clock, logger)
+      const restarted = new SqsConsumer(queue, consumer(persistence()), clock, logger, new SimpleMetric())
 
       await restarted.consume(redelivered)
 
@@ -478,7 +480,7 @@ describe('Crash recovery', () => {
     await reopen()
 
     const publisher = new RecordingPublisher()
-    const service = new OutboxPublisher(persistence(), publisher)
+    const service = new OutboxPublisher(persistence(), publisher, new SimpleMetric())
     const report = await service.publish({ at: instant.retry, limit: 20 })
     const stored = await new OutboxMessageRepository(persistence().em.fork()).findById(messageId)
 
@@ -511,7 +513,7 @@ describe('Crash recovery', () => {
     })
 
     const publisher = new FailingUpdatePublisher()
-    const service = new OutboxPublisher(orm, publisher)
+    const service = new OutboxPublisher(orm, publisher, new SimpleMetric())
     const report = await service.publish({ at: instant.retry, limit: 20 })
     const stored = await new OutboxMessageRepository(orm.em.fork()).findById(messageId)
 

@@ -1,7 +1,9 @@
-import { UniqueConstraintViolationException } from '@mikro-orm/core'
+import { DeadlockException, LockWaitTimeoutException, UniqueConstraintViolationException } from '@mikro-orm/core'
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
 import { uuidv7 } from 'uuidv7'
+import { metricNames, METRIC } from '@application/observability'
+import type { MetricProtocol } from '@application/observability'
 import { IdempotencyService } from '@application/idempotencies/idempotency.service'
 import { IdempotencyOutcome } from '@application/idempotencies/enums'
 import type { WagerGatewayProtocol } from '@application/wagers'
@@ -31,6 +33,7 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
     private readonly idempotency: IdempotencyService,
     private readonly events: WagerEventsMapper,
     private readonly mediator: WagerMediator,
+    @Inject(METRIC) private readonly metric: MetricProtocol,
   ) {}
 
   async submit(wager: WagerTransaction, at: Date, inbox?: QueueInbox): Promise<SubmitOutput> {
@@ -93,6 +96,10 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
     try {
       return await commit()
     } catch (error) {
+      const conflict = WagerSubmitWriter.isLockConflict(error)
+
+      if (conflict) { this.metric.increment(metricNames.lockConflict) }
+
       const raced = WagerSubmitWriter.isIdempotencyRace(error)
 
       if (!raced) { throw error }
@@ -120,6 +127,10 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
     if (!(error instanceof UniqueConstraintViolationException)) { return false }
 
     return error.message.includes(idempotencyConstraint)
+  }
+
+  private static isLockConflict(error: unknown): boolean {
+    return error instanceof LockWaitTimeoutException || error instanceof DeadlockException
   }
 
   private static async inbox(

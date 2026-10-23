@@ -6,7 +6,7 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 
 ### Unit Tests
 - **Status**: PASS (local)
-- **Count**: 297 tests across 52 files
+- **Count**: 308 tests across 54 files
 - **Duration**: ~1s
 - **Coverage**: Domain, application use cases, messaging adapters (no persistence integration)
 - **Command**: `bun run test:unit`
@@ -31,7 +31,7 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 
 ### E2E Tests
 - **Status**: PASS (local)
-- **Count**: 19 tests across 3 controller suites
+- **Count**: 20 tests across 3 controller suites
 - **Duration**: ~1–2s
 - **Command**: `bun run test:e2e`
 - **Scope**: `bunfig.e2e.toml` → `src/presentation/**/tests/*.e2e.test.ts` (mapper/filter unit files excluded via `package.json` ignore patterns)
@@ -83,6 +83,14 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 
 Wallet, wager, and health controllers: validation, idempotency conflict, pagination, reconciliation, readiness (`src/presentation/**/tests/*.e2e.test.ts`).
 
+## Observability
+
+- `GET /metrics` answers the Prometheus text exposition, scraped from the process that serves the request
+- `PrometheusMetric` (`prom-client`) is the default adapter; `SimpleMetric` runs under `METRICS_BACKEND=memory`
+- Names live in `application/observability/data/metric-names.data.ts`; the help text lives in `maps/metric-description.map.ts`
+- Instrumented: transactions by status and processing time (`SubmitWagerUseCase`), duplicates (replay counted by the same use case), retries and dead letters (`SqsConsumer`), lock conflicts (`WagerSubmitWriter`), outbox lag (`OutboxPublisher`), divergence (`ReconcileWalletUseCase`)
+- `prometheus.metric.test.ts` and `simple.metric.test.ts` cover the exposition; the health e2e suite covers the route
+
 ## CI Configuration
 
 - Bun **1.4.3** pinned in `.github/workflows/ci.yml`
@@ -99,4 +107,4 @@ Wallet, wager, and health controllers: validation, idempotency conflict, paginat
 
 ## Out of Scope
 
-- Audit store, Keycloak, OpenTelemetry, load tests (per project `AGENTS.md`)
+- Audit store, Keycloak, OpenTelemetry, load tests (per project `AGENTS.md`); Prometheus metrics are in scope

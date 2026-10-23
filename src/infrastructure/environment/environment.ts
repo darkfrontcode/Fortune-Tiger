@@ -1,6 +1,7 @@
 const defaultPort = 3000
 const defaultRegion = 'us-east-1'
 const defaultCredential = 'test'
+const defaultMetricsBackend = 'prometheus'
 const empty = String()
 
 export class Environment {
@@ -14,6 +15,10 @@ export class Environment {
 
   get databaseUrl(): string | undefined {
     return process.env.DATABASE_URL
+  }
+
+  get metricsBackend(): string {
+    return process.env.METRICS_BACKEND ?? defaultMetricsBackend
   }
 
   get region(): string {

@@ -8,6 +8,7 @@ import { LEDGER_READER, WALLET_OPENING, WALLET_READER } from '@application/walle
 import { ReferenceMediator } from '@application/wagers/mediators'
 import { WagerMediator } from '@application/wagers/mediators'
 import { Environment, EnvironmentModule } from '../environment'
+import { ObservabilityModule } from '../observability'
 import { WagerEventsMapper } from '../messaging/mappers'
 import { DatabaseReadiness } from './database.readiness'
 import { LedgerReader } from './ledger/ledger.reader'
@@ -22,7 +23,7 @@ import { WalletReader } from './wallet/wallet.reader'
 
 const openOrm = (environment: Environment) => createOrm(environment.databaseUrl)
 
-const moduleImports = [EnvironmentModule, IdempotenciesModule]
+const moduleImports = [EnvironmentModule, IdempotenciesModule, ObservabilityModule]
 
 const moduleExports = [
   MikroORM,

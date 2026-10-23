@@ -115,6 +115,8 @@ src/
       patterns/tests/
       tests/
     observability/
+      data/
+      maps/
       protocols/
       tokens/
     references/

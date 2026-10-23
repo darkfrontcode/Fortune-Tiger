@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
 import type { Published, PublisherProtocol } from '@infrastructure/messaging/publishers'
+import { SimpleMetric } from '../../observability'
 import { OutboxMessage } from '../../messaging/messages'
 import { OutboxPublisher } from '../../messaging/publishers/outbox.publisher'
 import { OutboxMessageEntity } from '../outbox'
@@ -23,6 +24,8 @@ const failure = {
 const EMPTY = 0
 const FIRST_RETRY_MS = 1_000
 const LIMIT = 20
+
+const metric = new SimpleMetric()
 
 type MessageInput = {
   at: Date
@@ -95,7 +98,7 @@ describe('OutboxPublisher', () => {
     await seed([message])
 
     const publisher = new RecordingPublisher()
-    const service = new OutboxPublisher(orm, publisher)
+    const service = new OutboxPublisher(orm, publisher, metric)
     const report = await service.publish({ at: instant.open, limit: LIMIT })
     const stored = await findStored(message.id)
     const toId = (published: Published) => published.id
@@ -127,7 +130,7 @@ describe('OutboxPublisher', () => {
     await seed([message])
 
     const publisher = new RecordingPublisher()
-    const service = new OutboxPublisher(orm, publisher)
+    const service = new OutboxPublisher(orm, publisher, metric)
     const report = await service.publish({ at: instant.open, limit: LIMIT })
     const stored = await findStored(message.id)
 
@@ -142,7 +145,7 @@ describe('OutboxPublisher', () => {
 
     await seed([message])
 
-    const service = new OutboxPublisher(orm, new FailingPublisher())
+    const service = new OutboxPublisher(orm, new FailingPublisher(), metric)
     const report = await service.publish({ at: instant.open, limit: LIMIT })
     const stored = await findStored(message.id)
     const expected = new Date(instant.open.getTime() + FIRST_RETRY_MS)
@@ -159,7 +162,7 @@ describe('OutboxPublisher', () => {
     await seed([message])
 
     const publisher = new RecordingPublisher()
-    const service = new OutboxPublisher(orm, publisher)
+    const service = new OutboxPublisher(orm, publisher, metric)
     const report = await service.publish({ at: instant.open, limit: LIMIT })
 
     expect(report).toEqual({ published: EMPTY, retried: EMPTY })
@@ -174,7 +177,7 @@ describe('OutboxPublisher', () => {
     await seed([messageAfter, messageAtStart])
 
     const publisher = new RecordingPublisher()
-    const service = new OutboxPublisher(orm, publisher)
+    const service = new OutboxPublisher(orm, publisher, metric)
 
     await service.publish({ at: instant.open, limit: 1 })
 
@@ -190,7 +193,7 @@ describe('OutboxPublisher', () => {
     await seed([messageOne, messageTwo])
 
     const publisher = new RecordingPublisher()
-    const service = new OutboxPublisher(orm, publisher)
+    const service = new OutboxPublisher(orm, publisher, metric)
     const firstBatch = service.publish({ at: instant.open, limit: 1 })
     const secondBatch = service.publish({ at: instant.open, limit: 1 })
     const reports = await Promise.all([firstBatch, secondBatch])

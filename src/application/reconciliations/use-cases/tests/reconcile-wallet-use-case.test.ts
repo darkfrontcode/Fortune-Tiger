@@ -39,6 +39,12 @@ class Metric implements MetricProtocol {
 
     this.counts.set(name, total)
   }
+
+  observe(_name: string, _milliseconds: number): void {}
+
+  render(): Promise<string> {
+    return Promise.resolve(String())
+  }
 }
 
 const instant = new Date('2026-01-01T00:00:00.000Z')

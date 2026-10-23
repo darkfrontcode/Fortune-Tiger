@@ -1,5 +1,6 @@
 export * from './logger.service'
 export * from './observability.module'
+export * from './prometheus.metric'
 export * from './simple-logger'
 export * from './simple.metric'
 export * from './system-clock'

@@ -25,4 +25,9 @@ export namespace ObservabilityType {
     level: string
     message: string
   }
+
+  export type Observation = {
+    count: number
+    sum: number
+  }
 }

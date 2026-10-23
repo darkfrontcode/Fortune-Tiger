@@ -49,6 +49,7 @@ The behind-the-scenes layer keeps the service dependable:
 - 📬 **Inbox and outbox** help the service handle repeated messages and publish events after a successful save.
 - ☁️ **LocalStack SQS** lets the queue run locally, including retries and a dead-letter queue.
 - 🔎 **Logs and metrics** help explain what happened without putting financial payloads in the logs.
+- 📊 **Prometheus metrics** answer `GET /metrics`, so a scrape sees transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing time.
 
 </details>
 
@@ -213,6 +214,14 @@ bun run test:e2e
 ### Pick a log style
 
 Set `LOG_PRETTY=true` in `.env` for readable, one-line text output. Leave it unset or set it to `false` for JSON logs.
+
+### Read the metrics
+
+```bash
+curl http://localhost:3000/metrics
+```
+
+The route answers the Prometheus text exposition: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing time. `METRICS_BACKEND` chooses the adapter — `prometheus` by default, `memory` for the in-process counters without the Prometheus client.
 
 </details>
 

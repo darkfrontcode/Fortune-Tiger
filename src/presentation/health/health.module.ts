@@ -6,10 +6,11 @@ import {
   READINESS,
 } from '@application/health'
 import { MessagingModule, QueueReadiness } from '@infrastructure/messaging'
+import { ObservabilityModule } from '@infrastructure/observability'
 import { DatabaseReadiness, PersistenceModule } from '@infrastructure/persistence'
-import { HealthController } from './controllers'
+import { HealthController, MetricsController } from './controllers'
 
-const moduleImports = [PersistenceModule, MessagingModule]
+const moduleImports = [PersistenceModule, MessagingModule, ObservabilityModule]
 const readinessDependencies = [DatabaseReadiness, QueueReadiness]
 
 const joinReadiness = (database: DatabaseReadiness, queue: QueueReadiness): Array<ReadinessProtocol> => [
@@ -19,7 +20,7 @@ const joinReadiness = (database: DatabaseReadiness, queue: QueueReadiness): Arra
 
 @Module({
   imports: moduleImports,
-  controllers: [HealthController],
+  controllers: [HealthController, MetricsController],
   providers: [
     CheckHealthLivenessUseCase,
     CheckHealthReadinessUseCase,

@@ -256,9 +256,11 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 - `LoggerService` adapter for Nest
 
 **Metrics:**
-- `SimpleMetric` with `increment()` and `count()`
-- In-memory counters (real exporter out of scope)
-- Metrics cover: status, duplicates, retries, DLQ, lock conflicts, outbox lag, latency
+- `MetricProtocol` with `increment()`, `observe()` and `render()`
+- `PrometheusMetric` (`prom-client`) is the default adapter; `SimpleMetric` serves `METRICS_BACKEND=memory`
+- `GET /metrics` exposes the Prometheus text exposition
+- Names live in `application/observability/data`: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing latency
+- Instrumented at `SubmitWagerUseCase`, `SqsConsumer`, `OutboxPublisher`, `WagerSubmitWriter`, and `ReconcileWalletUseCase`
 
 **Health:**
 - `GET /health/live` → process alive

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { ClockProtocol } from '@application/time'
-import type { LoggerProtocol } from '@application/observability'
+import { metricNames, METRIC } from '@application/observability'
+import type { LoggerProtocol, MetricProtocol } from '@application/observability'
 import { CLOCK } from '@application/time'
 import { LOGGER } from '@application/observability'
 import { ConsumerOutcome } from './enums'
@@ -41,6 +42,7 @@ export class SqsConsumer {
     private readonly consumer: WagerConsumer,
     @Inject(CLOCK) private readonly clock: ClockProtocol,
     @Inject(LOGGER) private readonly logger: LoggerProtocol,
+    @Inject(METRIC) private readonly metric: MetricProtocol,
   ) {}
 
   open(): void {
@@ -78,6 +80,8 @@ export class SqsConsumer {
   }
 
   private async retry(message: ConsumerType.QueueMessage): Promise<void> {
+    this.metric.increment(metricNames.consumerRetry)
+
     try {
       await this.queue.changeVisibility(message, delay(message.receiveCount))
     } catch (error) {
@@ -86,6 +90,8 @@ export class SqsConsumer {
   }
 
   private async deadLetter(message: ConsumerType.QueueMessage): Promise<void> {
+    this.metric.increment(metricNames.consumerDeadLetter)
+
     try {
       await this.queue.deadLetter(message)
       await this.queue.delete(message)

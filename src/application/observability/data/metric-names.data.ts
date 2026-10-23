@@ -1,0 +1,14 @@
+export const metricNames = {
+  reconciliationDivergence: 'reconciliation_divergence',
+  transactionPending: 'wager_transactions_pending_total',
+  transactionPendingReference: 'wager_transactions_pending_reference_total',
+  transactionProcessed: 'wager_transactions_processed_total',
+  transactionRejected: 'wager_transactions_rejected_total',
+  transactionFailed: 'wager_transactions_failed_total',
+  duplicate: 'idempotency_duplicates_total',
+  consumerRetry: 'consumer_retries_total',
+  consumerDeadLetter: 'consumer_dead_letters_total',
+  lockConflict: 'lock_conflicts_total',
+  outboxLag: 'outbox_lag_milliseconds',
+  transactionLatency: 'wager_processing_milliseconds',
+}
