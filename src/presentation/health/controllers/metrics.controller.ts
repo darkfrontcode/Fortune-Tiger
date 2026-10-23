@@ -1,7 +1,9 @@
 import { Controller, Get, Header, Inject } from '@nestjs/common'
+import { ApiExcludeController } from '@nestjs/swagger'
 import { METRIC } from '@application/observability'
 import type { MetricProtocol } from '@application/observability'
 
+@ApiExcludeController()
 @Controller()
 export class MetricsController {
   constructor(@Inject(METRIC) private readonly metric: MetricProtocol) {}

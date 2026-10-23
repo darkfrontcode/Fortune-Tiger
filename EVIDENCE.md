@@ -1,12 +1,12 @@
 # Quality Evidence Matrix
 
-Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `localstack:3`). Base git ref: `66b0d12` (merge PR #38). Every command below was re-run on this ref: `bun run verify:full` passed, and `bun run demo` passed against the same stack.
+Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `localstack:3`). Base git ref: `3cb1cbe` (merge PR #40), with the working tree of this branch. Every command below was re-run on it: `bun run verify:full` passed, and `bun run demo` passed against the same stack.
 
 ## Test Suite Results
 
 ### Unit Tests
 - **Status**: PASS (local)
-- **Count**: 308 tests across 54 files
+- **Count**: 328 tests across 57 files
 - **Duration**: ~1s
 - **Coverage**: Domain, application use cases, messaging adapters (no persistence integration)
 - **Command**: `bun run test:unit`
@@ -31,8 +31,8 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 
 ### E2E Tests
 - **Status**: PASS (local)
-- **Count**: 20 tests across 3 controller suites
-- **Duration**: ~1–2s
+- **Count**: 42 tests across 7 suites
+- **Duration**: ~2s
 - **Command**: `bun run test:e2e`
 - **Scope**: `bunfig.e2e.toml` → `src/presentation/**/tests/*.e2e.test.ts` (mapper/filter unit files excluded via `package.json` ignore patterns)
 - **Prerequisites**: `DATABASE_URL` and SQS env vars (full `AppModule` boots)
@@ -96,7 +96,14 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 
 ## HTTP E2E Coverage
 
-Wallet, wager, and health controllers: validation, idempotency conflict, pagination, reconciliation, readiness (`src/presentation/**/tests/*.e2e.test.ts`).
+Wallet, wager, health, and Swagger suites: validation, idempotency conflict, pagination, reconciliation, readiness, the OpenAPI document, and the UI (`src/presentation/**/tests/*.e2e.test.ts`).
+
+## OpenAPI
+
+- `GET /docs` serves the Swagger UI; `GET /docs-json` serves the OpenAPI 3 document
+- `SwaggerFactory` (`src/presentation/http/factories/swagger.factory.ts`) builds it from the DTOs and the controller decorators
+- The health and metrics controllers carry `@ApiExcludeController`, so the document keeps the provider routes only
+- The `swagger.e2e.test.ts` suite checks the provider paths, the request and response schemas, the required `Idempotency-Key` header, and the UI response
 
 ## Observability
 

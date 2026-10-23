@@ -1,10 +1,12 @@
 import { Controller, Get } from '@nestjs/common'
+import { ApiExcludeController } from '@nestjs/swagger'
 import {
   CheckHealthLivenessUseCase,
   CheckHealthReadinessUseCase,
 } from '@application/health'
 import type { HealthType } from '@application/health'
 
+@ApiExcludeController()
 @Controller('health')
 export class HealthController {
   constructor(

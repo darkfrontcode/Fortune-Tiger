@@ -51,6 +51,8 @@ In every scenario: `wallet.balance` equals the balance reconstructed from the le
 
 Status table in `src/presentation/http/spec.md`, invalid payload, and idempotent replay. It enters the README only when the test exists.
 
+`swagger.e2e.test.ts` reads `GET /docs-json` and proves the provider paths, the request and response schemas, the required `Idempotency-Key` header, and that health and metrics stay out of the document. It also reads `GET /docs` and proves the UI answers.
+
 ## Load
 
 Out of this delivery. If time remains, `bun run test:load`, with environment, method, throughput, p50, p95, p99, error rate, conflict, and outbox lag. No RPS target.

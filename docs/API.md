@@ -28,6 +28,19 @@ Open [`requests.http`](../requests.http) beside this file, or run `bun run demo`
 | `GET` | `/health/live` | the process is up |
 | `GET` | `/health/ready` | PostgreSQL and SQS answer |
 | `GET` | `/metrics` | Prometheus text exposition |
+| `GET` | `/docs` | the Swagger UI over this contract |
+| `GET` | `/docs-json` | the same document as OpenAPI 3 JSON |
+
+## Documentation
+
+```http
+GET /docs
+GET /docs-json
+```
+
+`/docs` serves the Swagger UI, and `/docs-json` answers the OpenAPI 3 document behind it. Both stay open, like health and metrics.
+
+The document covers the provider routes only: health and metrics stay out of it. The request DTOs carry the field rules and an example, and each route shows its response body, the `Idempotency-Key` header on `POST /wagering/transactions`, the `X-Provider-Id` header of the `anonymous` mode, and the statuses of the table below. The `bearer` scheme is registered for the `jwt` mode; the default mode asks for no token.
 
 ## Status
 

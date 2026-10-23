@@ -22,6 +22,12 @@ GET {{host}}/health/ready
 ### Metrics — Prometheus text exposition of this process
 GET {{host}}/metrics
 
+### Swagger UI — 200, the contract in a browser
+GET {{host}}/docs
+
+### OpenAPI document — 200
+GET {{host}}/docs-json
+
 ### Open a wallet — 201, balance 100.00 BRL
 # @name openWallet
 POST {{host}}/wallets

@@ -40,6 +40,8 @@ bun run start
 
 Then open [`requests.http`](../requests.http) in the VS Code REST Client or the JetBrains HTTP client. The file walks the same steps as the demo, plus the idempotency conflict, the insufficient funds rejection, a reversal without a reference, pagination, and the `404` cases.
 
+With the API running, `http://localhost:3000/docs` opens the whole contract in the Swagger UI, and `http://localhost:3000/docs-json` answers the OpenAPI 3 document.
+
 The route rules are in [`docs/API.md`](API.md) and in [`src/presentation/http/spec.md`](../src/presentation/http/spec.md).
 
 ## The full gate
