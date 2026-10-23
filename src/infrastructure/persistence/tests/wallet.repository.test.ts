@@ -5,7 +5,10 @@ import { LedgerDirection } from '@domain/ledger/enums'
 import { Ledger } from '@domain/ledger/ledger'
 import { Money } from '@domain/money/money'
 import { Wallet } from '@domain/wallet/wallet'
+import { WagerTransactionKind } from '@domain/wager/enums'
+import { WagerTransaction } from '@domain/wager/wager'
 import { WalletLedgerRepository } from '../ledger/wallet-ledger.repository'
+import { WagerTransactionRepository } from '../wager/wager-transaction.repository'
 import { WalletRepository } from '../wallet/wallet.repository'
 import { PersistenceHarness } from './persistence.harness'
 
@@ -30,12 +33,16 @@ const revision = {
   moved: 2,
 }
 
+const provider = 'jungle-provider'
+
 class Suite {
   static orm: MikroORM
 
   static wallets: WalletRepository
 
   static ledger: WalletLedgerRepository
+
+  static wagers: WagerTransactionRepository
 }
 
 const openWallet = (playerId: string) => {
@@ -51,10 +58,32 @@ const openWallet = (playerId: string) => {
   return Wallet.open(input)
 }
 
+const pendingBet = (wallet: Wallet) => {
+  const externalTransactionId = uuidv7()
+  const input = {
+    id: uuidv7(),
+    providerId: provider,
+    externalTransactionId,
+    idempotencyKey: `${provider}:${externalTransactionId}`,
+    payloadHash: 'payload-hash',
+    walletId: wallet.id,
+    playerId: wallet.playerId,
+    roundId: uuidv7(),
+    gameId: 'fortune-tiger',
+    kind: WagerTransactionKind.BET,
+    money: Money.zero(currency.brl),
+    referenceExternalTransactionId: undefined,
+    createdAt: instant.open,
+  }
+
+  return WagerTransaction.create(input)
+}
+
 beforeAll(async () => {
   Suite.orm = await PersistenceHarness.open()
   Suite.wallets = new WalletRepository(Suite.orm.em)
   Suite.ledger = new WalletLedgerRepository(Suite.orm.em)
+  Suite.wagers = new WagerTransactionRepository(Suite.orm.em)
 })
 
 beforeEach(async () => {
@@ -111,9 +140,10 @@ describe('WalletLedgerRepository', () => {
   test('WHEN a ledger entry is saved SHOULD reload by transaction id', async () => {
     const wallet = openWallet(uuidv7())
     const debit = Money.from({ amount: amount.eighty, currency: currency.brl })
-    const transactionId = uuidv7()
+    const wager = pendingBet(wallet)
 
     await Suite.wallets.save(wallet)
+    await Suite.wagers.save(wager)
 
     wallet.debit(debit, instant.move)
     await Suite.wallets.save(wallet)
@@ -124,7 +154,7 @@ describe('WalletLedgerRepository', () => {
     const input = {
       id: uuidv7(),
       walletId: wallet.id,
-      transactionId,
+      transactionId: wager.id,
       direction: LedgerDirection.DEBIT,
       money,
       balanceBefore: before,
@@ -135,7 +165,7 @@ describe('WalletLedgerRepository', () => {
 
     await Suite.ledger.save(row)
 
-    const stored = await Suite.ledger.findByTransactionId(transactionId)
+    const stored = await Suite.ledger.findByTransactionId(wager.id)
 
     expect(stored?.direction).toBe(LedgerDirection.DEBIT)
     expect(stored?.money.amount).toBe(amount.eighty)
@@ -146,8 +176,12 @@ describe('WalletLedgerRepository', () => {
     const wallet = openWallet(uuidv7())
     const firstMoney = Money.from({ amount: amount.twenty, currency: currency.brl })
     const secondMoney = Money.from({ amount: amount.twenty, currency: currency.brl })
+    const firstWager = pendingBet(wallet)
+    const secondWager = pendingBet(wallet)
 
     await Suite.wallets.save(wallet)
+    await Suite.wagers.save(firstWager)
+    await Suite.wagers.save(secondWager)
 
     wallet.debit(firstMoney, instant.move)
     await Suite.wallets.save(wallet)
@@ -157,7 +191,7 @@ describe('WalletLedgerRepository', () => {
     const first = Ledger.create({
       id: uuidv7(),
       walletId: wallet.id,
-      transactionId: uuidv7(),
+      transactionId: firstWager.id,
       direction: LedgerDirection.DEBIT,
       money: firstMoney,
       balanceBefore: firstBefore,
@@ -175,7 +209,7 @@ describe('WalletLedgerRepository', () => {
     const second = Ledger.create({
       id: uuidv7(),
       walletId: wallet.id,
-      transactionId: uuidv7(),
+      transactionId: secondWager.id,
       direction: LedgerDirection.DEBIT,
       money: secondMoney,
       balanceBefore: secondBefore,
