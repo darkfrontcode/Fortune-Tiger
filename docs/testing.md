@@ -10,6 +10,10 @@ A test proves the property. It does not replace Postgres or SQS with a mock when
 
 Both commands live in `scripts/verify.ts`, and the folder spec is `scripts/spec.md`.
 
+## Demo
+
+`bun run demo` boots the application on a free port and calls the HTTP API. It opens a wallet, submits a bet, repeats it with the same idempotency key, submits a loss, reads the ledger page, reconciles the wallet, and reads the metrics. Each step asserts the contract, and the first failure ends the run with exit code `1`. The script is `scripts/demo.ts`, and the folder spec is `scripts/spec.md`.
+
 ## Unit
 
 Unit tests sit in `tests/` beside the module they cover. The file name is `{subject}.test.ts`.

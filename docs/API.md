@@ -1,0 +1,251 @@
+# API
+
+The HTTP contract of Fortune Tiger. The route rules live in [`src/presentation/http/spec.md`](../src/presentation/http/spec.md); this page is the provider-facing view.
+
+Open [`requests.http`](../requests.http) beside this file, or run `bun run demo` for the same happy path without a client.
+
+## Conventions
+
+- Base URL: `http://localhost:3000` (`PORT` from `.env`). The queue is an internal channel and has no route.
+- Bodies are JSON with `Content-Type: application/json`.
+- `X-Provider-Id` carries the caller identity. Without the header, the `providerId` of the body answers for it; no identity provider is wired in this delivery.
+- `Idempotency-Key` is required on `POST /wagering/transactions`. The recommended shape is `{providerId}:{externalTransactionId}`.
+- Money is `{ "amount": "10.00", "currency": "BRL" }`. `amount` is a decimal string with exactly two places; `currency` is an uppercase ISO-4217 code.
+- Identifiers are UUIDv7. Ledger pages order by identifier, so the order is the insertion order.
+
+## Routes
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `POST` | `/wallets` | open a wallet, with an optional opening balance |
+| `GET` | `/wallets/:walletId` | read the wallet |
+| `GET` | `/wallets/:walletId/ledger?cursor=&limit=50` | page through the ledger entries |
+| `POST` | `/wallets/:walletId/reconciliation` | compare the wallet with its ledger |
+| `POST` | `/wagering/transactions` | submit a wager |
+| `GET` | `/wagering/transactions/:transactionId` | read a wager |
+| `GET` | `/providers/:providerId/wagering/transactions/:externalTransactionId` | read a wager by provider pair |
+| `GET` | `/health/live` | the process is up |
+| `GET` | `/health/ready` | PostgreSQL and SQS answer |
+| `GET` | `/metrics` | Prometheus text exposition |
+
+## Status
+
+Stable across every endpoint.
+
+| Situation | HTTP |
+| --- | --- |
+| Invalid payload | `400` |
+| Missing resource | `404` |
+| Idempotency key with a different payload, or a duplicate wallet | `409` |
+| Business rule, `failureCode` in the body | `422` |
+| `PENDING` or `PENDING_REFERENCE` | `202` |
+| Transient infrastructure failure, or a `FAILED` wager | `503` |
+| `PROCESSED`, replay with `idempotentReplay: true`, and an already terminal `REJECTED` | `200` |
+| Wallet created | `201` |
+
+A replay answers `200` even when the stored wager is `REJECTED`: the body is the original result, and `idempotentReplay` is `true`.
+
+## Wallet
+
+### Open a wallet
+
+```http
+POST /wallets
+```
+
+```json
+{
+  "playerId": "0192f28f-5dc0-7d58-bdb2-814ad6a0f4a1",
+  "initialBalance": { "amount": "100.00", "currency": "BRL" }
+}
+```
+
+`201`:
+
+```json
+{
+  "id": "01a1665d-4713-7b01-8ac6-c868e696abab",
+  "playerId": "0192f28f-5dc0-7d58-bdb2-814ad6a0f4a1",
+  "balance": { "amount": "100.00", "currency": "BRL" },
+  "version": 2
+}
+```
+
+An initial balance above zero writes the internal `OPENING` transaction and its `CREDIT` ledger entry in the same SQL transaction as the wallet. `version` counts balance changes, so the opening credit moves it from `1` to `2`. A duplicate `playerId` plus `currency` answers `409` with `{ "message": "A wallet already exists for this player and currency." }`.
+
+### Read a wallet
+
+```http
+GET /wallets/:walletId
+```
+
+`200` with `id`, `playerId`, `balance`, and `version`. An absent wallet answers `404` with `"Wallet not found."`.
+
+### Page the ledger
+
+```http
+GET /wallets/:walletId/ledger?limit=50
+```
+
+```json
+{
+  "items": [
+    {
+      "id": "01a1665d-4764-7f82-a626-7bdb6d5201b4",
+      "transactionId": "01a1665d-4762-7e04-8271-4f705d6bc677",
+      "direction": "CREDIT",
+      "amount": { "amount": "100.00", "currency": "BRL" },
+      "balanceBefore": { "amount": "0.00", "currency": "BRL" },
+      "balanceAfter": { "amount": "100.00", "currency": "BRL" },
+      "createdAt": "2026-10-23T01:25:51.506Z"
+    }
+  ]
+}
+```
+
+- `limit` defaults to `50` and stays between `1` and `100`.
+- `cursor` is the base64url of the last `id` of the previous page. The next page starts after it.
+- `nextCursor` is absent on the last page.
+- An invalid `cursor` or `limit` answers `400` with `"Invalid ledger query."`.
+- An absent wallet answers `404`.
+
+### Reconcile
+
+```http
+POST /wallets/:walletId/reconciliation
+```
+
+`200`:
+
+```json
+{
+  "walletId": "01a1665d-4713-7b01-8ac6-c868e696abab",
+  "storedBalance": { "amount": "70.00", "currency": "BRL" },
+  "calculatedBalance": { "amount": "70.00", "currency": "BRL" },
+  "difference": { "amount": "0.00", "currency": "BRL" },
+  "consistent": true,
+  "checkedEntries": 2
+}
+```
+
+The route compares and reports; it never repairs. A divergence is logged and counted in `reconciliation_divergence`. An absent wallet answers `404` with `{ "walletId": "...", "failureCode": "WALLET_NOT_FOUND" }`.
+
+## Wager
+
+```http
+POST /wagering/transactions
+Idempotency-Key: provider-a:transaction-bet-1
+```
+
+```json
+{
+  "providerId": "provider-a",
+  "externalTransactionId": "transaction-bet-1",
+  "playerId": "0192f28f-5dc0-7d58-bdb2-814ad6a0f4a1",
+  "walletId": "01a1665d-4713-7b01-8ac6-c868e696abab",
+  "roundId": "round-1",
+  "gameId": "fortune-tiger",
+  "kind": "BET",
+  "money": { "amount": "30.00", "currency": "BRL" }
+}
+```
+
+`200`:
+
+```json
+{
+  "transactionId": "01a1665d-47ff-7d2e-915c-c764badf3399",
+  "status": "PROCESSED",
+  "balance": { "amount": "70.00", "currency": "BRL" },
+  "idempotentReplay": false
+}
+```
+
+`balance` is the wallet balance when the transaction finished. A business rejection answers `422` with the same shape plus `failureCode`, for example `REJECTED` and `INSUFFICIENT_FUNDS`.
+
+### Kinds
+
+| Kind | Balance | Ledger | Rule |
+| --- | --- | --- | --- |
+| `BET` | debit | `DEBIT` | insufficient balance rejects with `INSUFFICIENT_FUNDS` |
+| `WIN` | credit | `CREDIT` | a `BET` reference in the same round is optional |
+| `LOSS` | unchanged | none | records the processed event only |
+| `REFUND` | credit | `CREDIT` | one processed `BET`, once, same amount, same round |
+| `ROLLBACK` | inverse | one inverted entry | one processed `BET`, `WIN`, or `REFUND`, once |
+| `OPENING` | internal | `CREDIT` | written when a wallet opens with a balance above zero; rejected here with `OPENING_NOT_ALLOWED` |
+
+`REFUND` and `ROLLBACK` require `referenceExternalTransactionId`, pointing at a transaction of the same provider, player, wallet, currency, and round. `REFUND` points only at `BET`; `ROLLBACK` points at `BET`, `WIN`, or `REFUND`. A reference that has not arrived yet answers `202` with `PENDING_REFERENCE`, and the retry worker keeps checking it.
+
+### Idempotency
+
+- The header is the source of truth. A request without it answers `400` with `"The Idempotency-Key header is required."`.
+- The hash covers the business fields only: `providerId`, `externalTransactionId`, `playerId`, `walletId`, `roundId`, `gameId`, `kind`, `money`, and `referenceExternalTransactionId` when present. The header and transport metadata stay out.
+- Same key and same payload: the original result, the balance observed at that processing, and `idempotentReplay: true`.
+- Same key and a different payload: `409` with `failureCode: IDEMPOTENCY_PAYLOAD_CONFLICT`. That is not a replay.
+- Uniqueness holds in PostgreSQL on `idempotency_key` and on `(provider_id, external_transaction_id)`.
+
+### Failure codes
+
+`INSUFFICIENT_FUNDS`, `REVERSAL_INSUFFICIENT_FUNDS`, `CURRENCY_MISMATCH`, `WALLET_NOT_FOUND`, `PLAYER_WALLET_MISMATCH`, `INVALID_KIND`, `INVALID_REFERENCE_KIND`, `REFERENCE_NOT_FOUND`, `REFERENCE_ALREADY_REVERSED`, `REFERENCE_AMOUNT_MISMATCH`, `REFERENCE_SCOPE_MISMATCH`, `IDEMPOTENCY_PAYLOAD_CONFLICT`, `OPENING_NOT_ALLOWED`, `NEGATIVE_AMOUNT`, `INVALID_MONEY`.
+
+`REJECTED` is a business violation. `FAILED` is a permanent infrastructure error and answers `503`; the provider may resend.
+
+### Read a wager
+
+```http
+GET /wagering/transactions/:transactionId
+GET /providers/:providerId/wagering/transactions/:externalTransactionId
+```
+
+`200`:
+
+```json
+{
+  "transactionId": "01a1665d-47ff-7d2e-915c-c764badf3399",
+  "providerId": "provider-a",
+  "externalTransactionId": "transaction-bet-1",
+  "playerId": "0192f28f-5dc0-7d58-bdb2-814ad6a0f4a1",
+  "walletId": "01a1665d-4713-7b01-8ac6-c868e696abab",
+  "roundId": "round-1",
+  "gameId": "fortune-tiger",
+  "kind": "BET",
+  "status": "PROCESSED",
+  "money": { "amount": "30.00", "currency": "BRL" },
+  "createdAt": "2026-10-23T01:25:51.743Z"
+}
+```
+
+An absent wager answers `404` with `"Wager transaction not found."`.
+
+## Errors
+
+| Body | When |
+| --- | --- |
+| `{ "statusCode": 400, "message": ["..."], "error": "Bad Request" }` | a DTO field fails validation |
+| `{ "statusCode": 400, "message": "...", "error": "Bad Request" }` | a cross-field rule fails, such as a reversal without a reference, or an invalid ledger query |
+| `{ "message": "A wallet already exists for this player and currency." }` | duplicate wallet, `409` |
+| `"Wallet not found."` and `"Wager transaction not found."` | `404` |
+| `{ "walletId": "...", "failureCode": "WALLET_NOT_FOUND" }` | reconciliation of an absent wallet, `404` |
+| `{ "message": "The request could not be completed. Try again." }` | anything else, `503`, so the provider knows it may resend |
+
+## Health and metrics
+
+```http
+GET /health/live
+GET /health/ready
+GET /metrics
+```
+
+`/health/live` answers `200` with `{ "status": "live" }`. `/health/ready` asks PostgreSQL and SQS at the same time and answers `200` with `{ "status": "ready" }` or `503` with `{ "status": "unavailable" }`.
+
+`/metrics` answers `text/plain; version=0.0.4; charset=utf-8` with the Prometheus exposition: `wager_transactions_*_total`, `idempotency_duplicates_total`, `consumer_retries_total`, `consumer_dead_letters_total`, `lock_conflicts_total`, `outbox_lag_milliseconds`, `wager_processing_milliseconds`, and `reconciliation_divergence`. Counters live in the process that served the request.
+
+## Queue
+
+The queue is an internal channel: `wager-transactions.fifo`, with `wager-transactions-dlq.fifo` as the dead-letter queue. After the financial commit, the outbox publishes `WagerTransactionProcessed`, `WagerTransactionRejected`, `WagerTransactionPendingReference`, and `WalletBalanceChanged` when the balance changed. Read them locally with:
+
+```bash
+docker exec fortune-tiger-localstack-1 awslocal sqs receive-message \
+  --queue-url http://localhost:4566/000000000000/wager-transactions.fifo \
+  --max-number-of-messages 10
+```

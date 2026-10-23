@@ -1,6 +1,6 @@
 # Quality Evidence Matrix
 
-Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `localstack:3`). Base git ref before audit fixes: `14ee0ef` (merge PR #35). Re-run the commands below after pulling audit fixes to refresh counts.
+Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `localstack:3`). Base git ref: `66b0d12` (merge PR #38). Every command below was re-run on this ref: `bun run verify:full` passed, and `bun run demo` passed against the same stack.
 
 ## Test Suite Results
 
@@ -36,6 +36,21 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 - **Command**: `bun run test:e2e`
 - **Scope**: `bunfig.e2e.toml` → `src/presentation/**/tests/*.e2e.test.ts` (mapper/filter unit files excluded via `package.json` ignore patterns)
 - **Prerequisites**: `DATABASE_URL` and SQS env vars (full `AppModule` boots)
+
+### Demo
+- **Status**: PASS (local)
+- **Command**: `bun run demo`
+- **Duration**: ~3s
+- **Coverage**: boots the app on a free port and asserts liveness, readiness, wallet `201`, `BET` `200` with balance `70.00`, replay with `idempotentReplay: true` and the same transaction, `LOSS` without a balance change, two ledger entries in order, reconciliation `consistent: true` with `difference 0.00`, and the processed and duplicate counters in `/metrics`
+- **Prerequisites**: same stack as integration; scripts are specified in `scripts/spec.md`
+
+## Delivery Docs
+
+- `docs/API.md` — routes, headers, status table, error bodies, failure codes, queue events
+- `docs/DELIVERY.md` — reviewer path: commands, expected output, reading map, limits
+- `requests.http` — the same happy path by hand, plus conflict, rejection, and not-found cases
+- `docs/testing.md` — what each suite covers
+- `scripts/spec.md` — `verify`, `verify:full`, and `demo` behavior
 
 ## PostgreSQL Constraints Audit
 
@@ -97,7 +112,7 @@ Wallet, wager, and health controllers: validation, idempotency conflict, paginat
 - PostgreSQL 16 + LocalStack 3 services with health checks
 - Env: `DATABASE_URL`, `AWS_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`
 - FIFO queues created before migrations/tests
-- Pipeline: `test:unit` → `test:int` → `test:concurrency` → `test:e2e`
+- Pipeline: `bun run build` → `test:unit` → `test:int` → `test:concurrency` → `test:e2e`
 
 ## Delivery Guarantees (honest)
 
