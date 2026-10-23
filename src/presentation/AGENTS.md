@@ -10,5 +10,5 @@ All project text is English, including the root `README.md`.
 
 History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this folder starts doing something.
 
-- `http` — wallet and wager routes, status, auth. Subfolders: `bodies/`, `controllers/`, `data/`, `filters/`, `guards/`, `mappers/`, `maps/`, `providers/`, `queries/`, `statuses/`, and `tests/`.
+- `http` — wallet and wager routes, status, auth. Subfolders: `bodies/`, `controllers/`, `data/`, `dtos/`, `errors/`, `factories/`, `filters/`, `guards/`, `mappers/`, `maps/`, `providers/`, `queries/`, `statuses/`, and `tests/`.
 - `health` — liveness and readiness, open

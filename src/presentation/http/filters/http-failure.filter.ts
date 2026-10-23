@@ -10,6 +10,7 @@ import { WagerNotFoundError } from '@application/wagers/use-cases'
 import { LOGGER } from '@application/observability'
 import { WALLET_PLAYER_CURRENCY_CONFLICT_MESSAGE } from '@infrastructure/persistence/data'
 import { INFRASTRUCTURE_FAILURE_MESSAGE } from '../data'
+import { ProviderIdentityError } from '../errors'
 import type { HttpType } from '../types'
 
 @Injectable()
@@ -23,6 +24,14 @@ export class HttpFailureFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus()
       const body = exception.getResponse()
+
+      this.reply(response, status, body)
+      return
+    }
+
+    if (exception instanceof ProviderIdentityError) {
+      const status = HttpStatus.UNAUTHORIZED
+      const body = exception.message
 
       this.reply(response, status, body)
       return

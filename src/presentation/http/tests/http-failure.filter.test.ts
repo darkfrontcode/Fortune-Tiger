@@ -6,7 +6,8 @@ import { HealthReadinessError, HealthStatus } from '@application/health'
 import { WalletNotFoundError } from '@application/wallets'
 import { WalletReconciliationNotFoundError } from '@application/reconciliations'
 import { WagerNotFoundError } from '@application/wagers'
-import { INFRASTRUCTURE_FAILURE_MESSAGE } from '../data'
+import { INFRASTRUCTURE_FAILURE_MESSAGE, INVALID_CREDENTIAL_MESSAGE } from '../data'
+import { ProviderIdentityError } from '../errors'
 import type { HttpType } from '../types'
 import { HttpFailureFilter } from '../filters'
 
@@ -89,6 +90,20 @@ describe('HttpFailureFilter', () => {
 
     expect(response.statusCode).toBe(HttpStatus.SERVICE_UNAVAILABLE)
     expect(response.body).toEqual({ status: HealthStatus.UNAVAILABLE })
+    expect(logger.warnings).toHaveLength(0)
+  })
+
+  test('identity refused - WHEN the guard cannot resolve the caller SHOULD answer 401', () => {
+    const response = new Response()
+    const host = new ExecutionContextHost([undefined, response, undefined])
+    const logger = new Logger()
+    const filter = new HttpFailureFilter(logger)
+    const error = new ProviderIdentityError()
+
+    filter.catch(error, host)
+
+    expect(response.statusCode).toBe(HttpStatus.UNAUTHORIZED)
+    expect(response.body).toBe(INVALID_CREDENTIAL_MESSAGE)
     expect(logger.warnings).toHaveLength(0)
   })
 

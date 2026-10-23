@@ -104,7 +104,7 @@ The domain folder is the concept, and the file is the concept: `ledger/ledger.ts
 
 ## Scope
 
-Keycloak, OpenTelemetry, double-entry, partial reversal, and a load test stay out of this delivery.
+Keycloak, OpenTelemetry, double-entry, and partial reversal stay out of the core delivery. Keycloak ships as an optional compose profile (`--profile auth`) with the `jwt` auth mode. A load test is not part of the score.
 
 The database is PostgreSQL. The ORM is MikroORM. Section 4 of the statement also accepts TypeORM.
 

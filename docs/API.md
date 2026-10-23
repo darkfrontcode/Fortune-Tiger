@@ -8,7 +8,8 @@ Open [`requests.http`](../requests.http) beside this file, or run `bun run demo`
 
 - Base URL: `http://localhost:3000` (`PORT` from `.env`). The queue is an internal channel and has no route.
 - Bodies are JSON with `Content-Type: application/json`.
-- `X-Provider-Id` carries the caller identity. Without the header, the `providerId` of the body answers for it; no identity provider is wired in this delivery.
+- `X-Provider-Id` carries the caller identity in the default `anonymous` auth mode. Without the header, the `providerId` of the body answers for it, so the caller is trusted.
+- `Authorization: Bearer <token>` is required in the `jwt` auth mode (`AUTH_MODE=jwt`). The provider comes from the `provider_id` claim of the token; see [Auth](#auth).
 - `Idempotency-Key` is required on `POST /wagering/transactions`. The recommended shape is `{providerId}:{externalTransactionId}`.
 - Money is `{ "amount": "10.00", "currency": "BRL" }`. `amount` is a decimal string with exactly two places; `currency` is an uppercase ISO-4217 code.
 - Identifiers are UUIDv7. Ledger pages order by identifier, so the order is the insertion order.
@@ -223,10 +224,33 @@ An absent wager answers `404` with `"Wager transaction not found."`.
 | --- | --- |
 | `{ "statusCode": 400, "message": ["..."], "error": "Bad Request" }` | a DTO field fails validation |
 | `{ "statusCode": 400, "message": "...", "error": "Bad Request" }` | a cross-field rule fails, such as a reversal without a reference, or an invalid ledger query |
+| `{ "message": "A valid bearer token is required." }` | the `jwt` auth mode received a missing or invalid token, `401` |
 | `{ "message": "A wallet already exists for this player and currency." }` | duplicate wallet, `409` |
 | `"Wallet not found."` and `"Wager transaction not found."` | `404` |
 | `{ "walletId": "...", "failureCode": "WALLET_NOT_FOUND" }` | reconciliation of an absent wallet, `404` |
 | `{ "message": "The request could not be completed. Try again." }` | anything else, `503`, so the provider knows it may resend |
+
+## Auth
+
+`AUTH_MODE` selects the mode. The default `anonymous` mode trusts the caller as described above, so a local run needs no identity provider.
+
+The `jwt` mode is the optional Keycloak profile:
+
+```bash
+docker compose --profile auth up -d
+```
+
+Set `AUTH_MODE=jwt`, `OIDC_ISSUER=http://127.0.0.1:8080/realms/fortune-tiger`,
+`OIDC_AUDIENCE=fortune-tiger-api`, and
+`OIDC_JWKS_URL=http://127.0.0.1:8080/realms/fortune-tiger/protocol/openid-connect/certs`, restart the API, and ask Keycloak for a token:
+
+```bash
+curl -s -X POST http://127.0.0.1:8080/realms/fortune-tiger/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=fortune-tiger-api \
+  -d username=provider-a -d password=provider-a
+```
+
+The access token carries `provider_id: provider-a`. Send it as `Authorization: Bearer <access_token>`; the API verifies the signature against the realm key set and answers `401` with `{ "message": "A valid bearer token is required." }` when the token is missing, expired, signed by another key, or without that claim. Health and metrics stay open.
 
 ## Health and metrics
 

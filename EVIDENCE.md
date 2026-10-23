@@ -122,4 +122,4 @@ Wallet, wager, and health controllers: validation, idempotency conflict, paginat
 
 ## Out of Scope
 
-- Audit store, Keycloak, OpenTelemetry, load tests (per project `AGENTS.md`); Prometheus metrics are in scope
+- Audit store, OpenTelemetry, load tests (per project `AGENTS.md`); Prometheus metrics and the optional Keycloak `auth` profile are in scope

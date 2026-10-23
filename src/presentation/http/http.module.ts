@@ -8,18 +8,23 @@ import {
 } from '@application/wallets/use-cases'
 import { PROVIDER_IDENTITY } from './tokens'
 import { WagersModule } from '@application/wagers'
+import { Environment, EnvironmentModule } from '@infrastructure/environment'
 import { ObservabilityModule } from '@infrastructure/observability'
 import { PersistenceModule } from '@infrastructure/persistence'
 import { WagerController, WalletController } from './controllers'
 import { AuthGuard } from './guards'
 import { HttpFailureFilter } from './filters'
-import { AnonymousProviderIdentity } from './providers'
+import { ProviderIdentityFactory } from './factories'
+import type { ProviderIdentityProtocol } from './providers'
+
+const createIdentity = (factory: ProviderIdentityFactory): ProviderIdentityProtocol => factory.create()
 
 const moduleImports = [
   PersistenceModule,
   WagersModule,
   ReconciliationsModule,
   ObservabilityModule,
+  EnvironmentModule,
 ]
 
 const moduleControllers = [WalletController, WagerController]
@@ -29,7 +34,8 @@ const moduleProviders = [
   ListWalletLedgerUseCase,
   OpenWalletUseCase,
   AuthGuard,
-  { provide: PROVIDER_IDENTITY, useClass: AnonymousProviderIdentity },
+  ProviderIdentityFactory,
+  { provide: PROVIDER_IDENTITY, useFactory: createIdentity, inject: [ProviderIdentityFactory] },
   { provide: APP_FILTER, useClass: HttpFailureFilter },
 ]
 

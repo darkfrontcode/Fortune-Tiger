@@ -11,3 +11,7 @@ export const WALLET_NOT_FOUND_MESSAGE = 'Wallet not found.'
 export const WAGER_NOT_FOUND_MESSAGE = 'Wager transaction not found.'
 
 export const INFRASTRUCTURE_FAILURE_MESSAGE = 'The request could not be completed. Try again.'
+
+export const INVALID_CREDENTIAL_MESSAGE = 'A valid bearer token is required.'
+
+export const JWKS_URL_REQUIRED_MESSAGE = 'OIDC_JWKS_URL is required when AUTH_MODE is jwt.'
