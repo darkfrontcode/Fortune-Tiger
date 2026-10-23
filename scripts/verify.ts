@@ -39,6 +39,7 @@ const messages = {
 }
 
 const command = {
+  lint: ['bun', 'run', 'lint'],
   build: ['bun', 'run', 'build'],
   unit: ['bun', 'run', 'test:unit'],
   migration: ['bun', 'run', 'migration:up'],
@@ -49,6 +50,7 @@ const command = {
 
 const steps: { static: Array<Step>, full: Array<Step> } = {
   static: [
+    { name: 'Lint', command: command.lint },
     { name: 'Build', command: command.build },
     { name: 'Unit tests', command: command.unit },
   ],

@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
     "start": "bun run src/main.ts",
     "start:dev": "bun --watch src/main.ts",
     "test:unit": "bun test --path-ignore-patterns '**/persistence/**' --path-ignore-patterns '**/*.e2e.test.ts'",
@@ -43,6 +45,7 @@
     ]
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.6.2",
     "@mikro-orm/cli": "6.4.16",
     "@nestjs/testing": "^12.2.0",
     "@types/bun": "^1.4.3",

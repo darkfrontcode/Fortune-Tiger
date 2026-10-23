@@ -4,7 +4,7 @@ Local orchestration. No business rule, no adapter, and no import from the domain
 
 ## verify
 
-`scripts/verify.ts` runs the static gate: `bun run build`, then `bun run test:unit`. No Docker, no database, no queue. It answers exit code `0` only when both steps pass.
+`scripts/verify.ts` runs the static gate: `bun run lint`, `bun run build`, then `bun run test:unit`. No Docker, no database, no queue. It answers exit code `0` only when every step passes.
 
 ## verify:full
 
