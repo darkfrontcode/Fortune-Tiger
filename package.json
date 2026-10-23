@@ -10,6 +10,8 @@
     "test:int": "bun test --config=bunfig.int.toml",
     "test:e2e": "bun test --config=bunfig.e2e.toml --path-ignore-patterns '**/http-failure.filter.test.ts' --path-ignore-patterns '**/identity.test.ts' --path-ignore-patterns '**/ledger-query.test.ts' --path-ignore-patterns '**/wager-dto-mapper.test.ts' --path-ignore-patterns '**/wager-status.test.ts' --path-ignore-patterns '**/wallet-dto-mapper.test.ts'",
     "test:concurrency": "bun test --config=bunfig.int.toml src/infrastructure/persistence/tests/races.test.ts",
+    "verify": "bun run scripts/verify.ts",
+    "verify:full": "bun run scripts/verify.ts full",
     "migration:up": "bunx --bun mikro-orm migration:up --config ./mikro-orm.config.ts",
     "migration:down": "bunx --bun mikro-orm migration:down --config ./mikro-orm.config.ts",
     "migration:pending": "bunx --bun mikro-orm migration:pending --config ./mikro-orm.config.ts"
