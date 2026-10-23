@@ -1,6 +1,6 @@
 # Docker
 
-The compose file runs three things: the local dependencies, the image, and the optional identity provider.
+The compose file runs the local dependencies, the image, the optional identity provider, and an optional observability pair.
 
 ## Services
 
@@ -11,6 +11,8 @@ The compose file runs three things: the local dependencies, the image, and the o
 | `keycloak` | `auth` | Keycloak 26 with the realm in `docker/keycloak`; needed only by `AUTH_MODE=jwt` |
 | `migrate` | `app` | one-shot service, runs `bun run migration:up`, exits `0` before the API starts |
 | `app` | `app` | the API and its workers, built from the root `Dockerfile`, healthcheck on `/health/live` |
+| `prometheus` | `observability` | scrapes `app:3000/metrics` every five seconds and keeps one day of samples |
+| `grafana` | `observability` | serves the provisioned `Fortune Tiger` dashboard on `3001`, with Prometheus as its datasource |
 
 `docker compose --profile app up --build --wait` builds the image once, applies the migrations, and starts the application on `3000`. The application waits for PostgreSQL, LocalStack, and the migration service, and it reports healthy only when `/health/live` answers.
 
@@ -23,5 +25,22 @@ The image holds the HTTP API, the outbox publisher, the reference worker, and th
 ## Queues
 
 `docker/localstack/01-queues.sh` runs on the LocalStack ready hook and creates `wager-transactions.fifo` for requests, `wager-transactions-dlq.fifo` behind it, and `wager-events.fifo` for integration events. Creating a queue twice is a no-op for LocalStack, so a restart is safe.
+
+## Observability
+
+```bash
+docker compose --profile app --profile observability up -d
+```
+
+`docker/prometheus/prometheus.yml` scrapes `app:3000/metrics` every five seconds under the `fortune-tiger` job. A target that is down means the API is not answering; the panel keeps the last samples instead of hiding the gap. The retention is one day, so the stack stays small.
+
+`docker/grafana/provisioning/` mounts the datasource and the dashboard provider, and `docker/grafana/dashboards/fortune-tiger.json` is the `Fortune Tiger` dashboard with four panels:
+
+1. transactions by status: processed, rejected, and failed per second;
+2. replays, retries, and dead letters per second;
+3. processing latency at p50, p90, and p99;
+4. outbox lag at p50, p90, and p99, with lock conflicts on the same axes as a rate.
+
+Every panel reads the names from `application/observability/data`, so an adapter cannot invent one and a dashboard cannot drift. Grafana allows anonymous viewing in this profile, so `http://localhost:3001` opens the dashboard without a login; `admin`/`admin` is the account for an edit. The profile is optional: `docker compose --profile app up -d` keeps the API alone, and `GET /metrics` still answers a manual scrape.
 
 All project text is English. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`.

@@ -257,7 +257,15 @@ Set `LOG_PRETTY=true` in `.env` for readable, one-line text output. Leave it uns
 curl http://localhost:3000/metrics
 ```
 
-The route answers the Prometheus text exposition: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing time. `METRICS_BACKEND` chooses the adapter — `prometheus` by default, `memory` for the in-process counters without the Prometheus client.
+The route answers the Prometheus text exposition: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing time. `METRICS_BACKEND` chooses the adapter - `prometheus` by default, `memory` for the in-process counters without the Prometheus client.
+
+A dashboard comes with the stack:
+
+```bash
+docker compose --profile app --profile observability up -d
+```
+
+Prometheus scrapes the API on `http://localhost:9090`, and Grafana answers `http://localhost:3001` with the provisioned `Fortune Tiger` dashboard: transactions by status, replays, retries, dead letters, processing latency, outbox lag, and lock conflicts. Anonymous viewing is on in that profile; the panel queries read the same names the application publishes.
 
 ### Require a token (optional)
 
