@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { ClockProtocol } from '@application/time'
 import type { LoggerProtocol } from '@application/observability'
+import { SimpleMetric } from '@infrastructure/observability'
 import { ConsumerOutcome } from '../enums'
 import type { SqsQueue } from '../sqs.queue'
 import { consumerBackoffSeconds, SqsConsumer } from '../sqs.consumer'
@@ -89,6 +90,7 @@ const subject = (queue: RecordingQueue, outcome: ConsumerOutcome, logger: Logger
     new StubConsumer(outcome) as unknown as WagerConsumer,
     clock,
     logger,
+    new SimpleMetric(),
   )
 
 describe('SqsConsumer', () => {
@@ -117,6 +119,7 @@ describe('SqsConsumer', () => {
       deferred as unknown as WagerConsumer,
       clock,
       new RecordingLogger(),
+      new SimpleMetric(),
     )
     const current = message()
     const running = consumer.consume(current)

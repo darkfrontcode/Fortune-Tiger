@@ -39,6 +39,8 @@ Each row is published through the infrastructure-owned `PublisherProtocol` in `p
 
 A published row calls `markPublished(at)`. A failed publish calls `scheduleRetry(at)`, and the batch continues. The transaction commits the published and the retry state together. A process that dies before the commit leaves the rows pending for another publisher. A process that dies after the send and before the commit republishes; the consumer inbox deduplicates.
 
+A published row observes `outbox_lag_milliseconds`, the age of the row when it is published, so a growing backlog is visible before it becomes a delay.
+
 `publishers/outbox.worker.ts` holds `OutboxWorker`. It ticks every 2 seconds and calls `OutboxPublisher.publish` with `limit` 20. `open` starts one timer; `close` stops it. A tick that is still publishing is skipped so broker latency does not stack overlapping batches. A failed batch goes to the logger as a warning.
 
 There is no outbox dead-letter. A failed row keeps retrying with the `1s × 2^(attempts - 1)` backoff capped at 60 seconds. `attempts` and `nextAttemptAt` are the control.
@@ -71,6 +73,8 @@ A processed `LOSS` publishes `WagerTransactionProcessed` and does not publish `W
 The inbox `messageId` is the envelope `messageId`, not the SQS id. The use case commits the inbox row with the wager, the wallet, the ledger, and the outbox. `ACK` happens only after `SubmitWagerUseCase.execute` resolves. A resolved `REJECTED` is a business rule and is acked.
 
 The attempt limit before the DLQ is 5. A transient failure under the limit returns `RETRY`; the consumer changes the visibility to `1s × 2^(receiveCount - 1)`, capped at 60 seconds. A transient failure on the fifth receive returns `DEAD_LETTER`. A permanent failure returns `DEAD_LETTER` immediately. A failed DLQ send does not ack; the message returns after the visibility timeout. A failed ack redelivers, and the inbox deduplicates.
+
+`SqsConsumer` counts `consumer_retries_total` when it schedules another attempt and `consumer_dead_letters_total` when it sends a message to the dead-letter queue.
 
 `consumers/sqs.consumer.ts` holds `SqsConsumer`. `open` starts one long-poll loop. `close` stops the loop and awaits the in-flight batch. A receive failure logs a warning, waits `1s × 2^(failures - 1)` capped at 60 seconds, and retries. A process killed before the commit or before the ack leaves the message for redelivery, and the inbox keeps the effect single. The boot wires `SIGTERM` to `close`.
 

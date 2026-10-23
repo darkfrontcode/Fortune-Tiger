@@ -7,6 +7,7 @@ One file reads `process.env`. `environment.ts` holds `Environment`, a plain clas
 | `port` | `PORT` | `3000` |
 | `pretty` | `LOG_PRETTY` | `false` |
 | `databaseUrl` | `DATABASE_URL` | absent |
+| `metricsBackend` | `METRICS_BACKEND` | `prometheus` |
 | `region` | `AWS_REGION` | `us-east-1` |
 | `endpoint` | `AWS_ENDPOINT_URL` | absent |
 | `accessKeyId` | `AWS_ACCESS_KEY_ID` | `test` |

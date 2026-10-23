@@ -28,6 +28,12 @@ class Logger implements LoggerProtocol {
 
 class Metric implements MetricProtocol {
   increment(_name: string): void {}
+
+  observe(_name: string, _milliseconds: number): void {}
+
+  render(): Promise<string> {
+    return Promise.resolve(String())
+  }
 }
 
 class Suite {

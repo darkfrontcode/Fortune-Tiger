@@ -10,6 +10,6 @@ If the wallet is absent, the use case throws `WalletReconciliationNotFoundError`
 
 `ReconciliationGatewayProtocol` lives in this context's `protocols/` folder, and `RECONCILIATION_GATEWAY` lives in `tokens/`. The cross-cutting `LoggerProtocol` and `MetricProtocol` and their `LOGGER` and `METRIC` tokens live in `application/observability`.
 
-`reconciliations.module.ts` imports `PersistenceModule` and `ObservabilityModule`, provides `ReconcileWalletUseCase`, and exports it. The HTTP route calls that use case, and the metric counts divergence through `SimpleMetric`.
+`reconciliations.module.ts` imports `PersistenceModule` and `ObservabilityModule`, provides `ReconcileWalletUseCase`, and exports it. The HTTP route calls that use case, and the metric counts divergence under the name from `application/observability/data`.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

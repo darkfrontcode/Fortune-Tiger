@@ -3,6 +3,7 @@ import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
 import { IdempotencyService } from '@application/idempotencies/idempotency.service'
 import { WagerMediator } from '@application/wagers/mediators'
+import { SimpleMetric } from '@infrastructure/observability'
 import { Money } from '@domain/money/money'
 import { Wallet } from '@domain/wallet/wallet'
 import { WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
@@ -92,6 +93,7 @@ beforeAll(async () => {
     new IdempotencyService(),
     new WagerEventsMapper(),
     new WagerMediator(),
+    new SimpleMetric(),
   )
 })
 

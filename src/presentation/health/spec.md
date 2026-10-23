@@ -4,6 +4,7 @@ No authentication.
 
 - `GET /health/live` — the process is up. Answers `200` with `{ "status": "live" }`.
 - `GET /health/ready` — Postgres and SQS are reachable. Answers `200` with `{ "status": "ready" }`, or `503` with `{ "status": "unavailable" }`.
+- `GET /metrics` — the counters of this process, in the Prometheus text exposition. Answers `200` with `text/plain; version=0.0.4; charset=utf-8` and delegates to `MetricProtocol.render`, so the memory backend and the Prometheus backend answer the same route.
 
 ## Ready
 
@@ -15,9 +16,9 @@ The queue URL and the client come from `Environment`. `DATABASE_URL` stays with 
 
 ## Module
 
-`health.module.ts` imports `PersistenceModule` and `MessagingModule`, declares the controller, and provides `CheckHealthLivenessUseCase` and `CheckHealthReadinessUseCase`. The readiness use case receives `READINESS` by token; the module binds that token with `useFactory` over `DatabaseReadiness` and `QueueReadiness`. The probes stay out of the controller.
+`health.module.ts` imports `PersistenceModule`, `MessagingModule`, and `ObservabilityModule`, declares `HealthController` and `MetricsController`, and provides `CheckHealthLivenessUseCase` and `CheckHealthReadinessUseCase`. The readiness use case receives `READINESS` by token; the module binds that token with `useFactory` over `DatabaseReadiness` and `QueueReadiness`. The metrics controller receives `METRIC` by token and holds no counter of its own. The probes stay out of the controller.
 
-`READINESS` lives in `src/application/health/tokens/`. `HealthReadinessError` is translated by the HTTP filter to the existing `503` response.
+`READINESS` lives in `src/application/health/tokens/`; `METRIC` lives in `src/application/observability/tokens/`. `HealthReadinessError` is translated by the HTTP filter to the existing `503` response.
 
 ## Boot
 
@@ -25,6 +26,6 @@ The queue URL and the client come from `Environment`. `DATABASE_URL` stays with 
 
 `src/app.module.ts` imports `ObservabilityModule`, `PersistenceModule`, `WagersModule`, `ReferencesModule`, `MessagingModule`, and `HealthModule`. It provides only what spans layers: `ReferenceWorker` and `RuntimeService`, both `@Injectable()`. `RuntimeService` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. No migration runs at boot, and no adapter is built at the root.
 
-`LOG_PRETTY` is read once by `Environment` and given to `SimpleLogger` by `ObservabilityModule`. Nest keeps its own startup line; the application log is `SimpleLogger`.
+`LOG_PRETTY` is read once by `Environment` and given to `SimpleLogger` by `ObservabilityModule`. `METRICS_BACKEND` is read the same way and chooses the metric adapter. Nest keeps its own startup line; the application log is `SimpleLogger`.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

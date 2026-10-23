@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { PersistenceModule } from '@infrastructure/persistence'
+import { ObservabilityModule } from '@infrastructure/observability'
 import { IdempotenciesModule } from '../idempotencies/idempotencies.module'
 import {
   FindWagerByProviderUseCase,
@@ -7,7 +8,7 @@ import {
   SubmitWagerUseCase,
 } from './use-cases'
 
-const moduleImports = [PersistenceModule, IdempotenciesModule]
+const moduleImports = [PersistenceModule, IdempotenciesModule, ObservabilityModule]
 const moduleProviders = [FindWagerByProviderUseCase, FindWagerUseCase, SubmitWagerUseCase]
 const moduleExports = [FindWagerByProviderUseCase, FindWagerUseCase, SubmitWagerUseCase]
 

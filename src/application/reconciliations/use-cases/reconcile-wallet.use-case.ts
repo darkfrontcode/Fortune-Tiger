@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { LOGGER, METRIC } from '@application/observability'
+import { metricNames } from '@application/observability'
 import type { LoggerProtocol, MetricProtocol } from '@application/observability'
 import type { ReconciliationGatewayProtocol } from '@application/reconciliations'
 import { RECONCILIATION_GATEWAY } from '../tokens'
@@ -12,10 +13,6 @@ type Snapshot = ReconciliationsType.Snapshot
 type CompareOutput = ReconciliationsType.CompareOutput
 type Input = { walletId: string }
 type Output = Promise<CompareOutput>
-
-const reconciliationMetric = {
-  divergence: 'reconciliation_divergence',
-}
 
 @Injectable()
 export class ReconcileWalletUseCase {
@@ -63,7 +60,7 @@ export class ReconcileWalletUseCase {
     const message = `${RECONCILIATION_DIVERGENCE_MESSAGE}: ${walletId}`
 
     this.logger.warn(message)
-    this.metric.increment(reconciliationMetric.divergence)
+    this.metric.increment(metricNames.reconciliationDivergence)
 
     return output
   }

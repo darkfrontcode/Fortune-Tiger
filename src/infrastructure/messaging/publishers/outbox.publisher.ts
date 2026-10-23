@@ -1,5 +1,7 @@
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
+import { metricNames, METRIC } from '@application/observability'
+import type { MetricProtocol } from '@application/observability'
 import type { PublisherProtocol } from '@infrastructure/messaging/publishers'
 import { PUBLISHER } from '../tokens'
 import { OutboxMessageRepository } from '../../persistence/outbox'
@@ -16,12 +18,14 @@ type Output = {
 }
 
 const EMPTY = 0
+const noLag = 0
 
 @Injectable()
 export class OutboxPublisher {
   constructor(
     @Inject(MikroORM) private readonly orm: MikroORM,
     @Inject(PUBLISHER) private readonly publisher: PublisherProtocol,
+    @Inject(METRIC) private readonly metric: MetricProtocol,
   ) {}
 
   async publish(input: Input): Promise<Output> {
@@ -55,6 +59,7 @@ export class OutboxPublisher {
     try {
       await this.publisher.publish(input)
       message.markPublished(at)
+      this.observeLag(message, at)
 
       return true
     } catch {
@@ -62,5 +67,11 @@ export class OutboxPublisher {
 
       return false
     }
+  }
+
+  private observeLag(message: OutboxMessage, at: Date): void {
+    const lag = Math.max(at.getTime() - message.occurredAt.getTime(), noLag)
+
+    this.metric.observe(metricNames.outboxLag, lag)
   }
 }
