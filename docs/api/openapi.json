@@ -1,0 +1,774 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/wallets": {
+      "post": {
+        "operationId": "WalletController_open",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WalletDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Wallet created. An initial balance above zero writes the OPENING transaction and its CREDIT entry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletOutputDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The payload does not fit the DTO."
+          },
+          "409": {
+            "description": "A wallet already exists for this player and currency."
+          }
+        },
+        "summary": "Open a wallet",
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallets/{walletId}": {
+      "get": {
+        "operationId": "WalletController_find",
+        "parameters": [
+          {
+            "name": "walletId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletOutputDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No wallet with this identifier."
+          }
+        },
+        "summary": "Read a wallet",
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallets/{walletId}/ledger": {
+      "get": {
+        "operationId": "WalletController_page",
+        "parameters": [
+          {
+            "name": "walletId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Between 1 and 100. Defaults to 50.",
+            "schema": {
+              "example": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "The base64url of the last id of the previous page.",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerOutputPageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid cursor or limit."
+          },
+          "404": {
+            "description": "No wallet with this identifier."
+          }
+        },
+        "summary": "Page the ledger of a wallet",
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wallets/{walletId}/reconciliation": {
+      "post": {
+        "operationId": "WalletController_reconcile",
+        "parameters": [
+          {
+            "name": "walletId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The comparison. A divergence is reported, never repaired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconciliationOutputDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No wallet with this identifier."
+          }
+        },
+        "summary": "Compare a wallet with its ledger",
+        "tags": [
+          "Wallet"
+        ]
+      }
+    },
+    "/wagering/transactions": {
+      "post": {
+        "operationId": "WagerController_submit",
+        "parameters": [
+          {
+            "name": "X-Provider-Id",
+            "in": "header",
+            "description": "Caller identity in the default `anonymous` auth mode.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Source of truth for the duplicate check. Recommended shape: {providerId}:{externalTransactionId}.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WagerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PROCESSED, a replay, or an already terminal REJECTED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WagerSubmitOutputDto"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "PENDING or PENDING_REFERENCE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WagerSubmitOutputDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing Idempotency-Key, or a payload that does not fit the DTO."
+          },
+          "401": {
+            "description": "Missing, expired, or badly signed bearer token in the `jwt` auth mode."
+          },
+          "409": {
+            "description": "The same Idempotency-Key arrived with a different payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WagerSubmitOutputDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A business rule refused the wager; the failureCode names it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WagerSubmitOutputDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Transient infrastructure failure, or a FAILED wager."
+          }
+        },
+        "summary": "Submit a wager",
+        "tags": [
+          "Wager"
+        ]
+      }
+    },
+    "/wagering/transactions/{transactionId}": {
+      "get": {
+        "operationId": "WagerController_find",
+        "parameters": [
+          {
+            "name": "X-Provider-Id",
+            "in": "header",
+            "description": "Caller identity in the default `anonymous` auth mode.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WagerOutputDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or badly signed bearer token in the `jwt` auth mode."
+          },
+          "404": {
+            "description": "No wager with this identifier."
+          }
+        },
+        "summary": "Read a wager by transaction",
+        "tags": [
+          "Wager"
+        ]
+      }
+    },
+    "/providers/{providerId}/wagering/transactions/{externalTransactionId}": {
+      "get": {
+        "operationId": "WagerController_findByProvider",
+        "parameters": [
+          {
+            "name": "X-Provider-Id",
+            "in": "header",
+            "description": "Caller identity in the default `anonymous` auth mode.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "provider-a",
+              "type": "string"
+            }
+          },
+          {
+            "name": "externalTransactionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "transaction-bet-1",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WagerOutputDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or badly signed bearer token in the `jwt` auth mode."
+          },
+          "404": {
+            "description": "No wager for this provider and external transaction."
+          }
+        },
+        "summary": "Read a wager by provider pair",
+        "tags": [
+          "Wager"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Fortune Tiger",
+    "description": "Wager processor: balance, ledger, and a repeated operation stay correct. The route rules are in `src/presentation/http/spec.md`, and the provider view is in `docs/API.md`. The default `anonymous` auth mode trusts the `X-Provider-Id` header, or the `providerId` of the body when the header is absent. The `jwt` mode takes `Authorization: Bearer <token>` from Keycloak and reads the `provider_id` claim. `POST /wagering/transactions` requires the `Idempotency-Key` header.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "Wallet",
+      "description": "Open a wallet, read it, page its ledger, and compare it with the ledger."
+    },
+    {
+      "name": "Wager",
+      "description": "Submit a wager, read it by transaction or by provider pair."
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Required in the `jwt` auth mode. Ignored in the default `anonymous` mode."
+      }
+    },
+    "schemas": {
+      "MoneyDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "example": "30.00",
+            "description": "Decimal string with exactly two places."
+          },
+          "currency": {
+            "type": "string",
+            "example": "BRL",
+            "description": "Uppercase ISO-4217 currency code."
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ]
+      },
+      "WalletDto": {
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Player that owns the wallet."
+          },
+          "initialBalance": {
+            "description": "Opening balance. Zero opens a wallet without a credit.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MoneyDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "playerId",
+          "initialBalance"
+        ]
+      },
+      "WalletOutputDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "balance": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "version": {
+            "type": "number",
+            "example": 2,
+            "description": "Increases only when the balance changes."
+          }
+        },
+        "required": [
+          "id",
+          "playerId",
+          "balance",
+          "version"
+        ]
+      },
+      "LedgerOutputDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "transactionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "DEBIT",
+              "CREDIT"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "balanceBefore": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "balanceAfter": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "transactionId",
+          "direction",
+          "amount",
+          "balanceBefore",
+          "balanceAfter",
+          "createdAt"
+        ]
+      },
+      "LedgerOutputPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LedgerOutputDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Absent on the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ReconciliationOutputDto": {
+        "type": "object",
+        "properties": {
+          "walletId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "storedBalance": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "calculatedBalance": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "difference": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "consistent": {
+            "type": "boolean",
+            "example": true
+          },
+          "checkedEntries": {
+            "type": "number",
+            "example": 2
+          }
+        },
+        "required": [
+          "walletId",
+          "storedBalance",
+          "calculatedBalance",
+          "difference",
+          "consistent",
+          "checkedEntries"
+        ]
+      },
+      "WagerDto": {
+        "type": "object",
+        "properties": {
+          "providerId": {
+            "type": "string",
+            "example": "provider-a",
+            "description": "Provider that owns the wager."
+          },
+          "externalTransactionId": {
+            "type": "string",
+            "example": "transaction-bet-1",
+            "description": "Provider transaction identifier."
+          },
+          "playerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Player that owns the wallet."
+          },
+          "walletId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Wallet the wager applies to."
+          },
+          "roundId": {
+            "type": "string",
+            "example": "round-1"
+          },
+          "gameId": {
+            "type": "string",
+            "example": "fortune-tiger"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "OPENING",
+              "BET",
+              "WIN",
+              "LOSS",
+              "REFUND",
+              "ROLLBACK"
+            ],
+            "example": "BET",
+            "description": "`OPENING` is internal and answers `422`."
+          },
+          "money": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "referenceExternalTransactionId": {
+            "type": "string",
+            "description": "Required for `REFUND` and `ROLLBACK`."
+          }
+        },
+        "required": [
+          "providerId",
+          "externalTransactionId",
+          "playerId",
+          "walletId",
+          "roundId",
+          "gameId",
+          "kind",
+          "money"
+        ]
+      },
+      "WagerSubmitOutputDto": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PENDING_REFERENCE",
+              "PROCESSED",
+              "REJECTED",
+              "FAILED"
+            ]
+          },
+          "balance": {
+            "description": "Balance observed when the wager was processed.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MoneyDto"
+              }
+            ]
+          },
+          "idempotentReplay": {
+            "type": "boolean",
+            "example": false,
+            "description": "True when the same key and payload returned the original result."
+          },
+          "failureCode": {
+            "type": "string",
+            "enum": [
+              "INSUFFICIENT_FUNDS",
+              "REVERSAL_INSUFFICIENT_FUNDS",
+              "CURRENCY_MISMATCH",
+              "WALLET_NOT_FOUND",
+              "PLAYER_WALLET_MISMATCH",
+              "INVALID_KIND",
+              "INVALID_REFERENCE_KIND",
+              "REFERENCE_NOT_FOUND",
+              "REFERENCE_ALREADY_REVERSED",
+              "REFERENCE_AMOUNT_MISMATCH",
+              "REFERENCE_SCOPE_MISMATCH",
+              "IDEMPOTENCY_PAYLOAD_CONFLICT",
+              "OPENING_NOT_ALLOWED",
+              "NEGATIVE_AMOUNT",
+              "INVALID_MONEY"
+            ]
+          }
+        },
+        "required": [
+          "transactionId",
+          "status",
+          "balance",
+          "idempotentReplay"
+        ]
+      },
+      "WagerOutputDto": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "providerId": {
+            "type": "string",
+            "example": "provider-a"
+          },
+          "externalTransactionId": {
+            "type": "string",
+            "example": "transaction-bet-1"
+          },
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "walletId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roundId": {
+            "type": "string",
+            "example": "round-1"
+          },
+          "gameId": {
+            "type": "string",
+            "example": "fortune-tiger"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "OPENING",
+              "BET",
+              "WIN",
+              "LOSS",
+              "REFUND",
+              "ROLLBACK"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PENDING_REFERENCE",
+              "PROCESSED",
+              "REJECTED",
+              "FAILED"
+            ]
+          },
+          "money": {
+            "$ref": "#/components/schemas/MoneyDto"
+          },
+          "failureCode": {
+            "type": "string",
+            "enum": [
+              "INSUFFICIENT_FUNDS",
+              "REVERSAL_INSUFFICIENT_FUNDS",
+              "CURRENCY_MISMATCH",
+              "WALLET_NOT_FOUND",
+              "PLAYER_WALLET_MISMATCH",
+              "INVALID_KIND",
+              "INVALID_REFERENCE_KIND",
+              "REFERENCE_NOT_FOUND",
+              "REFERENCE_ALREADY_REVERSED",
+              "REFERENCE_AMOUNT_MISMATCH",
+              "REFERENCE_SCOPE_MISMATCH",
+              "IDEMPOTENCY_PAYLOAD_CONFLICT",
+              "OPENING_NOT_ALLOWED",
+              "NEGATIVE_AMOUNT",
+              "INVALID_MONEY"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "transactionId",
+          "providerId",
+          "externalTransactionId",
+          "playerId",
+          "walletId",
+          "roundId",
+          "gameId",
+          "kind",
+          "status",
+          "money",
+          "createdAt"
+        ]
+      }
+    }
+  }
+}

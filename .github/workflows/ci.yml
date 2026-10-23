@@ -101,5 +101,8 @@ jobs:
       - name: Run E2E tests
         run: bun run test:e2e
 
+      - name: Check the OpenAPI document
+        run: bun run openapi:export --check
+
       - name: Build the container image
         run: docker build -t fortune-tiger:ci .

@@ -65,6 +65,12 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 - **Scope**: `bunfig.e2e.toml` → `src/presentation/**/tests/*.e2e.test.ts` (mapper/filter unit files excluded via `package.json` ignore patterns)
 - **Prerequisites**: `DATABASE_URL` and SQS env vars (full `AppModule` boots)
 
+### OpenAPI
+- **Status**: PASS (local)
+- **Command**: `bun run openapi:export --check`
+- **Coverage**: `docs/api/openapi.json` matches the document the application builds from its route metadata: 7 provider paths and 9 schemas, `Idempotency-Key` on the submit, and health and metrics absent; `bun run openapi:export` rewrites the file
+- **Prerequisites**: PostgreSQL for the boot; the pipeline step and the contract are in [`scripts/spec.md`](scripts/spec.md) and [`docs/API.md`](docs/API.md)
+
 ### Queues
 - **Status**: PASS (local)
 - **Command**: `docker compose --profile app up -d --build app`, then a wallet and a `BET` over HTTP

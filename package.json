@@ -17,6 +17,7 @@
     "verify:full": "bun run scripts/verify.ts full",
     "demo": "bun run scripts/demo.ts",
     "auth:smoke": "bun run scripts/auth.ts",
+    "openapi:export": "bun run scripts/openapi.ts",
     "test:load": "bun run scripts/load.ts",
     "migration:up": "bunx --bun mikro-orm migration:up --config ./mikro-orm.config.ts",
     "migration:down": "bunx --bun mikro-orm migration:down --config ./mikro-orm.config.ts",
