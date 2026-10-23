@@ -52,6 +52,12 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 - **Command**: `bun run test:int`
 - **Prerequisites**: Same as integration
 
+### Dashboards
+- **Status**: PASS (local)
+- **Command**: `docker compose --profile app --profile observability up -d`
+- **Coverage**: Prometheus 2.55 and Grafana 11.2 start beside the API; the `fortune-tiger` scrape target reports `up` on `http://app:3000/metrics`, Grafana answers `/api/health` with `database: ok`, the datasource `Prometheus` and the dashboard `Fortune Tiger` (uid `fortune-tiger`, four panels) are provisioned from `docker/grafana/`, and a wallet plus a `BET` moved `wager_transactions_processed_total` to `1` as scraped by Prometheus
+- **Prerequisites**: the `app` profile, so a target has something to scrape; the profile contract is in [`docker/spec.md`](docker/spec.md)
+
 ### E2E Tests
 - **Status**: PASS (local)
 - **Count**: 42 tests across 7 suites
