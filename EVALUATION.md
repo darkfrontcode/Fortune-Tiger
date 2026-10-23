@@ -239,7 +239,7 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 **Coverage:**
 - 84 test files: 63 unit, 14 integration (including the race and outage suites), and 7 end-to-end suites
 - 442 tests in total: 351 unit, 49 integration, and 42 end-to-end
-- 81.80% of the functions and 91.31% of the lines of the unit suite
+- 92.45% of the functions and 100% of the lines of the unit suite; the function metric includes implicit class constructors, while the enforced gate is 100% executable lines
 - All guards have their own tests
 - Invariants tested
 
@@ -355,7 +355,7 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 | In-memory only idempotency | ✅ Passed | Persistent in database |
 | Correct only with one instance | ✅ Passed | Tests with 6 real processes |
 | Event before commit | ✅ Passed | Outbox published outside transaction |
-| Missing auditable ledger | ✅ Passed | `WalletLedgerEntry` immutable |
+| Missing auditable ledger | ✅ Passed | `WalletLedgerEntry` is immutable in the domain and by PostgreSQL trigger; `transaction_id` is a foreign key |
 | Tests only with mocks | ✅ Passed | Real PostgreSQL and LocalStack |
 
 ---

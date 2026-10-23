@@ -1,6 +1,6 @@
 # Quality Evidence Matrix
 
-Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `localstack:3`). `bun run verify:full`, `bun run test:coverage`, and `bun run demo` were re-run on the branch stack that starts at `docs/docs/delivery-polish`. The load numbers below come from the measured run described in their own section.
+The current branch was verified locally with Docker Compose (`postgres:16`, `localstack:3`) on **2026-10-23**. `bun run verify:full` passed the complete gate, including migrations, unit tests, persistence integration, six-process concurrency tests, and HTTP end-to-end tests. The load numbers below come from the measured full-stack run described in their own section.
 
 ## Test Suite Results
 
@@ -13,23 +13,23 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 ### Coverage
 - **Status**: PASS (local)
 - **Command**: `bun run test:coverage`
-- **Functions**: 81.80%
-- **Lines**: 91.31%
+- **Functions**: 92.45% (Bun counts implicit class constructors in this metric)
+- **Lines**: 100%
 - **Report**: `coverage/lcov.info`, kept by the pipeline as an artifact
 - **Scope**: the unit suite; persistence and HTTP end-to-end paths need PostgreSQL and SQS, so they are measured by `verify:full` and stay out of this number
 
 ### Unit Tests
 - **Status**: PASS (local)
-- **Count**: 351 tests across 63 files
+- **Count**: 367 tests across 66 files
 - **Duration**: ~1s
-- **Coverage**: Domain, application use cases, messaging adapters (no persistence integration), plus `fast-check` properties for money arithmetic, wallet balance, ledger equation, idempotency digest, and wager transitions
+- **Coverage**: Domain, application use cases, messaging adapters (no persistence integration), plus `fast-check` properties for money arithmetic, wallet balance, ledger equation, idempotency digest, and wager transitions; 100% of executable unit-scope lines are covered
 - **Command**: `bun run test:unit`
 - **Database**: Not required
 - **Scope**: `bunfig.toml` root `./src` with ignores for `**/persistence/**` and presentation `*.e2e.test.ts`; `package.json` adds `--path-ignore-patterns` for the same
 
 ### Integration Tests
 - **Status**: PASS (local)
-- **Count**: 49 tests across 14 files
+- **Count**: 51 tests across 15 files
 - **Duration**: ~22s
 - **Coverage**: Persistence, inbox/outbox, crash recovery, reconciliation, reference retry, idempotency cross-wallet race, reversal flows, database outage and recovery
 - **Command**: `bun run test:int`
@@ -39,7 +39,7 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 ### Concurrency Tests
 - **Status**: PASS (local)
 - **Count**: 6 tests in `races.test.ts`
-- **Duration**: ~9s (spawns six app processes)
+- **Duration**: ~7s (spawns six app processes)
 - **Command**: `bun run test:concurrency`
 - **Coverage**: one debit under 50 parallel duplicates, a balance race, independent wallets, a duplicate storm with a conflicting payload, two rollbacks of one bet, and a process that stops with a request in flight
 - **Prerequisites**: Same as integration
@@ -59,8 +59,8 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 
 ### E2E Tests
 - **Status**: PASS (local)
-- **Count**: 42 tests across 7 suites
-- **Duration**: ~2s
+- **Count**: 47 tests across 8 files
+- **Duration**: ~5s
 - **Command**: `bun run test:e2e`
 - **Scope**: `bunfig.e2e.toml` → `src/presentation/**/tests/*.e2e.test.ts` (mapper/filter unit files excluded via `package.json` ignore patterns)
 - **Prerequisites**: `DATABASE_URL` and SQS env vars (full `AppModule` boots)
@@ -125,9 +125,11 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 - Ledger before/after checks and direction equation (`Migration20261021120000`)
 
 ### Ledger Immutability
-- Unique `transaction_id` prevents duplicate inserts, not UPDATE/DELETE
+- Unique `transaction_id` prevents duplicate inserts
 - Application never updates or deletes ledger rows
-- **Note**: immutability is application-enforced, not DB-permission-enforced
+- `Migration20261023090000` adds a database trigger that rejects direct `UPDATE` and `DELETE` mutations
+- The same migration adds a foreign key from `wallet_ledger_entries.transaction_id` to `wager_transactions.id` and validates wallet, transaction, and currency identity before insert
+- `ledger-integrity.test.ts` proves the database rejects direct update, delete, and orphan transaction references against PostgreSQL
 
 ## Messaging and Recovery
 

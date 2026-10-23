@@ -5,7 +5,7 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
 <p>
   <strong>CI / Coverage</strong><br />
   <a href="https://github.com/darkfrontcode/Fortune-Tiger/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/darkfrontcode/Fortune-Tiger/actions/workflows/ci.yml/badge.svg" /></a>
-  <img alt="Unit coverage" src="https://img.shields.io/badge/unit%20coverage-100%25%20lines-brightgreen?style=for-the-badge" />
+  <img alt="Unit coverage: 100% lines" src="https://img.shields.io/badge/unit%20coverage-100%25%20lines-brightgreen?style=for-the-badge" />
 </p>
 
 <hr />

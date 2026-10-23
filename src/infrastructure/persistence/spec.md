@@ -26,7 +26,7 @@ Tables: `wallets`, `wager_transactions`, `wallet_ledger_entries`, `inbox_message
 
 - `wallets`: unique `(player_id, currency)`; balance `>= 0`; `version >= 1`
 - `wager_transactions`: unique `idempotency_key`; unique `(provider_id, external_transaction_id)`; `kind` and `status` as Postgres enums; scale 2; `attempts int not null default 0`; `next_attempt_at timestamptz null`; index `(status, next_attempt_at)`
-- `wallet_ledger_entries`: unique `transaction_id`; no update and no delete in the app; `balance_after` matches the direction
+- `wallet_ledger_entries`: unique `transaction_id`; a foreign key to `wager_transactions`; database triggers reject update and delete; wallet, transaction, and currency identity are validated before insert; `balance_after` matches the direction
 - `inbox_messages`: unique `(consumer_name, message_id)`
 - `outbox_messages`: index `(published_at, next_attempt_at)`
 
