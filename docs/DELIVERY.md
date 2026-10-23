@@ -25,7 +25,7 @@ What each command answers:
 
 | Command | What it proves |
 | --- | --- |
-| `docker compose up -d` | PostgreSQL 16 and LocalStack, with both FIFO queues created by the ready hook in `docker/localstack` |
+| `docker compose up -d` | PostgreSQL 16 and LocalStack, with the FIFO queues created by the ready hook in `docker/localstack` |
 | `bun run migration:up` | the schema is versioned and reversible |
 | `bun run verify` | TypeScript strict and the unit suite pass, with no dependency running |
 | `bun run demo` | the happy path against a live application: wallet, bet, replay, loss, ledger, reconciliation, metrics |

@@ -71,6 +71,7 @@ services:
       AWS_SECRET_ACCESS_KEY: test
       SQS_QUEUE_URL: http://localstack:4566/000000000000/wager-transactions.fifo
       SQS_DEAD_LETTER_QUEUE_URL: http://localstack:4566/000000000000/wager-transactions-dlq.fifo
+      SQS_EVENTS_QUEUE_URL: http://localstack:4566/000000000000/wager-events.fifo
       AUTH_MODE: anonymous
     ports:
       - '3000:3000'

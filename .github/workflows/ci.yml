@@ -18,6 +18,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: test
       SQS_QUEUE_URL: http://localhost:4566/000000000000/wager-transactions.fifo
       SQS_DEAD_LETTER_QUEUE_URL: http://localhost:4566/000000000000/wager-transactions-dlq.fifo
+      SQS_EVENTS_QUEUE_URL: http://localhost:4566/000000000000/wager-events.fifo
 
     services:
       postgres:
@@ -65,6 +66,9 @@ jobs:
             --attributes FifoQueue=true
           aws --endpoint-url="$AWS_ENDPOINT_URL" sqs create-queue \
             --queue-name wager-transactions-dlq.fifo \
+            --attributes FifoQueue=true
+          aws --endpoint-url="$AWS_ENDPOINT_URL" sqs create-queue \
+            --queue-name wager-events.fifo \
             --attributes FifoQueue=true
 
       - name: Run migrations

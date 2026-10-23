@@ -11,6 +11,7 @@ const variables = [
   'AWS_SECRET_ACCESS_KEY',
   'SQS_QUEUE_URL',
   'SQS_DEAD_LETTER_QUEUE_URL',
+  'SQS_EVENTS_QUEUE_URL',
   'AUTH_MODE',
   'OIDC_ISSUER',
   'OIDC_AUDIENCE',
@@ -53,6 +54,7 @@ describe('Environment', () => {
     expect(environment.accessKeyId).toBe('test')
     expect(environment.secretAccessKey).toBe('test')
     expect(environment.queueUrl).toBe(String())
+    expect(environment.eventsQueueUrl).toBe(String())
     expect(environment.databaseUrl).toBeUndefined()
     expect(environment.authMode).toBe('anonymous')
     expect(environment.oidcIssuer).toBeUndefined()
@@ -64,6 +66,7 @@ describe('Environment', () => {
     process.env.PORT = '4000'
     process.env.LOG_PRETTY = 'true'
     process.env.SQS_QUEUE_URL = 'http://queue'
+    process.env.SQS_EVENTS_QUEUE_URL = 'http://events'
     process.env.DATABASE_URL = 'postgresql://database'
 
     const environment = new Environment()
@@ -71,6 +74,7 @@ describe('Environment', () => {
     expect(environment.port).toBe(4000)
     expect(environment.pretty).toBe(true)
     expect(environment.queueUrl).toBe('http://queue')
+    expect(environment.eventsQueueUrl).toBe('http://events')
     expect(environment.databaseUrl).toBe('postgresql://database')
   })
 

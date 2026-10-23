@@ -235,6 +235,8 @@ Keycloak itself is optional infrastructure. A production deployment would add th
 
 Delivery is at-least-once. FIFO is an optimization, not the guarantee: `MessageGroupId` is the aggregate id, so one wallet keeps its order and two wallets may interleave. Uniqueness lives in Postgres — the inbox row, the unique idempotency key, and the unique `(provider_id, external_transaction_id)`.
 
+The channel has two directions. `wager-transactions.fifo` carries requests into the consumer, with `wager-transactions-dlq.fifo` behind it; `wager-events.fifo` carries integration events out of the publisher. A poison request never sits in front of an event, and the two sides scale on their own.
+
 The inbox, the wager, the wallet, the ledger, and the outbox commit in one SQL transaction. The ack happens after that commit, and the publisher sends outside it, so an event never leaves before the financial change is durable. A publisher that dies after the send republishes, and the consumer inbox keeps the effect single.
 
 The retry ladder is data, not a loop: `attempts` and `nextAttemptAt` decide the next attempt on both the outbox row and the pending reference, with `1s × 2^(attempts - 1)` capped at 60 seconds. The consumer moves a message to the dead-letter queue after five receives, and a permanent failure goes there immediately. The outbox has no dead-letter: it keeps retrying, and the lag metric makes a backlog visible before it becomes a delay.
@@ -261,7 +263,7 @@ Stated here so the delivery is read for what it is:
 
 ## Decisions
 
-Eight records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, and the observability choice. A decision that changes gets a new record; the old one keeps its number.
+Nine records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, and the split between inbound and outbound queues. A decision that changes gets a new record; the old one keeps its number.
 
 ## Stack
 
