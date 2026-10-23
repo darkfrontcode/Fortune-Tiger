@@ -75,6 +75,6 @@ The code reads top to bottom: `src/domain` holds `Money`, `Wallet`, `Ledger`, an
 
 - Delivery is **at-least-once**, not exactly-once. A crash after the commit and before the ack redelivers the message; the inbox keeps the effect single.
 - Ledger immutability is enforced by the application, not by a database grant. The unique `transaction_id` prevents a duplicate row, not an `UPDATE`.
-- Auth is an extension point: `AuthGuard` allows every request and `AnonymousProviderIdentity` trusts the caller. Keycloak and JWT are not part of this delivery.
+- Auth has two modes. The default `anonymous` mode keeps `AuthGuard` permissive and `AnonymousProviderIdentity` trusts the caller, so a local run needs no identity provider. `AUTH_MODE=jwt` verifies the bearer token against the Keycloak realm key set and reads the `provider_id` claim; Keycloak itself is an optional compose profile, and the CI keeps `anonymous`.
 - OpenTelemetry, double-entry accounting, and partial reversal are out. The Prometheus exposition is in.
 - A load test is not part of the delivery.

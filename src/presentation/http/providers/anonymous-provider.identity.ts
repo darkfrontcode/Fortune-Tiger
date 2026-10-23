@@ -7,7 +7,7 @@ import type {
 const empty = String()
 
 export class AnonymousProviderIdentity implements ProviderIdentityProtocol {
-  identify(input: ProviderIdentityInput): ProviderIdentity {
+  async identify(input: ProviderIdentityInput): Promise<ProviderIdentity> {
     const blank = input.header === empty
     const providerId = blank ? input.providerId : input.header
 

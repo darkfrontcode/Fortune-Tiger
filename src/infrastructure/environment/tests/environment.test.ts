@@ -11,6 +11,10 @@ const variables = [
   'AWS_SECRET_ACCESS_KEY',
   'SQS_QUEUE_URL',
   'SQS_DEAD_LETTER_QUEUE_URL',
+  'AUTH_MODE',
+  'OIDC_ISSUER',
+  'OIDC_AUDIENCE',
+  'OIDC_JWKS_URL',
 ]
 
 const original: NodeJS.ProcessEnv = { ...process.env }
@@ -50,6 +54,10 @@ describe('Environment', () => {
     expect(environment.secretAccessKey).toBe('test')
     expect(environment.queueUrl).toBe(String())
     expect(environment.databaseUrl).toBeUndefined()
+    expect(environment.authMode).toBe('anonymous')
+    expect(environment.oidcIssuer).toBeUndefined()
+    expect(environment.oidcAudience).toBeUndefined()
+    expect(environment.oidcJwksUrl).toBeUndefined()
   })
 
   test('WHEN a variable is set SHOULD answer it', () => {
@@ -64,5 +72,21 @@ describe('Environment', () => {
     expect(environment.pretty).toBe(true)
     expect(environment.queueUrl).toBe('http://queue')
     expect(environment.databaseUrl).toBe('postgresql://database')
+  })
+
+  test('WHEN the identity provider variables are set SHOULD answer them', () => {
+    process.env.AUTH_MODE = 'jwt'
+    process.env.OIDC_ISSUER = 'https://issuer.test/realms/fortune-tiger'
+    process.env.OIDC_AUDIENCE = 'fortune-tiger-api'
+    process.env.OIDC_JWKS_URL = 'https://issuer.test/realms/fortune-tiger/protocol/openid-connect/certs'
+
+    const environment = new Environment()
+
+    expect(environment.authMode).toBe('jwt')
+    expect(environment.oidcIssuer).toBe('https://issuer.test/realms/fortune-tiger')
+    expect(environment.oidcAudience).toBe('fortune-tiger-api')
+    expect(environment.oidcJwksUrl).toBe(
+      'https://issuer.test/realms/fortune-tiger/protocol/openid-connect/certs',
+    )
   })
 })

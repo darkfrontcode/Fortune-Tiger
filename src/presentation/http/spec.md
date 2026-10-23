@@ -28,6 +28,7 @@ Decision. Stable across every endpoint.
 | Situation | HTTP |
 | --- | --- |
 | Invalid payload | 400 |
+| Missing, expired, or badly signed bearer token in the `jwt` auth mode | 401 |
 | Missing resource | 404 |
 | Idempotency key with a different payload, or a duplicate wallet | 409 |
 | Business rule, `failureCode` in the body | 422 |
@@ -38,25 +39,30 @@ Decision. Stable across every endpoint.
 
 A replay answers `200` even when the stored wager is `REJECTED`: the body is the original result, and `idempotentReplay` is `true`.
 
-`HttpFailureFilter` maps an error to the table. A Nest `HttpException` keeps its status. `WalletNotFoundError` and `WagerNotFoundError` answer `404`; the reconciliation error preserves its structured not-found response. The wallet conflict message answers `409`. `HealthReadinessError` preserves the health `503` body. Any other error goes to the logger and answers `503`, so the provider knows it may resend.
+`HttpFailureFilter` maps an error to the table. A Nest `HttpException` keeps its status. `WalletNotFoundError` and `WagerNotFoundError` answer `404`; the reconciliation error preserves its structured not-found response. The wallet conflict message answers `409`. `ProviderIdentityError` answers `401` with its message. `HealthReadinessError` preserves the health `503` body. Any other error goes to the logger and answers `503`, so the provider knows it may resend.
 
 ## Auth
 
-Decision: no identity provider. `AuthGuard` is the extension point and allows every request. `ProviderIdentityProtocol`, beside the HTTP provider, resolves the provider of the request; `AnonymousProviderIdentity` reads the `X-Provider-Id` header and falls back to the `providerId` of the body, so the caller is trusted. A real identity provider replaces that class and the guard starts to refuse.
+Decision: one guard, two modes, selected by `AUTH_MODE`. The default `anonymous` mode keeps the local run free of an identity provider. The `jwt` mode requires a bearer token.
+
+`AuthGuard` is the extension point. It resolves the identity of the request through `PROVIDER_IDENTITY` and stores it on `request.provider`. `ProviderIdentityProtocol` lives beside the HTTP provider and answers a promise, because the JWT mode reaches a remote key set.
+
+- `AnonymousProviderIdentity` reads the `X-Provider-Id` header and falls back to the `providerId` of the body, so the caller is trusted.
+- `JwtProviderIdentity` reads the token from the `Authorization: Bearer` header, verifies it against the JWKS at `OIDC_JWKS_URL`, checks the issuer and the audience when they are configured, and reads the `provider_id` claim as the caller. A missing header, a malformed token, an expired token, a signature that does not match, or a payload without that claim throws `ProviderIdentityError`, which answers `401`. A key set that cannot be reached is not a credential problem: the error leaves the provider and answers `503`.
 
 Health stays open. The queue is an internal channel, and the provider identity inside a message still goes through domain rules.
 
-Keycloak is out.
+Keycloak is optional: it runs in compose under the `auth` profile with the realm import in `docker/keycloak/`, and the API stays in `anonymous` unless `AUTH_MODE=jwt` is set.
 
 ## Module
 
-`http.module.ts` imports `PersistenceModule`, `WagersModule`, `ReconciliationsModule`, and `ObservabilityModule`. It declares `WalletController` and `WagerController`, and provides `OpenWalletUseCase`, `FindWalletUseCase`, and `ListWalletLedgerUseCase`; `ReconcileWalletUseCase` comes from `ReconciliationsModule`. `AuthGuard` is applied to `WagerController`, and `PROVIDER_IDENTITY` is bound to `AnonymousProviderIdentity`; its token lives in this module's `tokens/` folder. `WalletController` receives wallet use cases by class. `WagerController` receives its three route use cases by class and `CLOCK` by token. `CLOCK` lives in `application/time/tokens`; `LOGGER` lives in `application/observability/tokens`.
+`http.module.ts` imports `PersistenceModule`, `WagersModule`, `ReconciliationsModule`, `ObservabilityModule`, and `EnvironmentModule`. It declares `WalletController` and `WagerController`, and provides `OpenWalletUseCase`, `FindWalletUseCase`, and `ListWalletLedgerUseCase`; `ReconcileWalletUseCase` comes from `ReconciliationsModule`. `AuthGuard` is applied to `WagerController`. `ProviderIdentityFactory` reads `Environment` and builds one identity: the anonymous implementation by default, the JWT implementation in the `jwt` mode. `PROVIDER_IDENTITY` is bound with `useFactory` over that class, and its token lives in this module's `tokens/` folder. `WalletController` receives wallet use cases by class. `WagerController` receives its three route use cases by class and `CLOCK` by token. `CLOCK` lives in `application/time/tokens`; `LOGGER` lives in `application/observability/tokens`.
 
 `wager.dto.ts` and `wallet.dto.ts` in `dtos/` declare the request shape with `class-validator` decorators. The Nest `ValidationPipe` in `main.ts` validates every `@Body()` against the DTO class and answers `400` on mismatch. After validation, `WagerDtoMapper` and `WalletDtoMapper` in `mappers/` convert the validated DTO into `HttpType.WagerInput` and `HttpType.WalletInput` — building domain `Money` and checking cross-field rules (reference required for `REFUND`/`ROLLBACK`). A missing `Idempotency-Key` answers `400` with `IDEMPOTENCY_KEY_REQUIRED_MESSAGE`.
 
 `mappers/` turns the body into `WagersType.SubmitInput`, the wallet into its output, the ledger entry into its output, and the wager into its output. `maps/wager-status.map.ts` holds the status table, and `WagerStatus` in `statuses/` answers the HTTP status of one `SubmitOutput`.
 
-`guards/` holds `AuthGuard`, `filters/` holds `HttpFailureFilter`, and `providers/` holds `AnonymousProviderIdentity`. The global filter translates application errors into HTTP responses; controllers do not need per-route `try/catch` blocks for these errors.
+`guards/` holds `AuthGuard`, `filters/` holds `HttpFailureFilter`, `providers/` holds the identity protocol and its two implementations, and `errors/` holds `ProviderIdentityError`. The global filter translates application errors into HTTP responses; controllers do not need per-route `try/catch` blocks for these errors.
 
 ## Folder structure
 
@@ -71,6 +77,10 @@ http/
     money.dto.ts
     wager.dto.ts
     wallet.dto.ts
+  errors/
+    provider-identity.error.ts
+  factories/
+    provider-identity.factory.ts
   filters/
     http-failure.filter.ts
   guards/
@@ -87,6 +97,8 @@ http/
     wager-status.map.ts
   providers/
     anonymous-provider.identity.ts
+    jwt-provider.identity.ts
+    provider.identity.protocol.ts
   queries/
     ledger.query.ts
   statuses/

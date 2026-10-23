@@ -172,6 +172,8 @@ src/
       controllers/
       data/
       dtos/
+      errors/
+      factories/
       filters/
       guards/
       mappers/
@@ -214,6 +216,14 @@ A use case or service with a collaborator is not built with `new`. `SubmitWagerU
 A factory provider stays for a value the container builds from `Environment` (`MikroORM`, `SQSClient`, `QUEUE_CONFIG`) and for the array the health module joins (`READINESS`). A pure collaborator used by two layers is provided by the module that consumes it, so the layer arrow does not become a module cycle.
 
 `Environment` is the only reader of `process.env`. `environment.module.ts` provides it and exports it, so every factory receives it instead of reading a variable. `main.ts` asks the container for the port.
+
+## Auth
+
+Decision: one guard, two modes, selected by `AUTH_MODE`. The default `anonymous` mode keeps a local run and the CI free of an identity provider: `AnonymousProviderIdentity` trusts `X-Provider-Id` and falls back to the `providerId` of the body. The `jwt` mode verifies `Authorization: Bearer` against a Keycloak realm key set, checks the issuer and the audience, and reads `provider_id` as the caller. A refused credential answers `401`; an unreachable key set stays a `503`, so a provider knows whether to fix the token or to retry.
+
+`http.module.ts` binds `PROVIDER_IDENTITY` with `useFactory` over `ProviderIdentityFactory`, which receives `Environment` and refuses to boot the `jwt` mode without `OIDC_JWKS_URL`. `ProviderIdentityProtocol` lives beside the HTTP provider so a real IdP replaces one class. The trade-off is deliberate: Keycloak ships as a compose profile (`--profile auth`) and is never required by the test pipeline, and the guard stays a presentation concern, so the domain and the queue keep receiving a resolved provider identity.
+
+Keycloak itself is optional infrastructure. A production deployment would add the realm to the platform, replace the demo provider user with the provider's own client, and keep the same guard.
 
 ## Stack
 

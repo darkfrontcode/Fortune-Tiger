@@ -62,6 +62,8 @@ Providers use the HTTP API to open wallets, submit wagers, check results, browse
 
 The front door checks and translates requests. The money rules stay in the rulebook, not in the controller.
 
+By default the caller is trusted through `X-Provider-Id`, which keeps the local setup simple. An optional `jwt` mode verifies a Keycloak token instead: start the `auth` compose profile, set `AUTH_MODE=jwt`, and send `Authorization: Bearer <token>`. The route rules are in [`docs/API.md`](docs/API.md#auth).
+
 </details>
 
 <details>
@@ -238,6 +240,14 @@ curl http://localhost:3000/metrics
 ```
 
 The route answers the Prometheus text exposition: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing time. `METRICS_BACKEND` chooses the adapter — `prometheus` by default, `memory` for the in-process counters without the Prometheus client.
+
+### Require a token (optional)
+
+```bash
+docker compose --profile auth up -d
+```
+
+The `auth` profile starts Keycloak with the demo realm. Set `AUTH_MODE=jwt` and the `OIDC_*` values from `.env.example`, restart the API, and send `Authorization: Bearer <token>`. The default `anonymous` mode needs none of this, and the queue keeps receiving its provider identity from the message.
 
 </details>
 

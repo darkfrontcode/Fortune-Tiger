@@ -14,10 +14,16 @@ One file reads `process.env`. `environment.ts` holds `Environment`, a plain clas
 | `secretAccessKey` | `AWS_SECRET_ACCESS_KEY` | `test` |
 | `queueUrl` | `SQS_QUEUE_URL` | empty string |
 | `deadLetterQueueUrl` | `SQS_DEAD_LETTER_QUEUE_URL` | empty string |
+| `authMode` | `AUTH_MODE` | `anonymous` |
+| `oidcIssuer` | `OIDC_ISSUER` | absent |
+| `oidcAudience` | `OIDC_AUDIENCE` | absent |
+| `oidcJwksUrl` | `OIDC_JWKS_URL` | absent |
 
 `environment.module.ts` provides one `Environment` and exports it. Every infrastructure module imports that module. `main.ts` reads the port from the container, and `src/app.module.ts` no longer touches the variable. No other file reads `process.env`.
 
 The fallback for the queue URL is the empty string on purpose: the client fails at the probe, not at the import.
+
+`anonymous` is the auth mode of a local run. The three OIDC getters stay absent until `AUTH_MODE` is `jwt`, and the HTTP module refuses to boot the JWT mode without the JWKS URL.
 
 Unit tests live in `tests/environment.test.ts`.
 
