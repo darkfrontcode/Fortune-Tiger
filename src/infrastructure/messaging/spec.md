@@ -2,10 +2,11 @@
 
 FIFO queues on LocalStack. The statement also allows MiniStack. Decision: LocalStack.
 
-- `wager-transactions.fifo`
-- `wager-transactions-dlq.fifo`
+- `wager-transactions.fifo` — the inbound channel; the consumer reads requests here.
+- `wager-transactions-dlq.fifo` — the dead-letter queue of the inbound channel.
+- `wager-events.fifo` — the outbound channel; the publisher writes integration events here.
 
-FIFO is an optimization. Uniqueness and the inbox live in Postgres.
+The two directions do not share a queue. A deployment can scale the consumer and the publisher independently, a poison request can never sit in front of an event, and a downstream reader can drain the events without competing with the API's own consumer. The inbound and the outbound queue are both FIFO, and uniqueness still lives in Postgres.
 
 ## Layout
 
@@ -35,7 +36,7 @@ The row is inserted in the same SQL transaction as the business change. Publishi
 
 `publishers/outbox.publisher.ts` holds `OutboxPublisher`. `publish` receives `at` and `limit`, opens one SQL transaction, and claims due rows with `SELECT ... FOR UPDATE SKIP LOCKED`. A row is due when `publishedAt` is absent and `nextAttemptAt` is absent or not after `at`. Rows are ordered by `occurredAt` and limited by the caller. The batch stays inside the transaction, and the limit keeps the lock window small.
 
-Each row is published through the infrastructure-owned `PublisherProtocol` in `publishers/`. `publishers/sqs.publisher.ts` holds `SqsPublisher`, which sends the envelope to `wager-transactions.fifo`. `MessageGroupId` is `aggregateId`, so one aggregate keeps its order. `MessageDeduplicationId` is the event id.
+Each row is published through the infrastructure-owned `PublisherProtocol` in `publishers/`. `publishers/sqs.publisher.ts` holds `SqsPublisher`, which sends the envelope to `wager-events.fifo`. `MessageGroupId` is `aggregateId`, so one aggregate keeps its order. `MessageDeduplicationId` is the event id. The publisher reads that URL from `PublisherType.Config`, built by `createPublishConfig` from `SQS_EVENTS_QUEUE_URL`.
 
 A published row calls `markPublished(at)`. A failed publish calls `scheduleRetry(at)`, and the batch continues. The transaction commits the published and the retry state together. A process that dies before the commit leaves the rows pending for another publisher. A process that dies after the send and before the commit republishes; the consumer inbox deduplicates.
 
@@ -45,7 +46,7 @@ A published row observes `outbox_lag_milliseconds`, the age of the row when it i
 
 There is no outbox dead-letter. A failed row keeps retrying with the `1s × 2^(attempts - 1)` backoff capped at 60 seconds. `attempts` and `nextAttemptAt` are the control.
 
-The target is `wager-transactions.fifo`, the main FIFO queue in the statement. Integration events share it with `WagerTransactionRequested`. An integration event carries `eventType`; a request carries `type`. The consumer separates them by that field. FIFO is an optimization; uniqueness stays in Postgres.
+The outbound target is `wager-events.fifo`; the inbound channel is `wager-transactions.fifo`. A request carries `type` and an event carries `eventType`, so a message stays self-describing even if an operator forwards one to the other queue, and `WagerRequest.from` answers nothing for an event. FIFO is an optimization; uniqueness stays in Postgres.
 
 ## Integration event
 
@@ -94,9 +95,9 @@ Events are not published before the financial commit.
 
 ## Module
 
-`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `WagersModule`, and `ObservabilityModule`, and it provides the whole channel. `SQSClient` and the `QUEUE_CONFIG` token are built once from `Environment`; the token lives beside `createQueueConfig` in `factories/queue.factory.ts`.
+`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `WagersModule`, and `ObservabilityModule`, and it provides the whole channel. `SQSClient`, `QUEUE_CONFIG`, and `PUBLISH_CONFIG` are built once from `Environment`; the tokens live in `tokens/`, and `factories/queue.factory.ts` holds `createQueueConfig` and `createPublishConfig`.
 
-`SqsQueue`, `SqsPublisher`, `QueueReadiness`, `OutboxPublisher`, `OutboxWorker`, `WagerConsumer`, and `SqsConsumer` are `@Injectable()`. They receive `SQSClient` and `MikroORM` by class token, `CLOCK`, `LOGGER`, and `PUBLISHER` by their tokens, and `QUEUE_CONFIG` for the queue URLs and the poll limits. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`.
+`SqsQueue`, `SqsPublisher`, `QueueReadiness`, `OutboxPublisher`, `OutboxWorker`, `WagerConsumer`, and `SqsConsumer` are `@Injectable()`. They receive `SQSClient` and `MikroORM` by class token, `CLOCK`, `LOGGER`, and `PUBLISHER` by their tokens, `QUEUE_CONFIG` for the inbound queue and the poll limits, and `PUBLISH_CONFIG` for the events queue. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`.
 
 `PUBLISHER` and `PublisherProtocol` are owned by messaging; the token lives in `tokens/` and the protocol stays beside the publisher consumer. `CLOCK` lives in `application/time/tokens`; `LOGGER` lives in `application/observability/tokens`.
 
@@ -106,9 +107,9 @@ The consumer name is `wager`. It is the `CONSUMER_NAME` token in `consumers/cons
 
 ## Environment
 
-`Environment` is the only reader of the variables below. `AWS_REGION` defaults to `us-east-1`, and `AWS_ENDPOINT_URL` points to LocalStack. `SQS_QUEUE_URL` and `SQS_DEAD_LETTER_QUEUE_URL` carry the absolute queue URLs. The consumer name is `wager`. `factories/sqs.factory.ts` builds the client with `maxAttempts` 1, and `factories/queue.factory.ts` builds the `ConsumerType.Config`: `maxMessages` 10, `waitTimeSeconds` 20, `visibilityTimeout` 30.
+`Environment` is the only reader of the variables below. `AWS_REGION` defaults to `us-east-1`, and `AWS_ENDPOINT_URL` points to LocalStack. `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`, and `SQS_EVENTS_QUEUE_URL` carry the absolute queue URLs. The consumer name is `wager`. `factories/sqs.factory.ts` builds the client with `maxAttempts` 1, and `factories/queue.factory.ts` builds both configs: `ConsumerType.Config` for the inbound channel with `maxMessages` 10, `waitTimeSeconds` 20, and `visibilityTimeout` 30, and `PublisherType.Config` for the outbound channel. `QUEUE_CONFIG` and `PUBLISH_CONFIG` are the tokens.
 
-Compose starts Postgres 16 and LocalStack, and the ready script in `docker/localstack` creates `wager-transactions.fifo` and `wager-transactions-dlq.fifo`. The queue is FIFO, and the deduplication id is the event id.
+Compose starts Postgres 16 and LocalStack, and the ready script in `docker/localstack` creates `wager-transactions.fifo`, `wager-transactions-dlq.fifo`, and `wager-events.fifo`. Every queue is FIFO, and the deduplication id is the event id.
 
 The boot starts `OutboxWorker`, `ReferenceWorker`, and `SqsConsumer` once, and the shutdown closes them in that order. A close that throws goes to the logger as a warning, and the shutdown continues.
 

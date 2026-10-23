@@ -33,7 +33,7 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 - **Duration**: ~10s
 - **Coverage**: Persistence, inbox/outbox, crash recovery, reconciliation, reference retry, idempotency cross-wallet race, reversal flows
 - **Command**: `bun run test:int`
-- **Prerequisites**: `DATABASE_URL`, `AWS_ENDPOINT_URL`, `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL` (LocalStack queues created in CI or compose)
+- **Prerequisites**: `DATABASE_URL`, `AWS_ENDPOINT_URL`, `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`, `SQS_EVENTS_QUEUE_URL` (LocalStack queues created in CI or compose)
 - **Scope**: `bunfig.int.toml` → `src/infrastructure/persistence/tests`
 
 ### Concurrency Tests
@@ -50,6 +50,12 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 - **Command**: `bun run test:e2e`
 - **Scope**: `bunfig.e2e.toml` → `src/presentation/**/tests/*.e2e.test.ts` (mapper/filter unit files excluded via `package.json` ignore patterns)
 - **Prerequisites**: `DATABASE_URL` and SQS env vars (full `AppModule` boots)
+
+### Queues
+- **Status**: PASS (local)
+- **Command**: `docker compose --profile app up -d --build app`, then a wallet and a `BET` over HTTP
+- **Coverage**: the outbox row is published to `wager-events.fifo`, which reports two messages for one processed bet (`WagerTransactionProcessed` and `WalletBalanceChanged`); `receive-message` returns the envelope with `eventType`, `aggregateId`, and `correlationId`; `wager-transactions.fifo` carries requests only
+- **Prerequisites**: LocalStack with `docker/localstack/01-queues.sh` and `SQS_EVENTS_QUEUE_URL` set
 
 ### Container
 - **Status**: PASS (local)
@@ -144,7 +150,7 @@ Wallet, wager, health, and Swagger suites: validation, idempotency conflict, pag
 
 - Bun **1.4.3** pinned in `.github/workflows/ci.yml`
 - PostgreSQL 16 + LocalStack 3 services with health checks
-- Env: `DATABASE_URL`, `AWS_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`
+- Env: `DATABASE_URL`, `AWS_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`, `SQS_EVENTS_QUEUE_URL`
 - FIFO queues created before migrations/tests
 - Pipeline: `bun run build` → `test:unit` → `test:int` → `test:concurrency` → `test:e2e`
 

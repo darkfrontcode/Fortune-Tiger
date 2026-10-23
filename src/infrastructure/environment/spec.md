@@ -14,6 +14,7 @@ One file reads `process.env`. `environment.ts` holds `Environment`, a plain clas
 | `secretAccessKey` | `AWS_SECRET_ACCESS_KEY` | `test` |
 | `queueUrl` | `SQS_QUEUE_URL` | empty string |
 | `deadLetterQueueUrl` | `SQS_DEAD_LETTER_QUEUE_URL` | empty string |
+| `eventsQueueUrl` | `SQS_EVENTS_QUEUE_URL` | empty string |
 | `authMode` | `AUTH_MODE` | `anonymous` |
 | `oidcIssuer` | `OIDC_ISSUER` | absent |
 | `oidcAudience` | `OIDC_AUDIENCE` | absent |
