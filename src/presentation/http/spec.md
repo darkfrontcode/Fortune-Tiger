@@ -41,6 +41,17 @@ A replay answers `200` even when the stored wager is `REJECTED`: the body is the
 
 `HttpFailureFilter` maps an error to the table. A Nest `HttpException` keeps its status. `WalletNotFoundError` and `WagerNotFoundError` answer `404`; the reconciliation error preserves its structured not-found response. The wallet conflict message answers `409`. `ProviderIdentityError` answers `401` with its message. `HealthReadinessError` preserves the health `503` body. Any other error goes to the logger and answers `503`, so the provider knows it may resend.
 
+## Documentation
+
+- `GET /docs` serves the Swagger UI and answers `200` with HTML.
+- `GET /docs-json` serves the same document as OpenAPI 3 JSON and answers `200`.
+
+Both stay open. `HealthController` and `MetricsController` carry `@ApiExcludeController`, so the document covers the provider routes only and health and metrics stay out of it.
+
+`factories/swagger.factory.ts` holds the document: the title, the version, the description of the two auth modes, the `bearer` security scheme, and the tags. `createDocument` and `mountDocs` are module functions, not a Nest provider, because the document is built after the container exists. `main.ts` mounts it before listening, and the end-to-end setup mounts the same document, so a test reads the routes a provider reads.
+
+`ApiTags` groups the routes into `Wallet` and `Wager`. The request DTOs carry `ApiProperty`, and the output DTOs in `dtos/` describe the response body, so every route shows its shape and its example. The controller imports the body DTO as a value, not as a type, so the Nest metadata carries the class: the `ValidationPipe` validates it and the document describes it. `ApiBearerAuth` adds no requirement: the default mode is anonymous, and the description states that the `jwt` mode takes the token. `X-Provider-Id` is documented as an optional header on the wager routes, and `Idempotency-Key` as a required header on `POST /wagering/transactions`. A `422` documents the `failureCode` body, and `400`, `404`, `409`, and `503` document the status table above.
+
 ## Auth
 
 Decision: one guard, two modes, selected by `AUTH_MODE`. The default `anonymous` mode keeps the local run free of an identity provider. The `jwt` mode requires a bearer token.
@@ -72,15 +83,21 @@ http/
     wager.controller.ts
     wallet.controller.ts
   data/
+    documentation.data.ts
     messages.data.ts
   dtos/
+    ledger-output.dto.ts
     money.dto.ts
+    reconciliation-output.dto.ts
     wager.dto.ts
+    wager-output.dto.ts
     wallet.dto.ts
+    wallet-output.dto.ts
   errors/
     provider-identity.error.ts
   factories/
     provider-identity.factory.ts
+    swagger.factory.ts
   filters/
     http-failure.filter.ts
   guards/

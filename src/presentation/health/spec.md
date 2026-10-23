@@ -2,6 +2,8 @@
 
 No authentication.
 
+Health and metrics stay out of the OpenAPI document: both controllers carry `@ApiExcludeController`. The routes below remain reachable.
+
 - `GET /health/live` — the process is up. Answers `200` with `{ "status": "live" }`.
 - `GET /health/ready` — Postgres and SQS are reachable. Answers `200` with `{ "status": "ready" }`, or `503` with `{ "status": "unavailable" }`.
 - `GET /metrics` — the counters of this process, in the Prometheus text exposition. Answers `200` with `text/plain; version=0.0.4; charset=utf-8` and delegates to `MetricProtocol.render`, so the memory backend and the Prometheus backend answer the same route.

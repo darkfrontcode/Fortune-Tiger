@@ -64,6 +64,8 @@ The front door checks and translates requests. The money rules stay in the ruleb
 
 By default the caller is trusted through `X-Provider-Id`, which keeps the local setup simple. An optional `jwt` mode verifies a Keycloak token instead: start the `auth` compose profile, set `AUTH_MODE=jwt`, and send `Authorization: Bearer <token>`. The route rules are in [`docs/API.md`](docs/API.md#auth).
 
+The whole contract is browsable while the service runs: `/docs` serves the Swagger UI, and `/docs-json` serves the same document as OpenAPI 3 JSON. Both stay open, and the document covers the provider routes only, so health and metrics stay out of it.
+
 </details>
 
 <details>
@@ -176,6 +178,7 @@ These are the coding assistants and model names used to build Fortune Tiger:
 - 🐘 **PostgreSQL 16** keeps the financial records.
 - 🧩 **MikroORM** connects the code to the database.
 - 📨 **SQS on LocalStack** provides a queue that works on a developer's machine.
+- 📘 **Swagger** publishes the HTTP contract at `/docs`.
 
 </details>
 
@@ -219,6 +222,8 @@ bun run test:e2e
 ### Try the API by hand
 
 [`requests.http`](requests.http) carries the same steps plus the conflict, rejection, and not-found cases. The routes, headers, status table, and error bodies are in [docs/API.md](docs/API.md), and [docs/DELIVERY.md](docs/DELIVERY.md) is the reviewer's path through the delivery.
+
+With the API running, `http://localhost:3000/docs` opens the same contract in the Swagger UI, read from the DTOs and the response decorators. `http://localhost:3000/docs-json` answers the OpenAPI 3 document itself.
 
 ### Prove it with one command
 
