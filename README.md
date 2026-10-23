@@ -275,6 +275,14 @@ docker compose --profile auth up -d
 
 The `auth` profile starts Keycloak with the demo realm. Set `AUTH_MODE=jwt` and the `OIDC_*` values from `.env.example`, restart the API, and send `Authorization: Bearer <token>`. The default `anonymous` mode needs none of this, and the queue keeps receiving its provider identity from the message.
 
+The mode is smoke-tested end to end, against that realm, in one command:
+
+```bash
+bun run auth:smoke
+```
+
+It asks Keycloak for a token, boots the API in `jwt` mode, and asserts the refusals and the identity: `401` without a token, a wallet still open with `201`, a bet accepted with the token, the provider read from the token even when the header and the body name another one, `404` under that other provider, and `401` for a forged token.
+
 </details>
 
 ## Screenshots

@@ -87,6 +87,18 @@ Status table in `src/presentation/http/spec.md`, invalid payload, and idempotent
 
 `swagger.e2e.test.ts` reads `GET /docs-json` and proves the provider paths, the request and response schemas, the required `Idempotency-Key` header, and that health and metrics stay out of the document. It also reads `GET /docs` and proves the UI answers.
 
+## Auth
+
+`bun run auth:smoke` proves the `jwt` mode against a real Keycloak, not a stub. It reads the realm discovery document, asks for a token with the password grant, boots the API with `AUTH_MODE=jwt` and the `OIDC_*` values from that document, and drives the routes:
+
+- `POST /wagering/transactions` without a token answers `401`;
+- `POST /wallets` answers `201`, because the wallet routes stay open in both modes;
+- a bet with the token answers `200` with `PROCESSED`, and the stored wager carries the `provider_id` claim even though the body and the `X-Provider-Id` header name another provider;
+- the same pair read under that other provider answers `404`;
+- a forged token answers `401`.
+
+The signature check runs against the JWKS the realm publishes, so a token that Keycloak did not sign is refused for the real reason. The script is not part of CI: it needs the `auth` profile, so the pipeline stays free of an identity provider. `identity.test.ts` covers the guard and both providers with a stub identity, and the status table is in `src/presentation/http/spec.md`.
+
 ## Load
 
 `bun run test:load` calls a running API, so the client and the server do not share an event loop. Start the API with `bun run start` first. The script runs two measured waves:
