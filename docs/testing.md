@@ -2,6 +2,12 @@
 
 A test proves the property. It does not replace Postgres or SQS with a mock when the property depends on them.
 
+## Lint
+
+`bun run lint` runs Biome over the repository, and `bun run lint:fix` applies the safe fixes it can. The configuration is `biome.json`, and `bun run verify` runs the same check before the type-check, so a push and the pipeline catch the same problem.
+
+The linter is on and the formatter is off. The house style is explicit — one-line guard returns, grouped imports, and a chosen line length — so a formatter would rewrite every file without changing one behavior. Three rules are off with a reason: `useImportType` because Nest reads the constructor type at runtime through `emitDecoratorMetadata`, `noStaticOnlyClass` because a concept holds static factories beside a private constructor, and `useOptionalChain` because the code spells `undefined` out. `noExplicitAny` is an error outside the tests.
+
 ## Verify
 
 `bun run verify` is the static gate: `bun run build` and `bun run test:unit`. It needs no Docker, database, or queue.

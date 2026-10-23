@@ -54,7 +54,7 @@ const createMessage = (input: MessageInput): OutboxMessage => {
 }
 
 class RecordingPublisher implements PublisherProtocol {
-  readonly published = new Array<Published>()
+  readonly published = [] as Published[]
 
   async publish(published: Published): Promise<void> {
     this.published.push(published)

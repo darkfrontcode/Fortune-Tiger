@@ -13,7 +13,7 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
 
 A provider can send a bet, a win, a loss, a refund, or a rollback. Fortune Tiger keeps the wallet safe, remembers every balance change, and recognizes a repeated request.
 
-Prove the delivery with one command: `bun run verify` type-checks and runs the unit suite; `bun run verify:full` adds PostgreSQL, LocalStack, migrations, integration, concurrency, and end-to-end tests. Details in [docs/testing.md](docs/testing.md). See the happy path in one command with `bun run demo`, and the reviewer's path in [docs/DELIVERY.md](docs/DELIVERY.md).
+Prove the delivery with one command: `bun run verify` lints, type-checks, and runs the unit suite; `bun run verify:full` adds PostgreSQL, LocalStack, migrations, integration, concurrency, and end-to-end tests. Details in [docs/testing.md](docs/testing.md). See the happy path in one command with `bun run demo`, and the reviewer's path in [docs/DELIVERY.md](docs/DELIVERY.md).
 
 <details>
 <summary>🎯 Domain — the money and wager rules</summary>
@@ -219,6 +219,7 @@ The `app` profile builds the root `Dockerfile` once, applies the migrations in a
 ```bash
 bun run start:dev
 bun run demo
+bun run lint
 bun run test:unit
 bun run test:int
 bun run test:concurrency
@@ -241,7 +242,7 @@ bun run verify
 bun run verify:full
 ```
 
-`verify` type-checks the code and runs the unit suite, so it needs nothing running. `verify:full` checks that PostgreSQL and LocalStack answer, then runs the migrations, the integration suite, the concurrency suite, and the end-to-end suite. The first failure stops the run, and the exit code is `1`.
+`verify` lints, type-checks the code, and runs the unit suite, so it needs nothing running. `verify:full` checks that PostgreSQL and LocalStack answer, then runs the migrations, the integration suite, the concurrency suite, and the end-to-end suite. The first failure stops the run, and the exit code is `1`.
 
 ### Pick a log style
 

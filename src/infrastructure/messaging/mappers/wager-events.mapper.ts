@@ -44,7 +44,7 @@ export class WagerEventsMapper implements MapperProtocol<Input, Output> {
       return [message]
     }
 
-    if (status !== WagerTransactionStatus.PROCESSED) { return new Array<OutboxMessage>() }
+    if (status !== WagerTransactionStatus.PROCESSED) { return [] }
 
     const processed = WagerTransactionProcessed.from(wager, context)
     const processedMessage = OutboxMessage.enqueue(processed)

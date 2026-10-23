@@ -193,7 +193,7 @@ describe('WagerEventsMapper', () => {
     const input = { wager: pending, wallet, ledger: undefined, context }
     const messages = mapper.map(input)
     const types = messages.map(byEventType)
-    const expected = new Array<string>()
+    const expected: string[] = []
 
     expect(types).toEqual(expected)
   })

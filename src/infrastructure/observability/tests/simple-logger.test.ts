@@ -31,7 +31,7 @@ class FixedClock implements ClockProtocol {
 
 describe('SimpleLogger', () => {
   const clock = new FixedClock()
-  const written = new Array<string>()
+  const written: string[] = []
 
   const capture = () => {
     const writer = spyOn(process.stdout, 'write')

@@ -65,7 +65,7 @@ type Call = {
 }
 
 class RecordingGateway implements WagerGatewayProtocol {
-  readonly calls = new Array<Call>()
+  readonly calls = [] as Call[]
 
   constructor(
     private readonly status: WagerTransactionStatus = WagerTransactionStatus.PROCESSED,

@@ -1,7 +1,7 @@
 import { MISSING_TRANSITION_MESSAGE } from '../data'
 import { WagerTransactionStatus } from '../enums'
 
-const closed = new Array<WagerTransactionStatus>()
+const closed: WagerTransactionStatus[] = []
 
 const pending = [
   WagerTransactionStatus.PENDING_REFERENCE,

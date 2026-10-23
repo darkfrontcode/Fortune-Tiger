@@ -37,7 +37,7 @@ const received = {
 } as ReceiveMessageCommandOutput
 
 class RecordingClient {
-  readonly commands = new Array<unknown>()
+  readonly commands = [] as (unknown)[]
 
   async send(command: unknown): Promise<unknown> {
     this.commands.push(command)
