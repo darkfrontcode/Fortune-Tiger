@@ -259,6 +259,10 @@ Stated here so the delivery is read for what it is:
 - OpenTelemetry, a dashboard, and an audit store are out. The Prometheus exposition is in.
 - The load script measures the running API on one machine. It is not a CI gate, it has no RPS target, and its numbers are not a capacity claim.
 
+## Decisions
+
+Eight records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, and the observability choice. A decision that changes gets a new record; the old one keeps its number.
+
 ## Stack
 
 | Item | Choice |

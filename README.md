@@ -154,6 +154,8 @@ The domain is the rulebook. Application is the coordinator. Presentation is the 
 
 Cross-layer imports use the `@application/*`, `@domain/*`, `@infrastructure/*`, and `@presentation/*` TypeScript aliases.
 
+The reasoning behind the shape is in [`docs/adr/`](docs/adr/): eight short records, one per decision, each with the alternative that lost and the cost it carries.
+
 </details>
 
 <details>
