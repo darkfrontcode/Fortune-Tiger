@@ -56,7 +56,7 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
   2. Two bets of 80 on balance 100 → 1 PROCESSED, 1 REJECTED, balance 20
   3. Distinct wallets in parallel → all processed independently
 - Test uses 3 real application processes (verified in code)
-- Test duration: 120 seconds, including startup/shutdown
+- Test duration: ~3 seconds locally, including startup and shutdown
 
 **Evaluation:** ✅ **20/20 points**
 - Per-wallet lock strategy implemented
@@ -227,7 +227,7 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 - `health.controller.e2e.test.ts`
 
 **Coverage:**
-- 61 test files total
+- 74 test files total: 57 unit, 13 integration, and 4 end-to-end
 - All guards have their own tests
 - Invariants tested
 
@@ -301,6 +301,10 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 - Protocol and token pattern
 - DDD (entity vs value object)
 - Composition and injection
+- Auth: the two modes, the Keycloak profile, and the trade-off behind each
+- Messaging: FIFO as optimization, ordering per aggregate, at-least-once
+- Observability: the logger context, the metric names, the adapters, the health probes
+- Limits: what the delivery does not claim, in one place
 - Stack documented
 - Git workflow
 
@@ -309,9 +313,18 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 - Behavior documented before code
 - Domain with specs per concept
 
+**Delivery docs:**
+- `docs/DELIVERY.md` — the reviewer's path: commands, expected output, reading map, and limits
+- `docs/API.md` — routes, headers, status table, error bodies, failure codes
+- `docs/testing.md` — what each suite covers and why
+- `docs/load.md` — the load method, the waves, the results, and the bottleneck
+- `requests.http` — the happy path and the failure cases by hand
+- `EVIDENCE.md` — the last local run: counts, constraints, and the honest limits
+- `bun run verify`, `bun run verify:full`, and `bun run demo` — one command proves the delivery
+
 **Evaluation:** ✅ **5/5 points**
 - README complete and well-structured
-- ARCHITECTURE.md details decisions
+- ARCHITECTURE.md carries decisions, trade-offs, and limitations
 - Specs per context
 - Clear setup and commands
 
@@ -351,13 +364,15 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 ## Optional Differentials
 
 ### Authentication
-- Status: Documented as not implemented, with explicit extension in code
-- Decision is in `docs/challenge-original.md` section 2
-- This is accepted by the challenge (no points)
+- **Status: implemented.** `AUTH_MODE` selects the mode. The default `anonymous` mode trusts `X-Provider-Id`; `jwt` verifies `Authorization: Bearer` against the Keycloak realm key set, checks the issuer and the audience, and reads the `provider_id` claim as the caller.
+- Keycloak runs as an optional compose profile (`docker compose --profile auth up -d`), so the test pipeline never depends on it.
+- `ProviderIdentityProtocol` is the extension point, and a real identity provider replaces one class.
+- `identity.test.ts` covers both providers, and the e2e suite keeps the default mode.
 
-### Load Test
-- Status: Not implemented
-- This is optional, not part of the score
+### Load test
+- **Status: implemented** as `bun run test:load`.
+- `docs/load.md` records the environment, the method, throughput, p50/p95/p99, the error rate, the lock contention, and the bottleneck.
+- The script is a measurement, not a gate: no RPS target, no CI job, and the numbers belong to the machine that ran them.
 
 ---
 

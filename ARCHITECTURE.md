@@ -90,7 +90,7 @@ src/
     money/
       data/
       guards/tests/
-      patterns/tests/
+      patterns/
       tests/
     wager/
       data/
@@ -144,6 +144,7 @@ src/
       use-cases/tests/
   infrastructure/
     AGENTS.md
+    protocols/
     environment/tests/
     messaging/
       consumers/enums/
@@ -155,6 +156,7 @@ src/
       messages/data/
       messages/tests/
       publishers/tests/
+      tokens/
     observability/tests/
     persistence/
       data/
@@ -182,11 +184,15 @@ src/
       queries/
       statuses/
       tests/
+      tokens/
     health/
       controllers/
+      tests/
 ```
 
 `main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` imports the layer modules, and `runtime.service.ts` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.
+
+Beside `src`, the repository keeps `docs/` for the statement, the plan, the API, the delivery path, testing, and the load note; `scripts/` for `verify`, `verify:full`, `demo`, and `load`; `docker/` for the queue bootstrap and the optional Keycloak realm; and `test/` for the end-to-end setup file. `EVIDENCE.md` records the last local run, and `EVALUATION.md` is the section 14 checklist against the code.
 
 Files follow the Nest name (`health.controller.ts`, `health.module.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, `patterns/` holds concrete rule classes, and `guards/` holds one class per rule with its own `spec.md`. Application ports live in the consuming capability's `protocols/` folder; adapter-internal contracts and presentation-specific extension contracts stay with their consumer. A port token lives in a `tokens/` folder under the owning module, with one `Symbol` per file and an `index.ts` barrel. Unit tests live in `tests/` next to the module they cover. The file is `{subject}.test.ts`. Production barrels do not reexport tests.
 
@@ -224,6 +230,34 @@ Decision: one guard, two modes, selected by `AUTH_MODE`. The default `anonymous`
 `http.module.ts` binds `PROVIDER_IDENTITY` with `useFactory` over `ProviderIdentityFactory`, which receives `Environment` and refuses to boot the `jwt` mode without `OIDC_JWKS_URL`. `ProviderIdentityProtocol` lives beside the HTTP provider so a real IdP replaces one class. The trade-off is deliberate: Keycloak ships as a compose profile (`--profile auth`) and is never required by the test pipeline, and the guard stays a presentation concern, so the domain and the queue keep receiving a resolved provider identity.
 
 Keycloak itself is optional infrastructure. A production deployment would add the realm to the platform, replace the demo provider user with the provider's own client, and keep the same guard.
+
+## Messaging
+
+Delivery is at-least-once. FIFO is an optimization, not the guarantee: `MessageGroupId` is the aggregate id, so one wallet keeps its order and two wallets may interleave. Uniqueness lives in Postgres — the inbox row, the unique idempotency key, and the unique `(provider_id, external_transaction_id)`.
+
+The inbox, the wager, the wallet, the ledger, and the outbox commit in one SQL transaction. The ack happens after that commit, and the publisher sends outside it, so an event never leaves before the financial change is durable. A publisher that dies after the send republishes, and the consumer inbox keeps the effect single.
+
+The retry ladder is data, not a loop: `attempts` and `nextAttemptAt` decide the next attempt on both the outbox row and the pending reference, with `1s × 2^(attempts - 1)` capped at 60 seconds. The consumer moves a message to the dead-letter queue after five receives, and a permanent failure goes there immediately. The outbox has no dead-letter: it keeps retrying, and the lag metric makes a backlog visible before it becomes a delay.
+
+## Observability
+
+`LoggerProtocol` writes one line per event, JSON by default and text under `LOG_PRETTY`, with `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId` attached through `child`. An amount and a wager body never enter a log line.
+
+`MetricProtocol` carries counters and observations. `PrometheusMetric` is the default adapter and answers `GET /metrics` with the Prometheus text exposition; `SimpleMetric` serves `METRICS_BACKEND=memory` and the unit tests. The names live in `application/observability/data` and the help text lives in its `maps`, so no adapter invents a name. The instrumented families are transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing latency.
+
+`GET /health/live` reads the process, and `GET /health/ready` asks PostgreSQL and SQS at the same time with a two-second abort, so a dead dependency answers `503` instead of hanging the check.
+
+## Limits
+
+Stated here so the delivery is read for what it is:
+
+- Delivery is at-least-once. A crash after the commit and before the ack redelivers the message, and the inbox keeps the effect single. Exactly-once end to end is not claimed.
+- Ledger immutability is the application's discipline. The unique `transaction_id` stops a duplicate row, not an `UPDATE`, because the database grant is out of this delivery.
+- Reconciliation compares the stored balance with the ledger and reports the difference. It never repairs, so a divergence needs an operator.
+- A wallet holds one currency, and a reversal is all-or-nothing: partial reversal is out.
+- The `anonymous` auth mode trusts the caller, because a local run and the CI should not need an identity provider. `AUTH_MODE=jwt` is the mode that verifies a token.
+- OpenTelemetry, a dashboard, and an audit store are out. The Prometheus exposition is in.
+- The load script measures the running API on one machine. It is not a CI gate, it has no RPS target, and its numbers are not a capacity claim.
 
 ## Stack
 
