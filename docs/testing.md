@@ -20,6 +20,14 @@ Both commands live in `scripts/verify.ts`, and the folder spec is `scripts/spec.
 
 `bun run demo` boots the application on a free port and calls the HTTP API. It opens a wallet, submits a bet, repeats it with the same idempotency key, submits a loss, reads the ledger page, reconciles the wallet, and reads the metrics. Each step asserts the contract, and the first failure ends the run with exit code `1`. The script is `scripts/demo.ts`, and the folder spec is `scripts/spec.md`.
 
+## Coverage
+
+`bun run test:coverage` runs the unit suite with Bun coverage and writes `coverage/lcov.info`, which the pipeline keeps as an artifact. The reporters are `text` and `lcov` in `bunfig.toml`.
+
+The unit suite covers **81.20% of the functions and 90.85% of the lines**. Persistence and the HTTP end-to-end suites stay out of that number on purpose: they need PostgreSQL and SQS, so their coverage belongs to `bun run verify:full`, not to a gate that runs in one second with nothing up.
+
+The badge on the README reads the line number. It is updated by hand when the number moves, so it never claims a value the run did not produce.
+
 ## Unit
 
 Unit tests sit in `tests/` beside the module they cover. The file name is `{subject}.test.ts`.
