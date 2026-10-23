@@ -71,6 +71,12 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 - **Coverage**: the outbox row is published to `wager-events.fifo`, which reports two messages for one processed bet (`WagerTransactionProcessed` and `WalletBalanceChanged`); `receive-message` returns the envelope with `eventType`, `aggregateId`, and `correlationId`; `wager-transactions.fifo` carries requests only
 - **Prerequisites**: LocalStack with `docker/localstack/01-queues.sh` and `SQS_EVENTS_QUEUE_URL` set
 
+### Auth
+- **Status**: PASS (local)
+- **Command**: `docker compose up -d`, `docker compose --profile auth up -d keycloak`, `bun run auth:smoke`
+- **Coverage**: a real Keycloak 26 realm, a token from the password grant, and the API booted in `AUTH_MODE=jwt` against the realm JWKS: `401` without a token, wallet `201` while unguarded, bet `200` with `PROCESSED` and balance `95.00`, the provider read from the `provider_id` claim even with a spoofed header and body, `404` under the other provider, and `401` for a forged token
+- **Prerequisites**: PostgreSQL, LocalStack, the applied migrations, and the `auth` profile; the script contract is in [`scripts/spec.md`](scripts/spec.md) and [`docs/testing.md`](docs/testing.md#auth)
+
 ### Container
 - **Status**: PASS (local)
 - **Command**: `docker compose --profile app up -d --build`

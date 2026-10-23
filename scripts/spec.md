@@ -41,6 +41,22 @@ The output is one line per check, marked `✅`. A failed assertion prints the na
 
 The boot needs the same `.env`, PostgreSQL, LocalStack, and applied migrations as `bun run start`. The script creates no queue, writes no file, and takes no argument. The queue path stays covered by `requests.http`, `docs/API.md`, and the integration suite.
 
+## auth:smoke
+
+`scripts/auth.ts` proves the `jwt` auth mode against the Keycloak profile without a second terminal. It reads the discovery document at `KEYCLOAK_URL` (default `http://127.0.0.1:8080`), asks for a token with the password grant for `KEYCLOAK_USERNAME` (default `provider-a`), boots `AppModule` with `AUTH_MODE=jwt` and the `OIDC_ISSUER` / `OIDC_JWKS_URL` from that document, and listens on a free port.
+
+`bun run auth:smoke` asserts:
+
+- `/health/live` answers `200`, because health stays open;
+- `POST /wagering/transactions` without a token answers `401`;
+- `POST /wallets` answers `201` without a token, because the wallet routes stay open in both modes;
+- a bet with the token answers `200` with `PROCESSED` and a balance of `95.00`;
+- the stored wager carries `provider-a` from the token, even though the body says `provider-b`;
+- the same pair read under `provider-b` answers `404`;
+- a forged token answers `401`.
+
+The boot needs PostgreSQL, LocalStack, the applied migrations, and the `auth` profile. When Keycloak does not answer, the script stops with the `docker compose --profile auth up -d` hint. The token is never printed, and the script writes no file.
+
 ## load
 
 `scripts/load.ts` measures the HTTP path under concurrency. It calls a running API, so the client and the server do not share one event loop and the latency belongs to the server. `bun run test:load` is the entry.
