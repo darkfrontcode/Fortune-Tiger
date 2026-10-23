@@ -7,7 +7,8 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 ### Lint
 - **Status**: PASS (local)
 - **Command**: `bun run lint`
-- **Scope**: Biome 2.6 over every source file; the rule set and the three documented exceptions are in [`docs/testing.md`](docs/testing.md)
+<<<<<<< HEAD
+- **Scope**: Biome 2.6 over every source file; the rule set and the four documented exceptions are in [`docs/testing.md`](docs/testing.md)
 - **Prerequisites**: none; `bun run verify` runs it before the type-check
 
 ### Coverage

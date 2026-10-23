@@ -27,6 +27,10 @@
 				"noConfusingVoidType": "off"
 			},
 			"style": {
+<<<<<<< HEAD
+=======
+				"useArrayLiterals": "off",
+>>>>>>> main
 				"useConst": "error",
 				"useImportType": "off"
 			}
@@ -50,3 +54,4 @@
 		}
 	]
 }
+
