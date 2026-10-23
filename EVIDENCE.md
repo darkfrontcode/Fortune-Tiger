@@ -1,6 +1,6 @@
 # Quality Evidence Matrix
 
-Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `localstack:3`). Base git ref: `3cb1cbe` (merge PR #40), with the working tree of this branch. Every command below was re-run on it: `bun run verify:full` passed, and `bun run demo` passed against the same stack.
+Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `localstack:3`). Base git ref: `1a40474` (merge PR #42), with the working tree of `docs/docs/delivery-polish`. `bun run verify:full` and `bun run demo` were re-run on it. The load numbers below come from the measured run described in their own section.
 
 ## Test Suite Results
 
@@ -25,7 +25,7 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 ### Concurrency Tests
 - **Status**: PASS (local)
 - **Count**: 3 tests in `races.test.ts`
-- **Duration**: ~2–120s (spawns three app processes)
+- **Duration**: ~3s (spawns three app processes)
 - **Command**: `bun run test:concurrency`
 - **Prerequisites**: Same as integration
 
@@ -136,4 +136,4 @@ Wallet, wager, health, and Swagger suites: validation, idempotency conflict, pag
 
 ## Out of Scope
 
-- Audit store, OpenTelemetry, double-entry accounting, and partial reversal; Prometheus metrics, the optional Keycloak `auth` profile, and the local load measurement are in scope
+Out of scope: an audit store, OpenTelemetry, double-entry accounting, and partial reversal. In scope: the Prometheus exposition, the optional Keycloak `auth` profile, and the local load measurement.
