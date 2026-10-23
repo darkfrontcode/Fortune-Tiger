@@ -24,7 +24,7 @@ Both commands live in `scripts/verify.ts`, and the folder spec is `scripts/spec.
 
 `bun run test:coverage` runs the unit suite with Bun coverage and writes `coverage/lcov.info`, which the pipeline keeps as an artifact. The reporters are `text` and `lcov` in `bunfig.toml`.
 
-The unit suite covers **81.20% of the functions and 90.85% of the lines**. Persistence and the HTTP end-to-end suites stay out of that number on purpose: they need PostgreSQL and SQS, so their coverage belongs to `bun run verify:full`, not to a gate that runs in one second with nothing up.
+The unit suite covers **81.80% of the functions and 91.31% of the lines**. Persistence and the HTTP end-to-end suites stay out of that number on purpose: they need PostgreSQL and SQS, so their coverage belongs to `bun run verify:full`, not to a gate that runs in one second with nothing up.
 
 The badge on the README reads the line number. It is updated by hand when the number moves, so it never claims a value the run did not produce.
 
@@ -43,6 +43,16 @@ A unit case is a theory. The `Theory` type lives in `src/infrastructure/protocol
 Real PostgreSQL and LocalStack. Migrations and constraints. Atomicity of wallet, ledger, inbox, and outbox. Inbox redelivery after process termination. Concurrent publishers. Retry and DLQ. Reversals that arrive before their references. Consistency after a restart.
 
 `bun run test:int` runs these integration scenarios.
+
+## Properties
+
+`fast-check` runs the rule as a property, not as a handful of examples. Each property draws 100 to 200 cases, and a failure prints the smallest counterexample it found. The files are `*.property.test.ts` beside the suite they belong to, so `bun run test:unit` runs them with everything else.
+
+- `Money`: addition is commutative and associative, zero is the identity, subtract undoes add, serialization round-trips at two places, and a non-negative amount has exactly one sign.
+- `Wallet`: a random sequence of credits and debits that stays inside the opening balance ends at the arithmetic sum, the version counts the movements that changed the balance, and a debit one cent past the balance is refused without a change.
+- `Ledger`: a movement whose direction produces the closing balance is balanced, a wrong closing balance is refused, and a movement in another currency is refused.
+- `Idempotency`: the digest ignores key order, changes when a business field changes, changes when the amount gains one cent, and treats an absent reference like an undefined field.
+- `Wager`: only `PROCESSED`, `REJECTED`, and `FAILED` are terminal, a closed wager refuses every target, an open wager follows only the transition table, and a reversal without a reference is refused.
 
 ## Concurrency
 

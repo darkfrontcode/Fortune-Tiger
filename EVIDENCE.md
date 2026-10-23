@@ -13,16 +13,16 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 ### Coverage
 - **Status**: PASS (local)
 - **Command**: `bun run test:coverage`
-- **Functions**: 81.20%
-- **Lines**: 90.85%
+- **Functions**: 81.80%
+- **Lines**: 91.31%
 - **Report**: `coverage/lcov.info`, kept by the pipeline as an artifact
 - **Scope**: the unit suite; persistence and HTTP end-to-end paths need PostgreSQL and SQS, so they are measured by `verify:full` and stay out of this number
 
 ### Unit Tests
 - **Status**: PASS (local)
-- **Count**: 330 tests across 57 files
+- **Count**: 351 tests across 63 files
 - **Duration**: ~1s
-- **Coverage**: Domain, application use cases, messaging adapters (no persistence integration)
+- **Coverage**: Domain, application use cases, messaging adapters (no persistence integration), plus `fast-check` properties for money arithmetic, wallet balance, ledger equation, idempotency digest, and wager transitions
 - **Command**: `bun run test:unit`
 - **Database**: Not required
 - **Scope**: `bunfig.toml` root `./src` with ignores for `**/persistence/**` and presentation `*.e2e.test.ts`; `package.json` adds `--path-ignore-patterns` for the same
