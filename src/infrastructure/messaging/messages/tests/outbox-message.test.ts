@@ -68,6 +68,12 @@ describe('OutboxMessage', () => {
     const message = OutboxMessage.enqueue(recorded)
     const envelope = recorded.toJSON()
 
+    expect(recorded.eventId).toBeString()
+    expect(recorded.aggregateId).toBe(ids.wager)
+    expect(recorded.correlationId).toBe(correlation.id)
+    expect(recorded.causationId).toBeUndefined()
+    expect(recorded.occurredAt).toEqual(instant.enqueued)
+    expect(recorded.data).toEqual(data)
     expect(message.id).toBe(recorded.eventId)
     expect(message.aggregateId).toBe(ids.wager)
     expect(message.eventType).toBe(event.type)
@@ -120,6 +126,23 @@ describe('OutboxMessage', () => {
     message.markPublished(instant.enqueued)
 
     expect(message.publishedAt).toEqual(instant.enqueued)
+    expect(message.isPending()).toBe(false)
+  })
+
+  test('WHEN a message is rehydrated SHOULD preserve its stored state', () => {
+    const message = OutboxMessage.rehydrate({
+      id: ids.order,
+      aggregateId: ids.wager,
+      eventType: event.type,
+      payload: recorded.toJSON(),
+      occurredAt: instant.enqueued,
+      attempts: attempts.first,
+      nextAttemptAt: instant.enqueued,
+      publishedAt: instant.enqueued,
+    })
+
+    expect(message.id).toBe(ids.order)
+    expect(message.attempts).toBe(attempts.first)
     expect(message.isPending()).toBe(false)
   })
 })

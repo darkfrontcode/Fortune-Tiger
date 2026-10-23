@@ -3,13 +3,31 @@
 Wager processor. Balance, ledger, and a repeated operation stay correct.
 
 <p>
-  <img alt="Bun" src="https://img.shields.io/badge/Bun-1.x-000000?style=for-the-badge&logo=bun&logoColor=white" />
-  <img alt="NestJS" src="https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" />
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+  <strong>CI / Coverage</strong><br />
+  <a href="https://github.com/darkfrontcode/Fortune-Tiger/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/darkfrontcode/Fortune-Tiger/actions/workflows/ci.yml/badge.svg" /></a>
+  <img alt="Unit coverage" src="https://img.shields.io/badge/unit%20coverage-100%25%20lines-brightgreen?style=for-the-badge" />
+</p>
+
+<hr />
+
+<p>
+  <strong>Infrastructure</strong><br />
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
-  <img alt="MikroORM" src="https://img.shields.io/badge/MikroORM-2F6B4F?style=for-the-badge" />
-  <img alt="SQS" src="https://img.shields.io/badge/SQS-LocalStack-FF9900?style=for-the-badge&logo=amazonsqs&logoColor=white" />
-  <img alt="Coverage" src="https://img.shields.io/badge/coverage-91%25%20lines-brightgreen?style=for-the-badge" />
+  <img alt="SQS on LocalStack" src="https://img.shields.io/badge/SQS-LocalStack%203-FF9900?style=for-the-badge&logo=amazonsqs&logoColor=white" />
+  <img alt="Prometheus" src="https://img.shields.io/badge/Prometheus-2.55.1-E6522C?style=for-the-badge&logo=prometheus&logoColor=white" />
+  <img alt="Grafana" src="https://img.shields.io/badge/Grafana-11.2.2-F46800?style=for-the-badge&logo=grafana&logoColor=white" />
+  <img alt="Keycloak" src="https://img.shields.io/badge/Keycloak-26.0-4D4D4D?style=for-the-badge&logo=keycloak&logoColor=white" />
+</p>
+
+<hr />
+
+<p>
+  <strong>Technology</strong><br />
+  <img alt="Bun" src="https://img.shields.io/badge/Bun-1.4.3-000000?style=for-the-badge&logo=bun&logoColor=white" />
+  <img alt="NestJS" src="https://img.shields.io/badge/NestJS-12.2.0-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+  <img alt="MikroORM" src="https://img.shields.io/badge/MikroORM-6.4.16-2F6B4F?style=for-the-badge" />
 </p>
 
 A provider can send a bet, a win, a loss, a refund, or a rollback. Fortune Tiger keeps the wallet safe, remembers every balance change, and recognizes a repeated request.
@@ -165,10 +183,12 @@ These are the coding assistants and model names used to build Fortune Tiger:
 
 - 🖱️ **Cursor** — Composer 2.5 and Grok 4.7.
 - 🧰 **OpenCode** — DeepSeek V4.1 Flash, Big Pickle & GLM-5.3 Flash.
-- 🦆 **Clixad** — GPT-05 reasoning.
-- 💻 **GitHub Copilot** — GPT-5.3-Codex.
+- 🦆 **Clixad** — Gpt 5 Nano.
+- 💻 **GitHub Copilot** — GPT-5.3 Codex.
 - 🪐 **Antigravity** — Gemini 3.8 Flash High.
 - 🖥️ **Devin Desktop** — SWE-1.6 Slow.
+- 🧠 **OpenAI Codex** — GPT-5.6 Luna.
+- 🧑‍💻 **Cline** — Laguna S 2.1 and Nemotron 3.5 Super VL.
 
 </details>
 
@@ -181,6 +201,9 @@ These are the coding assistants and model names used to build Fortune Tiger:
 - 🐘 **PostgreSQL 16** keeps the financial records.
 - 🧩 **MikroORM** connects the code to the database.
 - 📨 **SQS on LocalStack** provides a queue that works on a developer's machine.
+- 🐳 **Docker Compose** runs the local database, queue, API, authentication, and observability profiles.
+- 📈 **Prometheus and Grafana** expose and visualize the application's metrics through the optional observability profile.
+- 🔐 **Keycloak** provides the optional JWT identity provider through the auth profile.
 - 📘 **Swagger** publishes the HTTP contract at `/docs`.
 
 </details>

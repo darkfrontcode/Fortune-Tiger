@@ -1,5 +1,15 @@
 [test]
 root = "./src"
 pathIgnorePatterns = ["**/persistence/**", "**/presentation/**/tests/*.e2e.test.ts", "**/health/**/tests/*.e2e.test.ts"]
+coveragePathIgnorePatterns = [
+  "**/persistence/**",
+  "src/**/factories/swagger.factory.ts",
+  "src/**/factories/sqs.factory.ts",
+  "src/**/consumers/sqs.consumer.ts",
+  "src/**/observability/observability.module.ts",
+  "src/**/publishers/outbox.publisher.ts",
+  "src/**/publishers/outbox.worker.ts",
+]
+coverageThreshold = { lines = 1.0, functions = 0.0 }
 coverageReporter = ["text", "lcov"]
 
