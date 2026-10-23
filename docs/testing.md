@@ -2,6 +2,14 @@
 
 A test proves the property. It does not replace Postgres or SQS with a mock when the property depends on them.
 
+## Verify
+
+`bun run verify` is the static gate: `bun run build` and `bun run test:unit`. It needs no Docker, database, or queue.
+
+`bun run verify:full` is the complete gate. It reads `.env` through `Environment`, checks that `DATABASE_URL` and `AWS_ENDPOINT_URL` answer within two seconds, and then runs the migrations plus the integration, concurrency, and end-to-end suites. A missing variable or a port that does not answer stops the run with the dependency name and the `docker compose up -d` hint. The first failing step ends the run with exit code `1`.
+
+Both commands live in `scripts/verify.ts`, and the folder spec is `scripts/spec.md`.
+
 ## Unit
 
 Unit tests sit in `tests/` beside the module they cover. The file name is `{subject}.test.ts`.

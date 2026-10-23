@@ -13,6 +13,8 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
 
 A provider can send a bet, a win, a loss, a refund, or a rollback. Fortune Tiger keeps the wallet safe, remembers every balance change, and recognizes a repeated request.
 
+Prove the delivery with one command: `bun run verify` type-checks and runs the unit suite; `bun run verify:full` adds PostgreSQL, LocalStack, migrations, integration, concurrency, and end-to-end tests. Details in [docs/testing.md](docs/testing.md).
+
 <details>
 <summary>🎯 Domain — the money and wager rules</summary>
 
@@ -155,9 +157,9 @@ Cross-layer imports use the `@application/*`, `@domain/*`, `@infrastructure/*`, 
 These are the coding assistants and model names used to build Fortune Tiger:
 
 - 🖱️ **Cursor** — Composer 2.5 and Grok 4.7.
-- 🧰 **OpenCode** — DeepSeek V4.1 Flash.
-- 🦆 **Clixad** (terminal assistant) — GPT-05 reasoning.
-- 💻 **GitHub Copilot in VS Code** — GPT-5.3-Codex.
+- 🧰 **OpenCode** — DeepSeek V4.1 Flash, Big Pickle & GLM-5.3 Flash.
+- 🦆 **Clixad** — GPT-05 reasoning.
+- 💻 **GitHub Copilot** — GPT-5.3-Codex.
 - 🪐 **Antigravity** — Gemini 3.8 Flash High.
 - 🖥️ **Devin Desktop** — SWE-1.6 Slow.
 
@@ -210,6 +212,15 @@ bun run test:e2e
 ```
 
 `start:dev` restarts the app when files change. `test:unit` checks the rules quickly. The integration and concurrency tests use the PostgreSQL and LocalStack services configured in `.env`. `test:e2e` runs HTTP endpoint tests with Supertest.
+
+### Prove it with one command
+
+```bash
+bun run verify
+bun run verify:full
+```
+
+`verify` type-checks the code and runs the unit suite, so it needs nothing running. `verify:full` checks that PostgreSQL and LocalStack answer, then runs the migrations, the integration suite, the concurrency suite, and the end-to-end suite. The first failure stops the run, and the exit code is `1`.
 
 ### Pick a log style
 
