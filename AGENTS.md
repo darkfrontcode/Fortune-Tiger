@@ -84,6 +84,10 @@ interface MapperProtocol<Input, Output> {
 
 The delivery target is the full score of section 14. A load test is not part of that score.
 
+## Coverage
+
+Line coverage is a delivery gate: the repository must keep 100% line coverage. Before finishing a change, run `bun run test:coverage`, cover every executable line introduced or exposed by the change with a meaningful test, and do not raise the README badge until the measured result is 100%. The badge and the coverage report must describe the same scope.
+
 ## Entity state
 
 The skeleton underscore (`_balance`) stays out of the code. Section 6 allows a different signature. State is a `schema`, received by the private constructor, as in the format skill. A getter reads the schema. A rule method writes the schema. `Money` and the ledger return another instance. Type names, kind, status, and `failureCode` follow the statement. The word `props` is not a type name and not a parameter name.

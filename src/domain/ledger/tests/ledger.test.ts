@@ -272,6 +272,14 @@ describe('Ledger', () => {
       const rebuilt = ledger.balanceAfter.amount === params.after
       const open = rebuilt && !ledger.isBalanced()
 
+      expect(ledger.id).toBe(identity.ledger)
+      expect(ledger.walletId).toBe(identity.wallet)
+      expect(ledger.transactionId).toBe(identity.transaction)
+      expect(ledger.direction).toBe(LedgerDirection.DEBIT)
+      expect(ledger.money.amount).toBe(amount.eighty)
+      expect(ledger.balanceBefore.amount).toBe(amount.hundred)
+      expect(ledger.balanceAfter.amount).toBe(amount.hundred)
+      expect(ledger.createdAt).toEqual(instant.posted)
       expect(open).toBe(expected)
     }
 

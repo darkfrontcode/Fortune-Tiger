@@ -5,7 +5,7 @@ import { IdempotencyType } from '../types'
 
 type Input = IdempotencyType.Payload
 type Output = string
-type JsonValue = string | number | boolean | null | JsonObject | JsonValue[]
+type JsonValue = string | number | boolean | JsonObject
 type JsonObject = { [key: string]: JsonValue }
 type KeyChild = {
   key: string
@@ -56,14 +56,6 @@ export class PayloadHashPattern {
   }
 
   private canonicalize(value: JsonValue): JsonValue {
-    if (value === null) {
-      return value
-    }
-
-    if (Array.isArray(value)) {
-      return this.canonicalizeArray(value)
-    }
-
     const primitive = typeof value !== 'object'
 
     if (primitive) {
@@ -73,12 +65,6 @@ export class PayloadHashPattern {
     const record = value
 
     return this.canonicalizeObject(record)
-  }
-
-  private canonicalizeArray(values: JsonValue[]): JsonValue[] {
-    const byValue = (item: JsonValue) => this.canonicalize(item)
-
-    return values.map(byValue)
   }
 
   private canonicalizeObject(record: JsonObject): JsonObject {
