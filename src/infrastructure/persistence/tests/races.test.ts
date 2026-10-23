@@ -35,6 +35,7 @@ type Wager = {
   gameId: string
   kind: WagerTransactionKind
   money: Money
+  referenceExternalTransactionId?: string
 }
 
 type Output = {
@@ -46,12 +47,13 @@ type Output = {
 type Process = ReturnType<typeof Bun.spawn>
 type Server = ReturnType<typeof Bun.serve>
 
-const processCount = 3
+const processCount = 6
 const duplicateCount = 50
 const startupTimeout = 60_000
 const shutdownTimeout = 60_000
 const testTimeout = 120_000
 const pollInterval = 100
+const shutdownDelay = 30
 const one = 1
 const successfulExitCode = 0
 const empty = String()
@@ -82,6 +84,9 @@ const amount = {
   remaining: '99.00',
   raceWager: '80.00',
   raceRemaining: '20.00',
+  rollbackWager: '30.00',
+  conflictWager: '2.00',
+  conflictRemaining: '98.00',
 }
 const provider = {
   id: 'race-test-provider',
@@ -101,9 +106,12 @@ const messages = {
 }
 const scenario = {
   suite: 'Application races',
-  duplicate: 'WHEN one wager is submitted 50 times across three application processes SHOULD create one debit',
+  duplicate: 'WHEN one wager is submitted 50 times across six application processes SHOULD create one debit',
   balance: 'WHEN two wagers of 80 race on a balance of 100 across processes SHOULD process one and reject one',
-  wallets: 'WHEN wagers for distinct wallets run in parallel across three processes SHOULD process each independently',
+  wallets: 'WHEN wagers for distinct wallets run in parallel across six processes SHOULD process each independently',
+  conflict: 'WHEN a duplicate storm carries a different payload SHOULD keep one winner and answer conflicts',
+  rollback: 'WHEN two rollbacks of one bet race across processes SHOULD process one and reject one',
+  shutdown: 'WHEN a process stops with a request in flight SHOULD keep one debit after the retry',
 }
 
 const headers = {
@@ -258,6 +266,20 @@ class RaceSuite {
     return this.address(port)
   }
 
+  async ephemeral(): Promise<{ address: string; child: Process }> {
+    const server = this.reserve()
+    const port = this.port(server)
+
+    this.release(server)
+
+    const child = this.launch(port)
+    const deadline = Date.now() + startupTimeout
+
+    await this.wait(port, deadline)
+
+    return { address: this.address(port), child }
+  }
+
   async openWallet(address: string, playerId: string): Promise<Wallet> {
     const initialBalance = { amount: amount.opening, currency: currency.brl }
     const body = JSON.stringify({ playerId, initialBalance })
@@ -289,6 +311,23 @@ class RaceSuite {
       kind: WagerTransactionKind.BET,
       money: { amount: wagerAmount, currency: currency.brl },
     }
+  }
+
+  rollback(
+    wallet: Wallet,
+    externalTransactionId: string,
+    reference: Wager,
+    wagerAmount: string,
+  ): Wager {
+    const bet = this.wager(wallet, externalTransactionId, wagerAmount)
+    const wager = {
+      ...bet,
+      roundId: reference.roundId,
+      kind: WagerTransactionKind.ROLLBACK,
+      referenceExternalTransactionId: reference.externalTransactionId,
+    }
+
+    return wager
   }
 
   key(externalTransactionId: string): string {
@@ -477,5 +516,124 @@ describe(scenario.suite, () => {
     expect(balances).toEqual(new Array(processCount).fill(amount.remaining))
     expect(debitCounts).toEqual(new Array(processCount).fill(one))
     expect(storedStatuses).toEqual(new Array(processCount).fill(WagerTransactionStatus.PROCESSED))
+  }, testTimeout)
+
+  test(scenario.conflict, async () => {
+    const wallet = await suite.openWallet(suite.endpoint(0), uuidv7())
+    const externalTransactionId = uuidv7()
+    const wager = suite.wager(wallet, externalTransactionId)
+    const conflicting = {
+      ...wager,
+      money: { amount: amount.conflictWager, currency: currency.brl },
+    }
+    const key = suite.key(externalTransactionId)
+    const indexes = [...new Array(processCount).keys()]
+    const toSubmit = (index: number) => suite.submit(suite.endpoint(index), wager, key)
+    const toConflict = () => suite.submit(suite.endpoint(0), conflicting, key)
+    const responses = await Promise.all([
+      ...indexes.map(toSubmit),
+      ...indexes.map(toSubmit),
+      toConflict(),
+    ])
+    const statuses = responses.map(suite.status)
+    const byConflict = (status: number) => status === HttpStatus.CONFLICT
+    const byOk = (status: number) => status === HttpStatus.OK
+    const conflicts = statuses.filter(byConflict)
+    const successes = statuses.filter(byOk)
+    const stored = await suite.stored(provider.id, externalTransactionId)
+    const balance = await suite.wallet(wallet.id)
+    const ledgers = await suite.ledgers(wallet.id)
+    const byDebit = (ledger: Ledger) => ledger.direction === LedgerDirection.DEBIT
+    const debits = ledgers.filter(byDebit)
+    const debit = debits[0]
+
+    expect(conflicts.length).toBeGreaterThanOrEqual(one)
+    expect(successes.length).toBeGreaterThanOrEqual(one)
+    expect(conflicts.length + successes.length).toBe(statuses.length)
+
+    if (stored === undefined) { throw new Error(messages.wagerMissing) }
+    if (balance === undefined) { throw new Error(messages.walletMissing) }
+    if (debit === undefined) { throw new Error(messages.ledgerMissing) }
+
+    const winner = stored.money.amount
+    const expected = winner === amount.wager ? amount.remaining : amount.conflictRemaining
+
+    expect(debits).toHaveLength(one)
+    expect(debit.money.amount).toBe(winner)
+    expect(balance.balance.amount).toBe(expected)
+  }, testTimeout)
+
+  test(scenario.rollback, async () => {
+    const wallet = await suite.openWallet(suite.endpoint(0), uuidv7())
+    const betId = uuidv7()
+    const bet = suite.wager(wallet, betId, amount.rollbackWager)
+    const betResponse = await suite.submit(suite.endpoint(0), bet, suite.key(betId))
+    const betOutput = await suite.output(betResponse)
+    const rollbackIds = [uuidv7(), uuidv7()]
+    const toRollback = (id: string) => suite.rollback(wallet, id, bet, amount.rollbackWager)
+    const wagers = rollbackIds.map(toRollback)
+    const addresses = [suite.endpoint(1), suite.endpoint(4)]
+    const toSubmit = (wager: Wager, index: number) => {
+      const address = addresses[index]
+
+      if (address === undefined) { throw new Error(messages.applicationStopped) }
+
+      return suite.submit(address, wager, suite.key(wager.externalTransactionId))
+    }
+    const responses = await Promise.all(wagers.map(toSubmit))
+    const outputs = await Promise.all(responses.map(suite.output))
+    const byProcessed = (output: Output) => output.status === WagerTransactionStatus.PROCESSED
+    const byRejected = (output: Output) => output.status === WagerTransactionStatus.REJECTED
+    const processed = outputs.filter(byProcessed)
+    const rejected = outputs.filter(byRejected)
+    const balance = await suite.wallet(wallet.id)
+    const ledgers = await suite.ledgers(wallet.id)
+    const byCredit = (ledger: Ledger) => ledger.direction === LedgerDirection.CREDIT
+    const credits = ledgers.filter(byCredit)
+
+    expect(betOutput.status).toBe(WagerTransactionStatus.PROCESSED)
+    expect(processed).toHaveLength(one)
+    expect(rejected).toHaveLength(one)
+
+    if (balance === undefined) { throw new Error(messages.walletMissing) }
+
+    expect(balance.balance.amount).toBe(amount.opening)
+    expect(ledgers).toHaveLength(3)
+    expect(credits).toHaveLength(2)
+  }, testTimeout)
+
+  test(scenario.shutdown, async () => {
+    const wallet = await suite.openWallet(suite.endpoint(0), uuidv7())
+    const externalTransactionId = uuidv7()
+    const wager = suite.wager(wallet, externalTransactionId)
+    const key = suite.key(externalTransactionId)
+    const { address, child } = await suite.ephemeral()
+    const byFailure = () => undefined
+    const pending = suite.submit(address, wager, key).catch(byFailure)
+
+    await Bun.sleep(shutdownDelay)
+    child.kill(terminationSignal)
+
+    const interrupted = await pending
+    await child.exited
+
+    const retried = await suite.submit(suite.endpoint(1), wager, key)
+    const output = await suite.output(retried)
+    const balance = await suite.wallet(wallet.id)
+    const ledgers = await suite.ledgers(wallet.id)
+    const byDebit = (ledger: Ledger) => ledger.direction === LedgerDirection.DEBIT
+    const debits = ledgers.filter(byDebit)
+
+    if (interrupted !== undefined) {
+      expect([HttpStatus.OK, HttpStatus.ACCEPTED]).toContain(interrupted.status)
+    }
+
+    expect(retried.status).toBe(HttpStatus.OK)
+    expect(output.status).toBe(WagerTransactionStatus.PROCESSED)
+
+    if (balance === undefined) { throw new Error(messages.walletMissing) }
+
+    expect(balance.balance.amount).toBe(amount.remaining)
+    expect(debits).toHaveLength(one)
   }, testTimeout)
 })

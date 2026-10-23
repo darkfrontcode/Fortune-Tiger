@@ -28,7 +28,7 @@ export class RetryReferencesUseCase {
       return outputs.concat(output)
     }
 
-    const started = Promise.resolve(new Array<RetryOutput>())
+    const started = Promise.resolve<RetryOutput[]>([])
     const outputs = await due.reduce(toRetried, started)
 
     const byProcessed = (output: RetryOutput) => output.status === WagerTransactionStatus.PROCESSED

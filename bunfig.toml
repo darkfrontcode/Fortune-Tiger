@@ -2,3 +2,4 @@
 root = "./src"
 pathIgnorePatterns = ["**/persistence/**", "**/presentation/**/tests/*.e2e.test.ts", "**/health/**/tests/*.e2e.test.ts"]
 coverageReporter = ["text", "lcov"]
+

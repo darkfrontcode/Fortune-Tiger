@@ -21,7 +21,7 @@ const event = {
 }
 
 class RecordingClient {
-  readonly commands = new Array<SendMessageCommand>()
+  readonly commands = [] as SendMessageCommand[]
 
   async send(command: SendMessageCommand): Promise<unknown> {
     this.commands.push(command)

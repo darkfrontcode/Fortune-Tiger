@@ -22,9 +22,9 @@ type Retry = {
 }
 
 class RecordingQueue {
-  readonly deleted = new Array<ConsumerType.QueueMessage>()
-  readonly retried = new Array<Retry>()
-  readonly dead = new Array<ConsumerType.QueueMessage>()
+  readonly deleted = [] as ConsumerType.QueueMessage[]
+  readonly retried = [] as Retry[]
+  readonly dead = [] as ConsumerType.QueueMessage[]
 
   constructor(private readonly deadLetterFailure = false) {}
 
@@ -66,7 +66,7 @@ class DeferredConsumer {
 }
 
 class RecordingLogger implements LoggerProtocol {
-  readonly warnings = new Array<string>()
+  readonly warnings = [] as string[]
 
   warn(message: string): void {
     this.warnings.push(message)

@@ -1,7 +1,7 @@
 import { MISSING_REFERENCE_MESSAGE } from '../data'
 import { WagerTransactionKind } from '../enums'
 
-const none = new Array<WagerTransactionKind>()
+const none: WagerTransactionKind[] = []
 
 const bet: Array<WagerTransactionKind> = [WagerTransactionKind.BET]
 

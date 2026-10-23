@@ -8,7 +8,7 @@ import {
 } from '@application/wallets/use-cases'
 import { PROVIDER_IDENTITY } from './tokens'
 import { WagersModule } from '@application/wagers'
-import { Environment, EnvironmentModule } from '@infrastructure/environment'
+import { EnvironmentModule } from '@infrastructure/environment'
 import { ObservabilityModule } from '@infrastructure/observability'
 import { PersistenceModule } from '@infrastructure/persistence'
 import { WagerController, WalletController } from './controllers'

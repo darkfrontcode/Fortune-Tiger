@@ -13,7 +13,7 @@ describe('WalletController (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/wallets')
       .send({
-        playerId: 'wallet-test-player-' + Date.now(),
+        playerId: `wallet-test-player-${Date.now()}`,
         initialBalance: {
           amount: '1000.00',
           currency: 'BRL',
@@ -29,7 +29,7 @@ describe('WalletController (e2e)', () => {
   describe('POST /wallets', () => {
     it('should create a wallet with valid payload', async () => {
       const body = {
-        playerId: 'player-test-' + Date.now(),
+        playerId: `player-test-${Date.now()}`,
         initialBalance: {
           amount: '500.00',
           currency: 'BRL',
@@ -49,7 +49,7 @@ describe('WalletController (e2e)', () => {
 
     it('should reject invalid amount scale', async () => {
       const body = {
-        playerId: 'player-test-' + Date.now(),
+        playerId: `player-test-${Date.now()}`,
         initialBalance: {
           amount: '500.001',
           currency: 'BRL',
@@ -64,7 +64,7 @@ describe('WalletController (e2e)', () => {
 
     it('should reject invalid currency case', async () => {
       const body = {
-        playerId: 'player-test-' + Date.now(),
+        playerId: `player-test-${Date.now()}`,
         initialBalance: {
           amount: '500.00',
           currency: 'brl',
@@ -79,7 +79,7 @@ describe('WalletController (e2e)', () => {
 
     it('should reject negative amount', async () => {
       const body = {
-        playerId: 'player-test-' + Date.now(),
+        playerId: `player-test-${Date.now()}`,
         initialBalance: {
           amount: '-100.00',
           currency: 'BRL',
@@ -93,7 +93,7 @@ describe('WalletController (e2e)', () => {
     })
 
     it('should reject duplicate wallet for same player and currency', async () => {
-      const playerId = 'player-duplicate-' + Date.now()
+      const playerId = `player-duplicate-${Date.now()}`
       const body = {
         playerId,
         initialBalance: {

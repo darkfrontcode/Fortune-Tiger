@@ -48,20 +48,28 @@ Real PostgreSQL and LocalStack. Migrations and constraints. Atomicity of wallet,
 
 ## Concurrency
 
-Real parallelism against PostgreSQL. The race suite starts three independent HTTP application processes against the same database.
+Real parallelism against PostgreSQL. The race suite starts six independent HTTP application processes against the same database.
 
-1. The same bet 50 times in parallel across three processes → one processed wager and one debit; the other 49 responses are idempotent replays.
+1. The same bet 50 times in parallel across six processes → one processed wager and one debit; the other 49 responses are idempotent replays.
 2. Balance 100, two bets of 80 at the same time across processes → one `PROCESSED`, one `REJECTED`, balance 20, one `DEBIT`.
-3. Bets for distinct wallets in parallel across all three processes → each wager is processed independently.
-4. Three or more application processes.
-5. Process killed after commit and before ack.
-6. Two publishers on the same outbox.
-7. `ROLLBACK` or `REFUND` before the `BET`.
-8. Restart and final consistency.
+3. Bets for distinct wallets in parallel across all six processes → each wager is processed independently.
+4. A duplicate storm that carries a different amount once → one payload wins, every other response is a conflict, and the single debit matches the stored winner.
+5. Two `ROLLBACK` requests for one `BET`, sent to two processes at once → one `PROCESSED`, one `REJECTED`, balance restored, one credit per processed reversal.
+6. A process stops with a request in flight → the retry lands on another process and the wallet still shows one debit.
+7. Process killed after commit and before ack.
+8. Two publishers on the same outbox.
+9. `ROLLBACK` or `REFUND` before the `BET`.
+10. Restart and final consistency.
 
 In every scenario: `wallet.balance` equals the balance reconstructed from the ledger.
 
 `bun run test:concurrency` runs the multi-process race scenarios. PostgreSQL and LocalStack must be running, and `.env` must point to them.
+
+## Fault injection
+
+`outage.test.ts` puts a TCP proxy between the application and PostgreSQL. It opens a wallet and processes a bet through the proxy, stops the proxy, and asserts that readiness and a new submit answer `503` instead of hanging. It then starts the proxy again on the same port and asserts that readiness recovers to `200` and the next submit is processed, without restarting the application.
+
+The proxy is part of the test, not of the product. It destroys open sockets on stop, so the pool sees a dead connection instead of a silent one.
 
 ## API
 

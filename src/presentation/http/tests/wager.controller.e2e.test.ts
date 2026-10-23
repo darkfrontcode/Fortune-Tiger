@@ -17,7 +17,7 @@ describe('WagerController (e2e)', () => {
     const walletResponse = await request(app.getHttpServer())
       .post('/wallets')
       .send({
-        playerId: 'wager-test-player-' + Date.now(),
+        playerId: `wager-test-player-${Date.now()}`,
         initialBalance: {
           amount: '1000.00',
           currency: 'BRL',
@@ -56,7 +56,7 @@ describe('WagerController (e2e)', () => {
       const stamp = Date.now()
       const body = {
         providerId: 'provider-123',
-        externalTransactionId: 'ext-submit-' + stamp,
+        externalTransactionId: `ext-submit-${stamp}`,
         playerId,
         walletId,
         roundId: 'round-123',
@@ -71,7 +71,7 @@ describe('WagerController (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/wagering/transactions')
         .set(providerHeader, 'provider-123')
-        .set(idempotencyHeader, 'key-submit-' + stamp)
+        .set(idempotencyHeader, `key-submit-${stamp}`)
         .send(body)
         .expect([200, 201])
 
@@ -128,8 +128,8 @@ describe('WagerController (e2e)', () => {
     })
 
     it('should detect idempotency conflict with different payload', async () => {
-      const externalId = 'ext-conflict-' + Date.now()
-      const key = 'key-conflict-' + Date.now()
+      const externalId = `ext-conflict-${Date.now()}`
+      const key = `key-conflict-${Date.now()}`
 
       const body1 = {
         providerId: 'provider-123',
@@ -174,7 +174,7 @@ describe('WagerController (e2e)', () => {
       const stamp = Date.now()
       const body = {
         providerId: 'provider-123',
-        externalTransactionId: 'ext-by-id-' + stamp,
+        externalTransactionId: `ext-by-id-${stamp}`,
         playerId,
         walletId,
         roundId: 'round-123',
@@ -189,7 +189,7 @@ describe('WagerController (e2e)', () => {
       const submitResponse = await request(app.getHttpServer())
         .post('/wagering/transactions')
         .set(providerHeader, 'provider-123')
-        .set(idempotencyHeader, 'key-by-id-' + stamp)
+        .set(idempotencyHeader, `key-by-id-${stamp}`)
         .send(body)
         .expect([200, 201])
 
@@ -209,7 +209,7 @@ describe('WagerController (e2e)', () => {
     it('should return a wager by provider and external transaction id', async () => {
       const providerId = 'provider-123'
       const stamp = Date.now()
-      const externalTransactionId = 'ext-by-provider-' + stamp
+      const externalTransactionId = `ext-by-provider-${stamp}`
 
       const body = {
         providerId,
@@ -228,7 +228,7 @@ describe('WagerController (e2e)', () => {
       await request(app.getHttpServer())
         .post('/wagering/transactions')
         .set(providerHeader, providerId)
-        .set(idempotencyHeader, 'key-by-provider-' + stamp)
+        .set(idempotencyHeader, `key-by-provider-${stamp}`)
         .send(body)
         .expect([200, 201])
 

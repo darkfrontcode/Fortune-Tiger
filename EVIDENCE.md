@@ -7,6 +7,7 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 ### Lint
 - **Status**: PASS (local)
 - **Command**: `bun run lint`
+<<<<<<< HEAD
 - **Scope**: Biome 2.6 over every source file; the rule set and the four documented exceptions are in [`docs/testing.md`](docs/testing.md)
 - **Prerequisites**: none; `bun run verify` runs it before the type-check
 
@@ -20,7 +21,7 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 
 ### Unit Tests
 - **Status**: PASS (local)
-- **Count**: 328 tests across 57 files
+- **Count**: 330 tests across 57 files
 - **Duration**: ~1s
 - **Coverage**: Domain, application use cases, messaging adapters (no persistence integration)
 - **Command**: `bun run test:unit`
@@ -29,18 +30,26 @@ Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `loc
 
 ### Integration Tests
 - **Status**: PASS (local)
-- **Count**: 45 tests across 13 files
-- **Duration**: ~10s
-- **Coverage**: Persistence, inbox/outbox, crash recovery, reconciliation, reference retry, idempotency cross-wallet race, reversal flows
+- **Count**: 49 tests across 14 files
+- **Duration**: ~22s
+- **Coverage**: Persistence, inbox/outbox, crash recovery, reconciliation, reference retry, idempotency cross-wallet race, reversal flows, database outage and recovery
 - **Command**: `bun run test:int`
 - **Prerequisites**: `DATABASE_URL`, `AWS_ENDPOINT_URL`, `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`, `SQS_EVENTS_QUEUE_URL` (LocalStack queues created in CI or compose)
 - **Scope**: `bunfig.int.toml` → `src/infrastructure/persistence/tests`
 
 ### Concurrency Tests
 - **Status**: PASS (local)
-- **Count**: 3 tests in `races.test.ts`
-- **Duration**: ~3s (spawns three app processes)
+- **Count**: 6 tests in `races.test.ts`
+- **Duration**: ~9s (spawns six app processes)
 - **Command**: `bun run test:concurrency`
+- **Coverage**: one debit under 50 parallel duplicates, a balance race, independent wallets, a duplicate storm with a conflicting payload, two rollbacks of one bet, and a process that stops with a request in flight
+- **Prerequisites**: Same as integration
+
+### Fault Injection
+- **Status**: PASS (local)
+- **Count**: 1 test in `outage.test.ts`
+- **Coverage**: a TCP proxy in front of PostgreSQL; readiness and a submit answer `503` while the database is unreachable, and both recover to `200` after the proxy returns, with no application restart
+- **Command**: `bun run test:int`
 - **Prerequisites**: Same as integration
 
 ### E2E Tests

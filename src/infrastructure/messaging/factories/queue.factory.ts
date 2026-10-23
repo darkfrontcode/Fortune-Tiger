@@ -19,3 +19,4 @@ export const createQueueConfig = (environment: Environment): ConsumerType.Config
 export const createPublishConfig = (environment: Environment): PublisherType.Config => ({
   eventsQueueUrl: environment.eventsQueueUrl,
 })
+

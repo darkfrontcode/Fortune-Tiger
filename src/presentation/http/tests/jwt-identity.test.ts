@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import { SignJWT, exportJWK, generateKeyPair } from 'jose'
-import type { JWK, JWTPayload } from 'jose'
+import type { JWTPayload } from 'jose'
 import { JwtProviderIdentity } from '../providers'
 import { ProviderIdentityError } from '../errors'
 import type { ProviderIdentityConfig } from '../providers'
