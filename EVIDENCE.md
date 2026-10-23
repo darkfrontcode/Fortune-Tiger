@@ -4,6 +4,12 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 
 ## Test Suite Results
 
+### Lint
+- **Status**: PASS (local)
+- **Command**: `bun run lint`
+- **Scope**: Biome 2.6 over every source file; the rule set and the four documented exceptions are in [`docs/testing.md`](docs/testing.md)
+- **Prerequisites**: none; `bun run verify` runs it before the type-check
+
 ### Unit Tests
 - **Status**: PASS (local)
 - **Count**: 328 tests across 57 files
