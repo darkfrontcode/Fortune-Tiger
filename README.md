@@ -13,7 +13,7 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
 
 A provider can send a bet, a win, a loss, a refund, or a rollback. Fortune Tiger keeps the wallet safe, remembers every balance change, and recognizes a repeated request.
 
-Prove the delivery with one command: `bun run verify` type-checks and runs the unit suite; `bun run verify:full` adds PostgreSQL, LocalStack, migrations, integration, concurrency, and end-to-end tests. Details in [docs/testing.md](docs/testing.md).
+Prove the delivery with one command: `bun run verify` type-checks and runs the unit suite; `bun run verify:full` adds PostgreSQL, LocalStack, migrations, integration, concurrency, and end-to-end tests. Details in [docs/testing.md](docs/testing.md). See the happy path in one command with `bun run demo`, and the reviewer's path in [docs/DELIVERY.md](docs/DELIVERY.md).
 
 <details>
 <summary>🎯 Domain — the money and wager rules</summary>
@@ -205,13 +205,18 @@ The first three steps install the tools, prepare local settings, and start Postg
 
 ```bash
 bun run start:dev
+bun run demo
 bun run test:unit
 bun run test:int
 bun run test:concurrency
 bun run test:e2e
 ```
 
-`start:dev` restarts the app when files change. `test:unit` checks the rules quickly. The integration and concurrency tests use the PostgreSQL and LocalStack services configured in `.env`. `test:e2e` runs HTTP endpoint tests with Supertest.
+`start:dev` restarts the app when files change. `demo` boots the app on a free port and walks the happy path — wallet, bet, replay, loss, ledger, reconciliation, metrics — asserting each result. `test:unit` checks the rules quickly. The integration and concurrency tests use the PostgreSQL and LocalStack services configured in `.env`. `test:e2e` runs HTTP endpoint tests with Supertest.
+
+### Try the API by hand
+
+[`requests.http`](requests.http) carries the same steps plus the conflict, rejection, and not-found cases. The routes, headers, status table, and error bodies are in [docs/API.md](docs/API.md), and [docs/DELIVERY.md](docs/DELIVERY.md) is the reviewer's path through the delivery.
 
 ### Prove it with one command
 

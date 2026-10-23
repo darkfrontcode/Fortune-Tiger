@@ -1,0 +1,179 @@
+@host = http://127.0.0.1:3000
+@providerId = provider-a
+@playerId = player-a
+@roundId = round-1
+@gameId = fortune-tiger
+@externalBetId = transaction-bet-1
+@externalLossId = transaction-loss-1
+@idempotencyKey = provider-a:transaction-bet-1
+@idempotencyLossKey = provider-a:transaction-loss-1
+
+# Run "bun run demo" for the same sequence without a client.
+# With the VS Code REST Client, the named requests fill the ids for you.
+# With another client, paste the id from the previous response into the request.
+# Change @playerId before running the file again: the player and currency pair is unique.
+
+### Liveness — 200, the process is up
+GET {{host}}/health/live
+
+### Readiness — 200 when PostgreSQL and SQS answer, 503 otherwise
+GET {{host}}/health/ready
+
+### Metrics — Prometheus text exposition of this process
+GET {{host}}/metrics
+
+### Open a wallet — 201, balance 100.00 BRL
+# @name openWallet
+POST {{host}}/wallets
+Content-Type: application/json
+
+{
+  "playerId": "{{playerId}}",
+  "initialBalance": { "amount": "100.00", "currency": "BRL" }
+}
+
+### Read the wallet — 200
+GET {{host}}/wallets/{{openWallet.response.body.$.id}}
+
+### Submit a BET of 30.00 — 200 PROCESSED, balance 70.00
+# @name bet
+POST {{host}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{idempotencyKey}}
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{externalBetId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{openWallet.response.body.$.id}}",
+  "roundId": "{{roundId}}",
+  "gameId": "{{gameId}}",
+  "kind": "BET",
+  "money": { "amount": "30.00", "currency": "BRL" }
+}
+
+### Repeat the same request — 200, idempotentReplay true, same transaction and balance
+POST {{host}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{idempotencyKey}}
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{externalBetId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{openWallet.response.body.$.id}}",
+  "roundId": "{{roundId}}",
+  "gameId": "{{gameId}}",
+  "kind": "BET",
+  "money": { "amount": "30.00", "currency": "BRL" }
+}
+
+### Same key, different amount — 409, IDEMPOTENCY_PAYLOAD_CONFLICT
+POST {{host}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{idempotencyKey}}
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{externalBetId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{openWallet.response.body.$.id}}",
+  "roundId": "{{roundId}}",
+  "gameId": "{{gameId}}",
+  "kind": "BET",
+  "money": { "amount": "45.00", "currency": "BRL" }
+}
+
+### Submit a LOSS of 30.00 — 200 PROCESSED, balance stays 70.00, no ledger entry
+POST {{host}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{idempotencyLossKey}}
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{externalLossId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{openWallet.response.body.$.id}}",
+  "roundId": "{{roundId}}",
+  "gameId": "{{gameId}}",
+  "kind": "LOSS",
+  "money": { "amount": "30.00", "currency": "BRL" }
+}
+
+### BET above the balance — 422, failureCode INSUFFICIENT_FUNDS
+POST {{host}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: provider-a:transaction-bet-2
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "transaction-bet-2",
+  "playerId": "{{playerId}}",
+  "walletId": "{{openWallet.response.body.$.id}}",
+  "roundId": "{{roundId}}",
+  "gameId": "{{gameId}}",
+  "kind": "BET",
+  "money": { "amount": "999.00", "currency": "BRL" }
+}
+
+### REFUND without a reference — 400
+POST {{host}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: provider-a:transaction-refund-1
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "transaction-refund-1",
+  "playerId": "{{playerId}}",
+  "walletId": "{{openWallet.response.body.$.id}}",
+  "roundId": "{{roundId}}",
+  "gameId": "{{gameId}}",
+  "kind": "REFUND",
+  "money": { "amount": "30.00", "currency": "BRL" }
+}
+
+### Ledger page — 200, the OPENING credit and the BET debit
+GET {{host}}/wallets/{{openWallet.response.body.$.id}}/ledger?limit=10
+
+### Reconciliation — 200, consistent true, difference 0.00
+POST {{host}}/wallets/{{openWallet.response.body.$.id}}/reconciliation
+
+### Wager by transaction id — 200
+GET {{host}}/wagering/transactions/{{bet.response.body.$.transactionId}}
+
+### Wager by provider pair — 200
+GET {{host}}/providers/{{providerId}}/wagering/transactions/{{externalBetId}}
+
+### Missing wallet — 404
+GET {{host}}/wallets/00000000-0000-0000-0000-000000000000
+
+### Invalid amount — 400, more than two decimal places
+POST {{host}}/wallets
+Content-Type: application/json
+
+{
+  "playerId": "player-invalid",
+  "initialBalance": { "amount": "100.001", "currency": "BRL" }
+}
+
+### Missing Idempotency-Key — 400
+POST {{host}}/wagering/transactions
+Content-Type: application/json
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "transaction-bet-3",
+  "playerId": "{{playerId}}",
+  "walletId": "{{openWallet.response.body.$.id}}",
+  "roundId": "{{roundId}}",
+  "gameId": "{{gameId}}",
+  "kind": "BET",
+  "money": { "amount": "1.00", "currency": "BRL" }
+}
+
+# The queue is an internal channel. The outbox publishes WagerTransactionProcessed
+# and WalletBalanceChanged after the financial commit. Read them with:
+#
+# docker exec fortune-tiger-localstack-1 awslocal sqs receive-message \
+#   --queue-url http://localhost:4566/000000000000/wager-transactions.fifo \
+#   --max-number-of-messages 10
