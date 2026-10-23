@@ -27,10 +27,25 @@ What each command answers:
 | --- | --- |
 | `docker compose up -d` | PostgreSQL 16 and LocalStack, with the FIFO queues created by the ready hook in `docker/localstack` |
 | `bun run migration:up` | the schema is versioned and reversible |
-| `bun run verify` | TypeScript strict and the unit suite pass, with no dependency running |
+| `bun run verify` | lint, TypeScript strict, and the unit suite pass, with no dependency running |
 | `bun run demo` | the happy path against a live application: wallet, bet, replay, loss, ledger, reconciliation, metrics |
 
 The demo boots the application on a free port, so it does not need `bun run start` in another terminal, and it does not collide with a server already on `3000`.
+
+## Optional profiles
+
+```bash
+docker compose --profile app --profile observability up -d
+```
+
+Adds Prometheus on `9090` and Grafana on `3001`, with the `Fortune Tiger` dashboard provisioned from `docker/grafana/`. The panels read transactions by status, replays, retries, dead letters, processing latency, outbox lag, and lock conflicts.
+
+```bash
+docker compose --profile auth up -d
+bun run auth:smoke
+```
+
+Starts Keycloak with the demo realm and proves the `jwt` mode end to end: `401` without a token, a wallet still open, a bet accepted with the token, the provider read from the claim even when the header and the body spoof another one, `404` under that provider, and `401` for a forged token.
 
 To run the whole stack in containers instead, with the migration applied by a one-shot service:
 
@@ -61,13 +76,17 @@ bun run verify:full
 
 The gate reads `.env` through `Environment`, checks that PostgreSQL and LocalStack answer within two seconds, then runs the migrations, the integration suite, the concurrency suite, and the end-to-end suite. The first failure stops the run with exit code `1`.
 
-The concurrency suite starts three independent application processes against the same database: the same bet 50 times becomes one debit, two bets of 80 on a balance of 100 leave one processed and one rejected, and the stored balance always equals the balance rebuilt from the ledger.
+The concurrency suite starts six independent application processes against the same database: the same bet 50 times becomes one debit, two bets of 80 on a balance of 100 leave one processed and one rejected, two rollbacks of one bet leave one processed, and the stored balance always equals the balance rebuilt from the ledger. The same suite carries the fault injection: a TCP proxy in front of PostgreSQL, `503` during the outage, and recovery without a restart.
+
+The OpenAPI document is checked in; `bun run openapi:export --check` rebuilds it from the code and fails when the file is stale, and the pipeline runs that check after the end-to-end suite.
 
 ## Where to read
 
 - [`README.md`](../README.md) — the four folders, the stack, and the commands.
 - [`ARCHITECTURE.md`](../ARCHITECTURE.md) — the layer rules and the composition.
 - [`docs/API.md`](API.md) — routes, headers, status, error bodies, and failure codes.
+- [`docs/api/openapi.json`](api/openapi.json) — the same contract, machine-readable and checked in.
+- [`docs/adr/`](adr/) — nine records, one per decision, with the alternative that lost.
 - [`docs/testing.md`](testing.md) — what each suite covers and why.
 - [`docs/load.md`](load.md) — the load method, the measured waves, and the honest limit.
 - [`EVIDENCE.md`](../EVIDENCE.md) — the last local run: counts, constraints, and the honest limits.
@@ -80,7 +99,7 @@ The code reads top to bottom: `src/domain` holds `Money`, `Wallet`, `Ledger`, an
 - **The domain decides.** `Money` uses `decimal.js` with exact scale, `Wallet` never goes negative, the ledger entry is immutable and checked by `balanceBefore ± money = balanceAfter`, and the wager state machine only moves forward.
 - **The database is the final guarantee.** `SELECT FOR UPDATE` on the wallet inside the same SQL transaction as the ledger, the wager, the inbox, and the outbox. Unique constraints on the idempotency key and on the provider pair back the in-memory checks.
 - **Delivery is at-least-once, and the effect is single.** FIFO is an optimization; the inbox deduplicates redelivery and the idempotency rule deduplicates the provider's retry.
-- **The observability is scrapeable.** `GET /metrics` answers the Prometheus exposition from the process that served the request, with names owned by the application.
+- **The observability is scrapeable.** `GET /metrics` answers the Prometheus exposition from the process that served the request, with names owned by the application, and the optional `observability` profile ships a dashboard that reads them.
 - **The spec arrives before the code.** Every folder has an English `spec.md`, and a behavior that is not in the spec is not in the code.
 
 ## Limits, stated up front
