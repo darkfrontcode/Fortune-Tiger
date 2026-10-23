@@ -60,6 +60,10 @@ The two bets of 80 do not wait for the end. A second sequential debit fails in t
 
 ## Proof and reading
 
-21. **Races.** The same bet 50 times becomes one debit. Distinct wallets in parallel. Three or more processes.
+21. **Races.** The same bet 50 times becomes one debit. Distinct wallets in parallel. Six processes.
 22. **Crash.** Kill after commit and before ack. Two publishers. `ROLLBACK` or `REFUND` before the `BET`. Restart with the balance equal to the ledger. Completed: integration tests verify SQS redelivery, concurrent publishers, out-of-order refund, and ledger consistency after restart.
 23. **Usage README.** Setup, commands, environment, and `LOG_PRETTY`. `ARCHITECTURE.md` then describes only what is implemented. FIFO is not the guarantee. Auth has an `anonymous` mode and an optional `jwt` mode backed by Keycloak. The happy path is `BRL`.
+
+## Status
+
+The twenty-three phases above describe the core delivery, and each one closed with a green test of what it introduced. The polish that follows them is a stack of small branches: the application image with a one-command boot, Biome as a lint gate, coverage reporting, nine ADRs, a separate events queue, a six-process race matrix with fault injection, property tests with `fast-check`, a provisioned Prometheus and Grafana profile, an auth smoke against the real realm, and the checked-in OpenAPI document. `EVIDENCE.md` carries the result of each.

@@ -51,12 +51,16 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 - Concurrency unit is `walletId`
 
 **Tests:**
-- `races.test.ts` implements 3 real concurrency scenarios:
-  1. Same bet 50 times in parallel → 1 debit
+- `races.test.ts` implements 6 real concurrency scenarios:
+  1. Same bet 50 times in parallel → 1 debit, 49 idempotent replays
   2. Two bets of 80 on balance 100 → 1 PROCESSED, 1 REJECTED, balance 20
   3. Distinct wallets in parallel → all processed independently
-- Test uses 3 real application processes (verified in code)
-- Test duration: ~3 seconds locally, including startup and shutdown
+  4. A duplicate storm where one request carries another amount → one payload wins, the rest conflict
+  5. Two `ROLLBACK` requests for one `BET`, sent to two processes → one processed, one rejected
+  6. A process stops with a request in flight → the retry lands on another process, one debit
+- Test uses 6 real application processes (verified in code)
+- `outage.test.ts` adds fault injection: a TCP proxy in front of PostgreSQL, `503` during the outage, recovery without a restart
+- Test duration: ~9 seconds locally, including startup and shutdown
 
 **Evaluation:** ✅ **20/20 points**
 - Per-wallet lock strategy implemented
@@ -218,24 +222,32 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 - Uses real PostgreSQL and LocalStack (via `persistence.harness`)
 
 **Concurrency:**
-- `races.test.ts`: 3 real processes, real parallelism
+- `races.test.ts`: 6 real processes, real parallelism
 - `crashes.test.ts`: crash recovery with production scenarios
+- `outage.test.ts`: a TCP proxy in front of PostgreSQL, `503` during the outage, recovery without a restart
+
+**Property-based:**
+- `*.property.test.ts` with `fast-check`: money arithmetic, wallet balance, ledger equation, idempotency digest, and wager transitions
 
 **E2E (presentation):**
 - `wallet.controller.e2e.test.ts`
 - `wager.controller.e2e.test.ts`
 - `health.controller.e2e.test.ts`
+- `swagger.e2e.test.ts`
+- The auth provider and the failure filter, beside their unit files
 
 **Coverage:**
-- 74 test files total: 57 unit, 13 integration, and 4 end-to-end
+- 84 test files: 63 unit, 14 integration (including the race and outage suites), and 7 end-to-end suites
+- 442 tests in total: 351 unit, 49 integration, and 42 end-to-end
+- 81.80% of the functions and 91.31% of the lines of the unit suite
 - All guards have their own tests
 - Invariants tested
 
 **Evaluation:** ✅ **10/10 points**
 - Complete coverage of unit, integration, and concurrency
 - Real PostgreSQL and LocalStack, not mocks
-- Race condition and crash recovery scenarios
-- ≥3 instances in concurrency tests
+- Race condition, crash recovery, and database outage scenarios
+- 6 instances in the concurrency suite
 
 ---
 
@@ -261,6 +273,7 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 - `GET /metrics` exposes the Prometheus text exposition
 - Names live in `application/observability/data`: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing latency
 - Instrumented at `SubmitWagerUseCase`, `SqsConsumer`, `OutboxPublisher`, `WagerSubmitWriter`, and `ReconcileWalletUseCase`
+- The `observability` compose profile provisions Prometheus and a Grafana dashboard (`Fortune Tiger`) whose four panels read those same names
 
 **Health:**
 - `GET /health/live` → process alive
@@ -315,12 +328,14 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 
 **Delivery docs:**
 - `docs/DELIVERY.md` — the reviewer's path: commands, expected output, reading map, and limits
-- `docs/API.md` — routes, headers, status table, error bodies, failure codes
-- `docs/testing.md` — what each suite covers and why
+- `docs/API.md` and `docs/api/openapi.json` — routes, headers, status table, error bodies, failure codes, and the checked-in machine-readable contract
+- `docs/adr/` — nine records, one per decision, each with the alternative that lost and the cost it carries
+- `docs/testing.md` — what each suite covers: lint, coverage, properties, concurrency, fault injection, auth, and why the load test stays out of CI
 - `docs/load.md` — the load method, the waves, the results, and the bottleneck
+- `docker/spec.md` — the services, the image, the queues, and the dashboards
 - `requests.http` — the happy path and the failure cases by hand
 - `EVIDENCE.md` — the last local run: counts, constraints, and the honest limits
-- `bun run verify`, `bun run verify:full`, and `bun run demo` — one command proves the delivery
+- `bun run verify`, `bun run verify:full`, `bun run demo`, `bun run auth:smoke`, and `bun run openapi:export --check` — one command proves each part of the delivery
 
 **Evaluation:** ✅ **5/5 points**
 - README complete and well-structured
@@ -338,7 +353,7 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 | Negative balance by race | ✅ Passed | `SELECT FOR UPDATE` + race tests |
 | Duplicate debit or credit | ✅ Passed | Inbox + idempotency key + unique constraints |
 | In-memory only idempotency | ✅ Passed | Persistent in database |
-| Correct only with one instance | ✅ Passed | Tests with 3 real processes |
+| Correct only with one instance | ✅ Passed | Tests with 6 real processes |
 | Event before commit | ✅ Passed | Outbox published outside transaction |
 | Missing auditable ledger | ✅ Passed | `WalletLedgerEntry` immutable |
 | Tests only with mocks | ✅ Passed | Real PostgreSQL and LocalStack |
@@ -368,6 +383,7 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 - Keycloak runs as an optional compose profile (`docker compose --profile auth up -d`), so the test pipeline never depends on it.
 - `ProviderIdentityProtocol` is the extension point, and a real identity provider replaces one class.
 - `identity.test.ts` covers both providers, and the e2e suite keeps the default mode.
+- `bun run auth:smoke` proves the mode end to end against the real realm: `401` without a token, a wallet still open, a bet accepted with the token, the provider read from the claim even when the header and the body spoof another one, `404` under that provider, and `401` for a forged token.
 
 ### Load test
 - **Status: implemented** as `bun run test:load`.
