@@ -32,6 +32,15 @@ What each command answers:
 
 The demo boots the application on a free port, so it does not need `bun run start` in another terminal, and it does not collide with a server already on `3000`.
 
+To run the whole stack in containers instead, with the migration applied by a one-shot service:
+
+```bash
+docker compose --profile app up -d --build
+docker compose --profile app ps
+```
+
+The `app` service reports `healthy` when `/health/live` answers, and `GET /health/ready` answers `ready` when PostgreSQL and SQS are reachable. The image is the root `Dockerfile`, and [`docker/spec.md`](../docker/spec.md) describes what it carries.
+
 ## Try the API by hand
 
 ```bash

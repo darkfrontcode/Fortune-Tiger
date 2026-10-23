@@ -84,3 +84,6 @@ jobs:
 
       - name: Run E2E tests
         run: bun run test:e2e
+
+      - name: Build the container image
+        run: docker build -t fortune-tiger:ci .

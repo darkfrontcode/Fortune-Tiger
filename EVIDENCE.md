@@ -37,6 +37,12 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 - **Scope**: `bunfig.e2e.toml` → `src/presentation/**/tests/*.e2e.test.ts` (mapper/filter unit files excluded via `package.json` ignore patterns)
 - **Prerequisites**: `DATABASE_URL` and SQS env vars (full `AppModule` boots)
 
+### Container
+- **Status**: PASS (local)
+- **Command**: `docker compose --profile app up -d --build`
+- **Coverage**: builds the root `Dockerfile`, applies the migrations in a one-shot `migrate` service, and starts the API with its workers; `docker compose --profile app ps` reports `app` healthy, `GET /health/ready` answers `{"status":"ready"}`, and `GET /docs-json` answers `200`
+- **Prerequisites**: Docker Compose v2 and the same `postgres:16` and `localstack:3` services; the image contract is in [`docker/spec.md`](docker/spec.md)
+
 ### Demo
 - **Status**: PASS (local)
 - **Command**: `bun run demo`
