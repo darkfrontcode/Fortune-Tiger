@@ -1,6 +1,6 @@
 # Quality Evidence Matrix
 
-Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `localstack:3`). Base git ref: `1a40474` (merge PR #42), with the working tree of `docs/docs/delivery-polish`. `bun run verify:full` and `bun run demo` were re-run on it. The load numbers below come from the measured run described in their own section.
+Last verified locally on **2026-10-23** with Docker Compose (`postgres:16`, `localstack:3`). `bun run verify:full`, `bun run test:coverage`, and `bun run demo` were re-run on the branch stack that starts at `docs/docs/delivery-polish`. The load numbers below come from the measured run described in their own section.
 
 ## Test Suite Results
 
@@ -9,6 +9,14 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 - **Command**: `bun run lint`
 - **Scope**: Biome 2.6 over every source file; the rule set and the four documented exceptions are in [`docs/testing.md`](docs/testing.md)
 - **Prerequisites**: none; `bun run verify` runs it before the type-check
+
+### Coverage
+- **Status**: PASS (local)
+- **Command**: `bun run test:coverage`
+- **Functions**: 81.20%
+- **Lines**: 90.85%
+- **Report**: `coverage/lcov.info`, kept by the pipeline as an artifact
+- **Scope**: the unit suite; persistence and HTTP end-to-end paths need PostgreSQL and SQS, so they are measured by `verify:full` and stay out of this number
 
 ### Unit Tests
 - **Status**: PASS (local)
