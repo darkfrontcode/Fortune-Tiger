@@ -55,4 +55,13 @@ Status table in `src/presentation/http/spec.md`, invalid payload, and idempotent
 
 ## Load
 
-Out of this delivery. If time remains, `bun run test:load`, with environment, method, throughput, p50, p95, p99, error rate, conflict, and outbox lag. No RPS target.
+`bun run test:load` calls a running API, so the client and the server do not share an event loop. Start the API with `bun run start` first. The script runs two measured waves:
+
+1. **Distinct wallets** — one wallet per bet, so no two requests touch the same row. It shows the throughput without wallet contention.
+2. **Hot wallet** — every bet debits the same wallet, so `SELECT FOR UPDATE` serializes them. It shows the cost of the lock.
+
+Each wave reports the request count, client throughput, p50, p95, p99, and HTTP errors. After the waves the script proves every distinct wallet ended at `9.00`, the hot wallet ended at `1000.00`, its reconciliation is consistent with one ledger entry per bet plus the opening, the processed counter grew by the wave sizes, and no duplicate key reached the API.
+
+Flags: `--wallets=<n>` (default `50`), `--hot=<n>` (default `50`), `--concurrency=<n>` (default `25`), and `--target=<url>` (default `http://127.0.0.1:<PORT>` from `Environment`). The folder spec is `scripts/spec.md`, and [`docs/load.md`](load.md) records the environment, the method, the results, and the bottleneck.
+
+The load test is not part of CI: it needs a running stack and produces numbers that depend on the machine, not on the code. No RPS target is claimed.
