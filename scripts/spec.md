@@ -41,4 +41,28 @@ The output is one line per check, marked `✅`. A failed assertion prints the na
 
 The boot needs the same `.env`, PostgreSQL, LocalStack, and applied migrations as `bun run start`. The script creates no queue, writes no file, and takes no argument. The queue path stays covered by `requests.http`, `docs/API.md`, and the integration suite.
 
+## load
+
+`scripts/load.ts` measures the HTTP path under concurrency. It calls a running API, so the client and the server do not share one event loop and the latency belongs to the server. `bun run test:load` is the entry.
+
+The target is `http://127.0.0.1:<PORT>`, read from `Environment`. `--target=<url>` replaces it. The preflight calls `GET /health/live`; when the API does not answer, the script stops with the `bun run start` hint and exit code `1`. It starts no container, applies no migration, creates no queue, and writes no file.
+
+Two waves are measured from the client:
+
+- **Distinct wallets** — one wallet per request, so no two requests touch the same row. `--wallets` sets the count, default `50`.
+- **Hot wallet** — one wallet receives every request, so the `SELECT FOR UPDATE` on the wallet serializes them. `--hot` sets the count, default `50`, and the opening balance is the count plus `1000.00`, so funds never reject a bet.
+
+`--concurrency` caps the requests in flight in each wave, default `25`. Opening the wallets is setup and stays out of the measurement. A wallet is opened with `10.00` and its single bet is `1.00`.
+
+Each wave reports the request count, the client throughput, p50, p95, p99, and the error count. A percentile uses the nearest rank over the client durations. Throughput is the count divided by the wave wall time.
+
+After the waves, the script proves the effects:
+
+- every distinct wallet answers `9.00` on `GET /wallets/:walletId`;
+- the hot wallet answers `1000.00`, and its reconciliation is `consistent` with `difference` `0.00` and one entry per bet plus the opening;
+- `GET /metrics` shows `wager_transactions_processed_total` grown by at least the two wave sizes, `lock_conflicts_total` reported, and `idempotency_duplicates_total` unchanged, because the load sends no duplicate key;
+- every bet answered `200` with status `PROCESSED`.
+
+The output is one line per check. A failed assertion prints the name, the expected value, and the observed value, and the process answers exit code `1`. The script takes the flags above and no other. `docs/load.md` records the environment, the method, the results of a local run, and the bottleneck.
+
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

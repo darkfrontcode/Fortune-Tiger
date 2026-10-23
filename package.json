@@ -13,6 +13,7 @@
     "verify": "bun run scripts/verify.ts",
     "verify:full": "bun run scripts/verify.ts full",
     "demo": "bun run scripts/demo.ts",
+    "test:load": "bun run scripts/load.ts",
     "migration:up": "bunx --bun mikro-orm migration:up --config ./mikro-orm.config.ts",
     "migration:down": "bunx --bun mikro-orm migration:down --config ./mikro-orm.config.ts",
     "migration:pending": "bunx --bun mikro-orm migration:pending --config ./mikro-orm.config.ts"

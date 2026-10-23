@@ -60,6 +60,7 @@ The concurrency suite starts three independent application processes against the
 - [`ARCHITECTURE.md`](../ARCHITECTURE.md) — the layer rules and the composition.
 - [`docs/API.md`](API.md) — routes, headers, status, error bodies, and failure codes.
 - [`docs/testing.md`](testing.md) — what each suite covers and why.
+- [`docs/load.md`](load.md) — the load method, the measured waves, and the honest limit.
 - [`EVIDENCE.md`](../EVIDENCE.md) — the last local run: counts, constraints, and the honest limits.
 - [`EVALUATION.md`](../EVALUATION.md) — the section 14 checklist against the code.
 
@@ -79,4 +80,4 @@ The code reads top to bottom: `src/domain` holds `Money`, `Wallet`, `Ledger`, an
 - Ledger immutability is enforced by the application, not by a database grant. The unique `transaction_id` prevents a duplicate row, not an `UPDATE`.
 - Auth has two modes. The default `anonymous` mode keeps `AuthGuard` permissive and `AnonymousProviderIdentity` trusts the caller, so a local run needs no identity provider. `AUTH_MODE=jwt` verifies the bearer token against the Keycloak realm key set and reads the `provider_id` claim; Keycloak itself is an optional compose profile, and the CI keeps `anonymous`.
 - OpenTelemetry, double-entry accounting, and partial reversal are out. The Prometheus exposition is in.
-- A load test is not part of the delivery.
+- The load test is a measurement, not a gate. `bun run test:load` reports the two waves on the machine it runs on, with no RPS target and no CI job; [`docs/load.md`](load.md) states the method and the limit.

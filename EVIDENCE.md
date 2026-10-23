@@ -44,13 +44,20 @@ Last verified locally on **2026-10-22** with Docker Compose (`postgres:16`, `loc
 - **Coverage**: boots the app on a free port and asserts liveness, readiness, wallet `201`, `BET` `200` with balance `70.00`, replay with `idempotentReplay: true` and the same transaction, `LOSS` without a balance change, two ledger entries in order, reconciliation `consistent: true` with `difference 0.00`, and the processed and duplicate counters in `/metrics`
 - **Prerequisites**: same stack as integration; scripts are specified in `scripts/spec.md`
 
+### Load
+- **Status**: PASS (local)
+- **Command**: `bun run test:load`
+- **Coverage**: two measured waves against a running API — 50 distinct wallets and 50 bets on one hot wallet, 25 requests in flight. Default run: `43.5 req/s` and p95 `762 ms` on distinct wallets; `22.4 req/s` and p95 `1325 ms` on the hot wallet; zero HTTP errors. Every wallet ended at the expected balance, reconciliation was consistent, the processed counter grew by 100, and the duplicate counter stayed at zero
+- **Prerequisites**: `docker compose up -d`, `bun run migration:up`, and `bun run start`; the method and the limits are in [`docs/load.md`](docs/load.md)
+
 ## Delivery Docs
 
 - `docs/API.md` — routes, headers, status table, error bodies, failure codes, queue events
 - `docs/DELIVERY.md` — reviewer path: commands, expected output, reading map, limits
 - `requests.http` — the same happy path by hand, plus conflict, rejection, and not-found cases
 - `docs/testing.md` — what each suite covers
-- `scripts/spec.md` — `verify`, `verify:full`, and `demo` behavior
+- `docs/load.md` — the load method, the two waves, the results, and the limits
+- `scripts/spec.md` — `verify`, `verify:full`, `demo`, and `load` behavior
 
 ## PostgreSQL Constraints Audit
 
@@ -129,4 +136,4 @@ Wallet, wager, health, and Swagger suites: validation, idempotency conflict, pag
 
 ## Out of Scope
 
-- Audit store, OpenTelemetry, load tests (per project `AGENTS.md`); Prometheus metrics and the optional Keycloak `auth` profile are in scope
+- Audit store, OpenTelemetry, double-entry accounting, and partial reversal; Prometheus metrics, the optional Keycloak `auth` profile, and the local load measurement are in scope
