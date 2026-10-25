@@ -7,6 +7,7 @@ The compose file runs the local dependencies, the image, the optional identity p
 | Service | Profile | What it does |
 | --- | --- | --- |
 | `postgres` | default | PostgreSQL 16, database `fortune_tiger`, healthcheck through `pg_isready` |
+| `mongo` | default | MongoDB 7, database `fortune_tiger_audit`, healthcheck through a `ping` command |
 | `localstack` | default | SQS, with the queues created by the ready hook in `docker/localstack` |
 | `keycloak` | `auth` | Keycloak 26 with the realm in `docker/keycloak`; needed only by `AUTH_MODE=jwt` |
 | `migrate` | `app` | one-shot service, runs `bun run migration:up`, exits `0` before the API starts |
@@ -14,7 +15,7 @@ The compose file runs the local dependencies, the image, the optional identity p
 | `prometheus` | `observability` | scrapes `app:3000/metrics` every five seconds and keeps one day of samples |
 | `grafana` | `observability` | serves the provisioned `Fortune Tiger` dashboard on `3001`, with Prometheus as its datasource |
 
-`docker compose --profile app up --build --wait` builds the image once, applies the migrations, and starts the application on `3000`. The application waits for PostgreSQL, LocalStack, and the migration service, and it reports healthy only when `/health/live` answers.
+`docker compose --profile app up --build --wait` builds the image once, applies the migrations, and starts the application on `3000`. The application waits for PostgreSQL, MongoDB, LocalStack, and the migration service, and it reports healthy only when `/health/live` answers.
 
 ## Image
 
@@ -24,7 +25,9 @@ The image holds the HTTP API, the outbox publisher, the reference worker, and th
 
 ## Queues
 
-`docker/localstack/01-queues.sh` runs on the LocalStack ready hook and creates `wager-transactions.fifo` for requests, `wager-transactions-dlq.fifo` behind it, and `wager-events.fifo` for integration events. Creating a queue twice is a no-op for LocalStack, so a restart is safe.
+`docker/localstack/01-queues.sh` runs on the LocalStack ready hook and creates `wager-transactions.fifo` for requests, `wager-transactions-dlq.fifo` behind it, `wager-events.fifo` for integration events, and `wager-events-dlq.fifo` behind the events channel. Creating a queue twice is a no-op for LocalStack, so a restart is safe.
+
+The same script is mounted by the Kubernetes LocalStack pod, generated from this file, so the two paths cannot drift. The cluster itself lives in `kubernetes/`, and `docs/kubernetes.md` is its operator guide.
 
 ## Observability
 

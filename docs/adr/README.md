@@ -13,5 +13,8 @@ An ADR records one decision, the context that forced it, and what it costs. The 
 | [0007](0007-two-authentication-modes.md) | Offer two authentication modes and keep Keycloak optional |
 | [0008](0008-observability-without-opentelemetry.md) | Observe with structured logs and Prometheus |
 | [0009](0009-separate-inbound-and-outbound-queues.md) | Separate inbound commands from outbound events |
+| [0010](0010-local-kubernetes-with-kind.md) | Run the delivery on a local Kubernetes cluster |
+| [0011](0011-polyglot-audit-store-with-mongodb.md) | Keep the audit timeline in MongoDB |
+| [0012](0012-journey-read-model-in-mongodb.md) | Keep the journey read model in MongoDB |
 
 A reader who wants the rules rather than the reasoning reads [`ARCHITECTURE.md`](../../ARCHITECTURE.md) and the `spec.md` beside each folder.

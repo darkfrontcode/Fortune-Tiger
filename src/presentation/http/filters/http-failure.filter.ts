@@ -7,6 +7,7 @@ import {
   WalletReconciliationNotFoundError,
 } from '@application/reconciliations/use-cases'
 import { WagerNotFoundError } from '@application/wagers/use-cases'
+import { JourneyNotFoundError } from '@application/journeys'
 import { LOGGER } from '@application/observability'
 import { WALLET_PLAYER_CURRENCY_CONFLICT_MESSAGE } from '@infrastructure/persistence/data'
 import { INFRASTRUCTURE_FAILURE_MESSAGE } from '../data'
@@ -56,6 +57,14 @@ export class HttpFailureFilter implements ExceptionFilter {
     if (exception instanceof WalletReconciliationNotFoundError) {
       const status = HttpStatus.NOT_FOUND
       const body = { walletId: exception.walletId, failureCode: exception.failureCode }
+
+      this.reply(response, status, body)
+      return
+    }
+
+    if (exception instanceof JourneyNotFoundError) {
+      const status = HttpStatus.NOT_FOUND
+      const body = exception.message
 
       this.reply(response, status, body)
       return

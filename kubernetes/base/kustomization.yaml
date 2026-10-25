@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: fortune-tiger
+resources:
+  - namespace.yaml
+  - config/api.configmap.yaml
+  - config/postgres.configmap.yaml
+  - secrets/fortune-tiger.secret.yaml
+  - postgres/postgres-primary.service.yaml
+  - postgres/postgres-primary.statefulset.yaml
+  - postgres/postgres-replica.service.yaml
+  - postgres/postgres-replica.statefulset.yaml
+  - postgres/postgres-init.configmap.yaml
+  - postgres/postgres-replica-init.configmap.yaml
+  - localstack/localstack.deployment.yaml
+  - localstack/localstack.service.yaml
+  - mongo/mongo.deployment.yaml
+  - mongo/mongo.service.yaml
+  - api/api.service.yaml
+  - api/api.pdb.yaml
+  - api/migrate.job.yaml
+  - api/api.deployment.yaml
+configMapGenerator:
+  - name: localstack-ready
+    files:
+      - ../../docker/localstack/01-queues.sh

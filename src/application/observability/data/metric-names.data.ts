@@ -11,4 +11,9 @@ export const metricNames = {
   lockConflict: 'lock_conflicts_total',
   outboxLag: 'outbox_lag_milliseconds',
   transactionLatency: 'wager_processing_milliseconds',
+  auditPersisted: 'audit_events_persisted_total',
+  auditDuplicate: 'audit_events_duplicates_total',
+  auditFailure: 'audit_events_failures_total',
+  journeyRecorded: 'journey_events_recorded_total',
+  journeyFailure: 'journey_events_failures_total',
 }

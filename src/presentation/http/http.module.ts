@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common'
 import { APP_FILTER } from '@nestjs/core'
+import { AuditsModule } from '@application/audits'
+import { JourneysModule } from '@application/journeys'
 import { ReconciliationsModule } from '@application/reconciliations'
 import {
   FindWalletUseCase,
@@ -15,6 +17,7 @@ import { WagerController, WalletController } from './controllers'
 import { AuthGuard } from './guards'
 import { HttpFailureFilter } from './filters'
 import { ProviderIdentityFactory } from './factories'
+import { JourneyInterceptor } from './interceptors'
 import type { ProviderIdentityProtocol } from './providers'
 
 const createIdentity = (factory: ProviderIdentityFactory): ProviderIdentityProtocol => factory.create()
@@ -23,6 +26,8 @@ const moduleImports = [
   PersistenceModule,
   WagersModule,
   ReconciliationsModule,
+  AuditsModule,
+  JourneysModule,
   ObservabilityModule,
   EnvironmentModule,
 ]
@@ -34,6 +39,7 @@ const moduleProviders = [
   ListWalletLedgerUseCase,
   OpenWalletUseCase,
   AuthGuard,
+  JourneyInterceptor,
   ProviderIdentityFactory,
   { provide: PROVIDER_IDENTITY, useFactory: createIdentity, inject: [ProviderIdentityFactory] },
   { provide: APP_FILTER, useClass: HttpFailureFilter },

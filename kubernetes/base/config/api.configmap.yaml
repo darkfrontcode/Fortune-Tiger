@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  labels:
+    app.kubernetes.io/part-of: fortune-tiger
+data:
+  PORT: '3000'
+  LOG_PRETTY: 'false'
+  METRICS_BACKEND: prometheus
+  AUTH_MODE: anonymous
+  AWS_REGION: us-east-1
+  AWS_ENDPOINT_URL: http://localstack:4566
+  SQS_QUEUE_URL: http://localstack:4566/000000000000/wager-transactions.fifo
+  SQS_DEAD_LETTER_QUEUE_URL: http://localstack:4566/000000000000/wager-transactions-dlq.fifo
+  SQS_EVENTS_QUEUE_URL: http://localstack:4566/000000000000/wager-events.fifo
+  SQS_EVENTS_DEAD_LETTER_QUEUE_URL: http://localstack:4566/000000000000/wager-events-dlq.fifo
+  MONGODB_URL: mongodb://mongo:27017/fortune_tiger_audit

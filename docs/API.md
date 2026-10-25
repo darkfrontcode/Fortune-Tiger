@@ -26,6 +26,9 @@ The machine-readable contract is checked in at [`docs/api/openapi.json`](api/ope
 | `POST` | `/wallets/:walletId/reconciliation` | compare the wallet with its ledger |
 | `POST` | `/wagering/transactions` | submit a wager |
 | `GET` | `/wagering/transactions/:transactionId` | read a wager |
+| `GET` | `/wagering/transactions/:transactionId/audit?eventType=&from=&to=&limit=50` | read the audit timeline of a wager |
+| `GET` | `/wagering/transactions/:transactionId/journey?stage=&outcome=&from=&to=&limit=50` | read the journey stages of a wager |
+| `GET` | `/providers/:providerId/players/:playerId/journey?stage=&outcome=&from=&to=&limit=50` | read the journey of a player |
 | `GET` | `/providers/:providerId/wagering/transactions/:externalTransactionId` | read a wager by provider pair |
 | `GET` | `/health/live` | the process is up |
 | `GET` | `/health/ready` | PostgreSQL and SQS answer |
@@ -233,15 +236,101 @@ GET /providers/:providerId/wagering/transactions/:externalTransactionId
 
 An absent wager answers `404` with `"Wager transaction not found."`.
 
+### Read the audit timeline
+
+```http
+GET /wagering/transactions/:transactionId/audit?eventType=&from=&to=&limit=50
+X-Provider-Id: provider-a
+```
+
+`200`:
+
+```json
+{
+  "items": [
+    {
+      "eventId": "01a1665d-47ff-7d2e-915c-c764badf3400",
+      "eventType": "WagerTransactionProcessed",
+      "eventVersion": 1,
+      "occurredAt": "2026-10-23T01:25:51.743Z",
+      "recordedAt": "2026-10-23T01:25:52.004Z",
+      "wagerId": "01a1665d-47ff-7d2e-915c-c764badf3399",
+      "correlationId": "provider-a:transaction-bet-1",
+      "source": "fortune-tiger",
+      "actor": { "type": "provider", "id": "provider-a" },
+      "metadata": { "status": "PROCESSED", "kind": "BET" }
+    }
+  ]
+}
+```
+
+The timeline is an append-only read model in MongoDB, fed by the same integration events the outbox publishes. It is **eventually consistent**: an event can take a moment to appear after the wager commits.
+
+- `eventType` filters one event type; `from` and `to` are ISO-8601 bounds on `occurredAt`, both inclusive.
+- `limit` defaults to `50` and stays between `1` and `100`.
+- Items order by `occurredAt`, then by `eventId` as a deterministic tie-break.
+- An invalid filter answers `400` with `"Invalid audit query."`.
+- A wager of another provider answers `404`, like an absent wager.
+- Only `status`, `kind`, and `direction` enter `metadata`; amounts, balances, and personal data stay out.
+- MongoDB is not part of `/health/ready`; a wager is never rolled back because the audit write failed.
+
+### Read the journey of a wager
+
+```http
+GET /wagering/transactions/:transactionId/journey?stage=&outcome=&from=&to=&limit=50
+X-Provider-Id: provider-a
+```
+
+`200`:
+
+```json
+{
+  "items": [
+    {
+      "stepId": "01a16667-1d4c-7d2e-915c-c764badf0001",
+      "flowId": "provider-a:transaction-bet-1",
+      "stage": "ROUTE",
+      "operation": "POST /wagering/transactions",
+      "outcome": "SUCCEEDED",
+      "occurredAt": "2026-10-23T01:25:51.700Z",
+      "durationMs": 12,
+      "providerId": "provider-a",
+      "playerId": "0192f28f-5dc0-7d58-bdb2-814ad6a0f4a1",
+      "wagerId": "01a1665d-47ff-7d2e-915c-c764badf3399",
+      "walletId": "01a1665d-4713-7b01-8ac6-c868e696abab",
+      "failureCode": null
+    }
+  ]
+}
+```
+
+A journey is what one request did, stage by stage: it entered the route (`ROUTE`), reached the use case (`USE_CASE`), wrote the database or rolled back (`DATABASE` with outcome `SUCCEEDED` or `ROLLBACK`), and handed the event to the queue (`QUEUE`). It is a read model in MongoDB, **eventually consistent**, and it never joins the financial SQL transaction.
+
+- `stage` is one of `ROUTE`, `USE_CASE`, `DATABASE`, `QUEUE`; `outcome` is one of `SUCCEEDED`, `FAILED`, `ROLLBACK`.
+- `from` and `to` are ISO-8601 bounds on `occurredAt`, both inclusive; `limit` defaults to `50` and stays between `1` and `100`.
+- Items order by `occurredAt`, then by `stepId` as a deterministic tie-break.
+- An invalid filter answers `400` with `"Invalid journey query."`.
+- A wager of another provider answers `404`, like an absent wager.
+- A step never carries an amount, a balance, a token, or a header. `failureCode` is the domain code the wager already exposes.
+
+### Read the journey of a player
+
+```http
+GET /providers/:providerId/players/:playerId/journey?stage=&outcome=&from=&to=&limit=50
+X-Provider-Id: provider-a
+```
+
+`200` with the same `{ "items": [...] }` shape, filtered to one caller across requests. Only the caller provider may read its own players: a `providerId` that does not match the caller answers `404` with `"Journey not found."`. A player with no recorded steps answers `200` with an empty page.
+
 ## Errors
 
 | Body | When |
 | --- | --- |
 | `{ "statusCode": 400, "message": ["..."], "error": "Bad Request" }` | a DTO field fails validation |
-| `{ "statusCode": 400, "message": "...", "error": "Bad Request" }` | a cross-field rule fails, such as a reversal without a reference, or an invalid ledger query |
+| `{ "statusCode": 400, "message": "...", "error": "Bad Request" }` | a cross-field rule fails, such as a reversal without a reference, or an invalid ledger, audit, or journey query |
 | `{ "message": "A valid bearer token is required." }` | the `jwt` auth mode received a missing or invalid token, `401` |
 | `{ "message": "A wallet already exists for this player and currency." }` | duplicate wallet, `409` |
-| `"Wallet not found."` and `"Wager transaction not found."` | `404` |
+| `"Wallet not found."`, `"Wager transaction not found."`, and `"Journey not found."` | `404` |
 | `{ "walletId": "...", "failureCode": "WALLET_NOT_FOUND" }` | reconciliation of an absent wallet, `404` |
 | `{ "message": "The request could not be completed. Try again." }` | anything else, `503`, so the provider knows it may resend |
 
@@ -275,13 +364,13 @@ GET /health/ready
 GET /metrics
 ```
 
-`/health/live` answers `200` with `{ "status": "live" }`. `/health/ready` asks PostgreSQL and SQS at the same time and answers `200` with `{ "status": "ready" }` or `503` with `{ "status": "unavailable" }`.
+`/health/live` answers `200` with `{ "status": "live" }`. `/health/ready` asks PostgreSQL and SQS at the same time and answers `200` with `{ "status": "ready" }` or `503` with `{ "status": "unavailable" }`. MongoDB stays out of readiness on purpose: the audit timeline and the journey are not on the financial path.
 
-`/metrics` answers `text/plain; version=0.0.4; charset=utf-8` with the Prometheus exposition: `wager_transactions_*_total`, `idempotency_duplicates_total`, `consumer_retries_total`, `consumer_dead_letters_total`, `lock_conflicts_total`, `outbox_lag_milliseconds`, `wager_processing_milliseconds`, and `reconciliation_divergence`. Counters live in the process that served the request.
+`/metrics` answers `text/plain; version=0.0.4; charset=utf-8` with the Prometheus exposition: `wager_transactions_*_total`, `idempotency_duplicates_total`, `consumer_retries_total`, `consumer_dead_letters_total`, `lock_conflicts_total`, `outbox_lag_milliseconds`, `wager_processing_milliseconds`, `reconciliation_divergence`, `audit_events_persisted_total`, `audit_events_duplicates_total`, `audit_events_failures_total`, `journey_events_recorded_total`, and `journey_events_failures_total`. Counters live in the process that served the request.
 
 ## Queue
 
-The queue is an internal channel with two directions. `wager-transactions.fifo` carries requests into the consumer, and `wager-transactions-dlq.fifo` holds a request the consumer gave up on. After the financial commit, the outbox publishes `WagerTransactionProcessed`, `WagerTransactionRejected`, `WagerTransactionPendingReference`, and `WalletBalanceChanged` when the balance changed to `wager-events.fifo`. Read the events locally with:
+The queue is an internal channel with two directions. `wager-transactions.fifo` carries requests into the consumer, and `wager-transactions-dlq.fifo` holds a request the consumer gave up on. After the financial commit, the outbox publishes `WagerTransactionProcessed`, `WagerTransactionRejected`, `WagerTransactionPendingReference`, and `WalletBalanceChanged` when the balance changed to `wager-events.fifo`. The audit consumer reads that channel and appends the timeline; a delivery it cannot store retries five times and then moves to `wager-events-dlq.fifo`. Read the events locally with:
 
 ```bash
 docker exec fortune-tiger-localstack-1 awslocal sqs receive-message \

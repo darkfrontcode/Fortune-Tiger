@@ -7,6 +7,8 @@ import {
   Param,
   Post,
   Query,
+  Req,
+  UseInterceptors,
 } from '@nestjs/common'
 import {
   ApiBadRequestResponse,
@@ -29,14 +31,19 @@ import type { ReconciliationsType } from '@application/reconciliations'
 import type { Ledger } from '@domain/ledger/ledger'
 import { walletTag } from '../data'
 import { LedgerOutputPageDto, ReconciliationOutputDto, WalletDto, WalletOutputDto } from '../dtos'
+import { JourneyInterceptor } from '../interceptors'
 import { WalletDtoMapper, LedgerOutputMapper, WalletOutputMapper } from '../mappers'
 import { LedgerQuery } from '../queries'
 import type { HttpType } from '../types'
 
 type CompareOutput = ReconciliationsType.CompareOutput
 
+const openingPrefix = 'opening'
+const separator = ':'
+
 @ApiTags(walletTag)
 @Controller('wallets')
+@UseInterceptors(JourneyInterceptor)
 export class WalletController {
   private readonly dtoMapper = new WalletDtoMapper()
   private readonly query = new LedgerQuery()
@@ -58,8 +65,12 @@ export class WalletController {
   })
   @ApiBadRequestResponse({ description: 'The payload does not fit the DTO.' })
   @ApiConflictResponse({ description: 'A wallet already exists for this player and currency.' })
-  async open(@Body() dto: WalletDto): Promise<HttpType.WalletOutput> {
+  async open(
+    @Body() dto: WalletDto,
+    @Req() request: HttpType.Request,
+  ): Promise<HttpType.WalletOutput> {
     const input = this.dtoMapper.map(dto)
+    request.flowId = `${openingPrefix}${separator}${input.id}`
     const wallet = await this.openWallet.execute(input)
 
     return this.walletMapper.map(wallet)

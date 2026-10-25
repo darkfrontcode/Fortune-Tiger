@@ -12,3 +12,7 @@ awslocal sqs create-queue \
 awslocal sqs create-queue \
   --queue-name wager-events.fifo \
   --attributes FifoQueue=true
+
+awslocal sqs create-queue \
+  --queue-name wager-events-dlq.fifo \
+  --attributes FifoQueue=true

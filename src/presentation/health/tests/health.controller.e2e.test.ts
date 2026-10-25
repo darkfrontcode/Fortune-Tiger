@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { metricNames } from '@application/observability'
@@ -13,6 +13,10 @@ describe('HealthController (e2e)', () => {
 
   beforeAll(async () => {
     app = await createApp()
+  })
+
+  afterAll(async () => {
+    await app.close()
   })
 
   describe('GET /health/live', () => {

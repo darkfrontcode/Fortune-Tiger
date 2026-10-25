@@ -15,6 +15,8 @@ One file reads `process.env`. `environment.ts` holds `Environment`, a plain clas
 | `queueUrl` | `SQS_QUEUE_URL` | empty string |
 | `deadLetterQueueUrl` | `SQS_DEAD_LETTER_QUEUE_URL` | empty string |
 | `eventsQueueUrl` | `SQS_EVENTS_QUEUE_URL` | empty string |
+| `eventsDeadLetterQueueUrl` | `SQS_EVENTS_DEAD_LETTER_QUEUE_URL` | empty string |
+| `mongoUrl` | `MONGODB_URL` | `mongodb://127.0.0.1:27017/fortune_tiger_audit` |
 | `authMode` | `AUTH_MODE` | `anonymous` |
 | `oidcIssuer` | `OIDC_ISSUER` | absent |
 | `oidcAudience` | `OIDC_AUDIENCE` | absent |

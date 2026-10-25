@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: localstack
+  labels:
+    app.kubernetes.io/part-of: fortune-tiger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: localstack
+  template:
+    metadata:
+      labels:
+        app: localstack
+    spec:
+      containers:
+        - name: localstack
+          image: localstack/localstack:3
+          env:
+            - name: SERVICES
+              value: sqs
+            - name: DEBUG
+              value: '0'
+          ports:
+            - name: edge
+              containerPort: 4566
+          startupProbe:
+            exec:
+              command:
+                - awslocal
+                - sqs
+                - list-queues
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            exec:
+              command:
+                - awslocal
+                - sqs
+                - list-queues
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - awslocal
+                - sqs
+                - list-queues
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 768Mi
+          volumeMounts:
+            - name: ready
+              mountPath: /etc/localstack/init/ready.d
+      volumes:
+        - name: ready
+          configMap:
+            name: localstack-ready
+            defaultMode: 493

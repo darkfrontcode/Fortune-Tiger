@@ -9,6 +9,7 @@ import { Money } from '@domain/money/money'
 import { WalletOpeningWriter } from '../wallet/wallet-opening.writer'
 import { ReconciliationReader } from '../reconciliation/reconciliation.reader'
 import { PersistenceHarness } from './persistence.harness'
+import { clock, journey } from './journey.stubs'
 
 const currency = {
   brl: 'BRL',
@@ -46,7 +47,7 @@ class Suite {
 
 beforeAll(async () => {
   Suite.orm = await PersistenceHarness.open()
-  Suite.writer = new WalletOpeningWriter(Suite.orm, new IdempotencyService(), new WagerMediator())
+  Suite.writer = new WalletOpeningWriter(Suite.orm, new IdempotencyService(), new WagerMediator(), clock, journey)
   const gateway = new ReconciliationReader(Suite.orm)
   const logger = new Logger()
   const metric = new Metric()
@@ -67,6 +68,7 @@ describe('Reconciliation reader', () => {
     const playerId = uuidv7()
     const initialBalance = Money.from({ amount: amount.hundred, currency: currency.brl })
     const input = {
+      id: uuidv7(),
       playerId,
       initialBalance,
       openedAt: instant.open,

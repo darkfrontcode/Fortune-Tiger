@@ -112,6 +112,10 @@ Keycloak, OpenTelemetry, double-entry, and partial reversal stay out of the core
 
 The database is PostgreSQL. The ORM is MikroORM. Section 4 of the statement also accepts TypeORM.
 
+`kubernetes/` is infrastructure, not application code. It holds the kind cluster, the Kustomize tree, and the overlays, and it carries no business rule. Each folder keeps its `spec.md`: the topology in `kubernetes/spec.md`, the cluster in `kind/`, the shared resources in `base/`, and the overlays. `scripts/cluster.ts` is the only entry, and the manifests run the same image and the same migrations as compose.
+
+A manifest change is not done when `kubectl apply` accepts it. `bun run cluster:verify` proves the shape — nodes, endpoints, replication, the migration, the financial flow, and both replicas serving — and the `CI` workflow runs `cluster:up` then `cluster:verify` on every push to `main` or `staging` and every pull request. A change that breaks either command keeps the job red.
+
 ## Git
 
 Conventional Commits. A branch leaves `main` as `<type>/<area>/<subject>`. The type is `feat`, `fix`, `docs`, `refactor`, `test`, or `chore`. The area is where the work sits, such as `docs`, `domain`, or `application`. The subject names the functionality in a few words. Example: `feat/docs/readme`. The commit uses that same type. The branch, the commit, and the pull request stay linked.

@@ -1,11 +1,15 @@
 [test]
 root = "./src"
-pathIgnorePatterns = ["**/persistence/**", "**/presentation/**/tests/*.e2e.test.ts", "**/health/**/tests/*.e2e.test.ts"]
+pathIgnorePatterns = ["**/persistence/**", "**/infrastructure/audit/tests/**", "**/infrastructure/journey/tests/**", "**/presentation/**/tests/*.e2e.test.ts", "**/health/**/tests/*.e2e.test.ts"]
 coveragePathIgnorePatterns = [
   "**/persistence/**",
+  "**/infrastructure/audit/**",
+  "**/infrastructure/journey/**",
+  "src/infrastructure/mongo/**",
   "src/**/factories/swagger.factory.ts",
   "src/**/factories/sqs.factory.ts",
   "src/**/consumers/sqs.consumer.ts",
+  "src/**/consumers/queue.loop.ts",
   "src/**/observability/observability.module.ts",
   "src/**/publishers/outbox.publisher.ts",
   "src/**/publishers/outbox.worker.ts",

@@ -3,6 +3,7 @@ import { IdempotencyService } from '@application/idempotencies/idempotency.servi
 import type { WagerGatewayProtocol } from '@application/wagers'
 import { SubmitWagerUseCase } from '@application/wagers/use-cases'
 import type { WagersType } from '@application/wagers'
+import type { JourneyService } from '@application/journeys'
 import { WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
 import type { WagerTransaction } from '@domain/wager/wager'
 import { SimpleMetric, SystemClock } from '@infrastructure/observability'
@@ -30,6 +31,8 @@ const instant = {
   occurredAt: '2026-07-29T15:00:00.000Z',
   receivedAt: new Date('2026-07-29T15:00:01.000Z'),
 }
+
+const journey = { record: () => Promise.resolve() } as unknown as JourneyService
 
 type Changes = {
   kind?: unknown
@@ -96,7 +99,13 @@ const message = (value: unknown, receiveCount = 1): ConsumerType.QueueMessage =>
 
 const consumer = (gateway: WagerGatewayProtocol) =>
   new WagerConsumer(
-    new SubmitWagerUseCase(gateway, new IdempotencyService(), new SimpleMetric(), new SystemClock()),
+    new SubmitWagerUseCase(
+      gateway,
+      new IdempotencyService(),
+      new SimpleMetric(),
+      new SystemClock(),
+      journey,
+    ),
     new WagerRequestMapper(),
     identity.consumerName,
   )

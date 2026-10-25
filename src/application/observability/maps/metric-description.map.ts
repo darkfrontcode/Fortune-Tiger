@@ -18,6 +18,11 @@ export class MetricDescriptionMap extends Map<string, string> {
       [metricNames.lockConflict, 'Wallet lock timeouts and deadlocks'],
       [metricNames.outboxLag, 'Age of an outbox row when it is published, in milliseconds'],
       [metricNames.transactionLatency, 'Wager processing duration in milliseconds'],
+      [metricNames.auditPersisted, 'Audit events stored in MongoDB'],
+      [metricNames.auditDuplicate, 'Audit events already stored, answered as a duplicate'],
+      [metricNames.auditFailure, 'Audit writes that failed and will be retried'],
+      [metricNames.journeyRecorded, 'Journey steps stored in MongoDB'],
+      [metricNames.journeyFailure, 'Journey steps that could not be stored'],
     ])
   }
 }

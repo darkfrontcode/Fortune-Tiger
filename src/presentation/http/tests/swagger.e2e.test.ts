@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { createApp } from '../../../../test/test-setup.e2e'
@@ -8,6 +8,10 @@ describe('Swagger (e2e)', () => {
 
   beforeAll(async () => {
     app = await createApp()
+  })
+
+  afterAll(async () => {
+    await app.close()
   })
 
   describe('GET /docs-json', () => {

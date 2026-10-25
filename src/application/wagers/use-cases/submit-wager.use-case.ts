@@ -4,6 +4,7 @@ import { metricNames } from '@application/observability'
 import type { MetricProtocol } from '@application/observability'
 import type { ClockProtocol } from '@application/time'
 import { CLOCK } from '@application/time'
+import { JourneyOutcome, JourneyService, JourneyStage } from '@application/journeys'
 import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
 import { WagerTransaction } from '@domain/wager/wager'
 import { IdempotencyService } from '../../idempotencies'
@@ -17,6 +18,9 @@ type SubmitOutput = WagersType.SubmitOutput
 type Payload = IdempotencyType.Payload
 
 const noElapsed = 0
+const operation = 'SubmitWagerUseCase'
+
+const failedStatuses = [WagerTransactionStatus.REJECTED, WagerTransactionStatus.FAILED]
 
 const statusMetrics = {
   [WagerTransactionStatus.PENDING]: metricNames.transactionPending,
@@ -33,15 +37,17 @@ export class SubmitWagerUseCase {
     private readonly idempotency: IdempotencyService,
     @Inject(METRIC) private readonly metric: MetricProtocol,
     @Inject(CLOCK) private readonly clock: ClockProtocol,
+    private readonly journey: JourneyService,
   ) {}
 
   async execute(input: SubmitInput): Promise<SubmitOutput> {
-    const startedAt = this.clock.now().getTime()
+    const startedAt = this.clock.now()
     const opening = input.kind === WagerTransactionKind.OPENING
 
     if (opening) {
       const output = this.rejectOpening(input.id)
-      this.record(output, startedAt)
+      this.record(output, startedAt.getTime())
+      this.track(input, startedAt, output)
 
       return output
     }
@@ -50,11 +56,36 @@ export class SubmitWagerUseCase {
     const payloadHash = this.idempotency.hash(payload)
     const wagerInput = this.wagerInput(input, payloadHash)
     const wager = WagerTransaction.create(wagerInput)
-    const output = await this.gateway.submit(wager, input.at, input.inbox)
 
-    this.record(output, startedAt)
+    try {
+      const output = await this.gateway.submit(wager, input.at, input.inbox)
+      this.record(output, startedAt.getTime())
+      this.track(input, startedAt, output)
 
-    return output
+      return output
+    } catch (error) {
+      this.track(input, startedAt, undefined)
+
+      throw error
+    }
+  }
+
+  private track(input: SubmitInput, startedAt: Date, output: SubmitOutput | undefined): void {
+    const failed = output === undefined || failedStatuses.includes(output.status)
+    const step = {
+      flowId: input.idempotencyKey,
+      stage: JourneyStage.USE_CASE,
+      operation: operation,
+      outcome: failed ? JourneyOutcome.FAILED : JourneyOutcome.SUCCEEDED,
+      startedAt,
+      providerId: input.providerId,
+      playerId: input.playerId,
+      wagerId: output?.transactionId ?? input.id,
+      walletId: input.walletId,
+      failureCode: output?.failureCode,
+    }
+
+    void this.journey.record(step)
   }
 
   private record(output: SubmitOutput, startedAt: number): void {
