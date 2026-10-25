@@ -21,6 +21,18 @@ The controller is thin. It parses the request, calls the use case, maps the resu
 
 `OPENING` is not accepted: the use case rejects it with `OPENING_NOT_ALLOWED`.
 
+## Journey
+
+Two read-only routes answer the per-caller journey. Both go through `AuthGuard`, so the caller identity decides the scope.
+The query is validated by `queries/journey.query.ts`: `stage` and `outcome` must be one of the enums, `from` and `to` ISO-8601 inclusive bounds, `limit` between `1` and `100`, default `50`. An invalid value answers `400` with `INVALID_JOURNEY_QUERY_MESSAGE`. Ordering is `occurredAt` then `stepId` (the deterministic tie-break), and the page limit is applied before the response. A step is mapped by `JourneyOutputMapper` and output `JourneyTimelineOutputDto` — `{ items }` where each item carries `stepId`, `flowId`, `stage`, `operation`, `outcome`, `occurredAt`, `durationMs`, `providerId`, `playerId`, `wagerId`, `walletId`, and `failureCode`. No amount, balance, token, or header ever appears on a step.
+
+- `GET /wagering/transactions/:transactionId/journey` — the steps of the flow that produced the wager. It loads the wager and answers a foreign one with the same `WagerNotFoundError` as the wager route, so another provider cannot read a journey. The `flowId` is the wager `idempotencyKey`, and the caller provider is taken from `request.provider`.
+- `GET /providers/:providerId/players/:playerId/journey` — the steps of the flows of a player, for one provider. A `:providerId` that is not the caller answers `JourneyNotFoundError` and `404`, so no provider reads another provider's picture of a player. A player of the caller provider with no recorded steps answers `200` with `{ items: [] }`.
+
+`JourneyNotFoundError` lives in `src/application/journeys`; `HttpFailureFilter` maps it to `404` with `JOURNEY_NOT_FOUND_MESSAGE`, and the same filter maps the wallet and wager not-found errors.
+
+The presentations records the `ROUTE` stage: `JourneyInterceptor` in `interceptors/` starts a stopwatch and, after the handler returns or throws, writes one `ROUTE` step with the `flowId` from `request.flowId` (set by the controller from the idempotency key), the caller provider, and the outcome and duration. Recording is fire-and-forget, so the route answer never waits on MongoDB. The `USE_CASE`, `DATABASE`, and `QUEUE` stages are recorded by the use cases, the persistence writers, and the outbox publisher; see `src/application/journeys/spec.md` and `src/infrastructure/journey/spec.md`.
+
 ## Status
 
 Decision. Stable across every endpoint.
@@ -67,7 +79,7 @@ Keycloak is optional: it runs in compose under the `auth` profile with the realm
 
 ## Module
 
-`http.module.ts` imports `PersistenceModule`, `WagersModule`, `ReconciliationsModule`, `ObservabilityModule`, and `EnvironmentModule`. It declares `WalletController` and `WagerController`, and provides `OpenWalletUseCase`, `FindWalletUseCase`, and `ListWalletLedgerUseCase`; `ReconcileWalletUseCase` comes from `ReconciliationsModule`. `AuthGuard` is applied to `WagerController`. `ProviderIdentityFactory` reads `Environment` and builds one identity: the anonymous implementation by default, the JWT implementation in the `jwt` mode. `PROVIDER_IDENTITY` is bound with `useFactory` over that class, and its token lives in this module's `tokens/` folder. `WalletController` receives wallet use cases by class. `WagerController` receives its three route use cases by class and `CLOCK` by token. `CLOCK` lives in `application/time/tokens`; `LOGGER` lives in `application/observability/tokens`.
+`http.module.ts` imports `PersistenceModule`, `WagersModule`, `ReconciliationsModule`, `AuditsModule`, `JourneysModule`, `ObservabilityModule`, and `EnvironmentModule`. It declares `WalletController` and `WagerController`, and provides `OpenWalletUseCase`, `FindWalletUseCase`, and `ListWalletLedgerUseCase`; `ReconcileWalletUseCase` comes from `ReconciliationsModule`. `AuthGuard` is applied to `WagerController`. `ProviderIdentityFactory` reads `Environment` and builds one identity: the anonymous implementation by default, the JWT implementation in the `jwt` mode. `PROVIDER_IDENTITY` is bound with `useFactory` over that class, and its token lives in this module's `tokens/` folder. `WalletController` receives wallet use cases by class. `WagerController` receives its route use cases by class (the two wager readers, the audit use case, and `FindJourneyUseCase`), `CLOCK` and `LOGGER` by token, and `JourneyService` by class. `JourneyInterceptor` is provided here and applied over the wager routes and the wallet routes that mutate state; it records the `ROUTE` stage through `JourneyService`. `CLOCK` lives in `application/time/tokens`; `LOGGER` lives in `application/observability/tokens`.
 
 `wager.dto.ts` and `wallet.dto.ts` in `dtos/` declare the request shape with `class-validator` decorators. The Nest `ValidationPipe` in `main.ts` validates every `@Body()` against the DTO class and answers `400` on mismatch. After validation, `WagerDtoMapper` and `WalletDtoMapper` in `mappers/` convert the validated DTO into `HttpType.WagerInput` and `HttpType.WalletInput` — building domain `Money` and checking cross-field rules (reference required for `REFUND`/`ROLLBACK`). A missing `Idempotency-Key` answers `400` with `IDEMPOTENCY_KEY_REQUIRED_MESSAGE`.
 
@@ -86,6 +98,7 @@ http/
     documentation.data.ts
     messages.data.ts
   dtos/
+    journey-output.dto.ts
     ledger-output.dto.ts
     money.dto.ts
     reconciliation-output.dto.ts
@@ -102,7 +115,10 @@ http/
     http-failure.filter.ts
   guards/
     auth.guard.ts
+  interceptors/
+    journey.interceptor.ts
   mappers/
+    journey-output.mapper.ts
     ledger-output.mapper.ts
     wager-dto.mapper.ts
     wager-input.mapper.ts
@@ -117,6 +133,7 @@ http/
     jwt-provider.identity.ts
     provider.identity.protocol.ts
   queries/
+    journey.query.ts
     ledger.query.ts
   statuses/
     wager.status.ts

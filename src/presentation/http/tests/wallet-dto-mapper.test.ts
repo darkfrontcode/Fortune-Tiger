@@ -39,6 +39,8 @@ describe('WalletDtoMapper', () => {
       const output = mapper.map(valid)
 
       expect(output.playerId).toBe(valid.playerId)
+      expect(output.id).toBeTruthy()
+      expect(typeof output.id).toBe('string')
       expect(output.initialBalance.toJSON()).toEqual({ amount: money.amount, currency: money.currency })
     })
 

@@ -1,6 +1,6 @@
 # Kubernetes
 
-The same application, running on a real Kubernetes cluster that lives inside Docker. Three nodes, five workloads, and the guarantees the rest of this delivery proves on one process.
+The same application, running on a real Kubernetes cluster that lives inside Docker. Three nodes, six workloads, and the guarantees the rest of this delivery proves on one process.
 
 The folder is declarative: no manifest is generated at apply time, and no step needs a command the reader cannot see. `bun run cluster:up` is the only entry.
 
@@ -36,13 +36,14 @@ The default storage class of `kind` is `standard`, backed by the local path prov
 | --- | --- | --- | --- |
 | `postgres-primary` | StatefulSet | 1 | writes, and the only target of the API |
 | `postgres-replica` | StatefulSet | 1 | streaming standby, read-only |
-| `localstack` | Deployment | 1 | SQS, with the three FIFO queues |
+| `localstack` | Deployment | 1 | SQS, with the four FIFO queues |
+| `mongo` | Deployment | 1 | MongoDB read models, the audit timeline and the journey store |
 | `api` | Deployment | 2 | HTTP API, outbox publisher, reference worker, queue consumer |
 | `migrate` | Job | 1 | `bun run migration:up`, once per apply |
 
-Five pods at rest, and the two API replicas are separate processes with separate memory.
+Six pods at rest, and the two API replicas are separate processes with separate memory.
 
-Two components stay at one replica on purpose. PostgreSQL has one writer, and the second instance is the standby, not a second writer. LocalStack is the broker itself: two replicas would be two queue sets with separate state, so a message published to one would never be consumed from the other. Behind a managed SQS that problem belongs to the provider; here the queue is the one dependency with a single process, and the readiness probe reports it when it is gone.
+Two components stay at one replica on purpose. PostgreSQL has one writer, and the second instance is the standby, not a second writer. LocalStack is the broker itself: two replicas would be two queue sets with separate state, so a message published to one would never be consumed from the other. Behind a managed SQS that problem belongs to the provider; here the queue is the one dependency with a single process, and the readiness probe reports it when it is gone. `mongo` is a read model: the audit timeline and the journey are append-only observations, the API never reads a balance from them, and the financial path keeps working while the store is down.
 
 ## Database
 
@@ -76,7 +77,11 @@ No migration runs at boot, in compose or here.
 
 ## LocalStack
 
-The deployment mounts a ConfigMap generated from `docker/localstack/01-queues.sh` at `/etc/localstack/init/ready.d`, so the three FIFO queues come from the one script the compose file already uses. The API reaches it at `http://localstack:4566`.
+The deployment mounts a ConfigMap generated from `docker/localstack/01-queues.sh` at `/etc/localstack/init/ready.d`, so the four FIFO queues come from the one script the compose file already uses. The API reaches it at `http://localstack:4566`.
+
+## Mongo
+
+`mongo` runs the same `mongo:7` image as compose and answers on the `mongo` Service at `mongodb://mongo:27017/fortune_tiger_audit`. The API ConfigMap carries `MONGODB_URL`, so both API replicas write the audit timeline and the journey store to the one database. Mongo is a read model, not a financial dependency: the acquisition is lazy, an unreachable store never blocks the boot or a transaction, and it stays out of `/health/ready`. `cluster:verify` proves the datalake by listing `audit_events` and `journey_steps` after the financial flow, so a manifest that forgets the store fails the job.
 
 ## Observability
 
@@ -91,7 +96,7 @@ Prometheus scrapes through a DNS service discovery on `api-headless`, so each sc
 | `bun run cluster:up` | builds the image, creates the cluster, loads the image, applies the tree, runs the migration, waits for both replicas, and checks `/health/ready` on `30080` |
 | `bun run cluster:down` | deletes the cluster |
 | `bun run cluster:status` | nodes, pods, services, endpoints, and the readiness body |
-| `bun run cluster:verify` | nodes `Ready`, two API endpoints, the standby `streaming`, the migration complete, the financial flow, and both replicas serving; exits non-zero on the first failing check |
+| `bun run cluster:verify` | nodes `Ready`, two API endpoints, the standby `streaming`, the migration complete, the financial flow, the `audit_events` and `journey_steps` collections in Mongo, and both replicas serving; exits non-zero on the first failing check |
 | `bun run cluster:render` | renders every overlay with `kubectl kustomize` and needs no cluster |
 
 `cluster:up` needs Docker only. `kind` and `kubectl` are resolved from `PATH`; when one is missing, the script downloads the pinned release (`kind` 0.33, `kubectl` 1.32) into `.tools/bin` and uses that binary, so a machine with Docker and Bun runs the command without a manual install. On Windows it starts Docker Desktop when the engine is not answering, and it starts the cluster containers again when they are stopped, so a run after a Docker restart converges without a recreate. `cluster:render` needs only `kubectl`, so the pipeline checks the manifests without a cluster. The script reads no environment variable: the cluster name, the namespace, the overlay, and the image tag are constants in the file.
@@ -107,6 +112,7 @@ The render of a ConfigMap that points at `docker/` runs with `LoadRestrictionsNo
 - `pg_stat_replication` on the primary answers `streaming`;
 - the `migrate` Job reports one success;
 - a wallet opens, a `BET` debits it, the same request replays with the same transaction and the original balance, the ledger holds one entry per balance change, and reconciliation answers `consistent: true`;
+- the Mongo pod answers and the audit and journey collections exist there;
 - after a burst of independent requests, both API pods show a higher `wager_transactions_processed_total`, which is the load balancer working.
 
 Every check prints a line with `✅` or `❌` and the measured value, and any failure exits `1`. The command needs `kubectl` only.
@@ -122,7 +128,8 @@ The job installs Bun and nothing else: the runner has Docker, and the script dow
 - two API processes answer behind one service, and a repeated wager still returns one debit;
 - a process that dies mid-flight leaves the work to the other replica, which the publisher and the consumer already guarantee with row locks and the inbox;
 - a wallet, its ledger, and its outbox row commit on the primary and replicate to the standby;
-- readiness turns `503` when PostgreSQL or SQS is gone, and the pod leaves the service before it takes traffic.
+- the audit timeline and the journey store live in Mongo, next to the financial path without joining it;
+- readiness turns `503` when PostgreSQL or SQS is gone, and the pod leaves the service before it takes traffic — a Mongo outage does not.
 
 ## Limits
 

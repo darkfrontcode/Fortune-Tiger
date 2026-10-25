@@ -74,7 +74,7 @@ export class SqsQueue {
     @Inject(QUEUE_CONFIG) private readonly config: Config,
   ) {}
 
-  async receive(): Promise<Array<QueueMessage>> {
+  async receive(signal?: AbortSignal): Promise<Array<QueueMessage>> {
     const command = new ReceiveMessageCommand({
       QueueUrl: this.config.queueUrl,
       MaxNumberOfMessages: this.config.maxMessages,
@@ -83,7 +83,7 @@ export class SqsQueue {
       MessageSystemAttributeNames: ['ApproximateReceiveCount'],
     })
 
-    const output = await this.client.send(command)
+    const output = await this.client.send(command, { abortSignal: signal })
     const messages = output.Messages ?? []
 
     return messages.flatMap((source) => {

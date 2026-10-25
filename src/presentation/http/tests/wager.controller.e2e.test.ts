@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { createApp } from '../../../../test/test-setup.e2e'
@@ -27,6 +27,10 @@ describe('WagerController (e2e)', () => {
 
     walletId = walletResponse.body.id
     playerId = walletResponse.body.playerId
+  })
+
+  afterAll(async () => {
+    await app.close()
   })
 
   describe('POST /wagering/transactions', () => {

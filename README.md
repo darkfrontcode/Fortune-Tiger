@@ -16,6 +16,7 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
   <img alt="Kubernetes on kind" src="https://img.shields.io/badge/Kubernetes-1.32%20on%20kind-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" />
   <img alt="Kustomize" src="https://img.shields.io/badge/Kustomize-manifests-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" />
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
+  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-7-47A248?style=for-the-badge&logo=mongodb&logoColor=white" />
   <img alt="SQS on LocalStack" src="https://img.shields.io/badge/SQS-LocalStack%203-FF9900?style=for-the-badge&logo=amazonsqs&logoColor=white" />
   <img alt="Prometheus" src="https://img.shields.io/badge/Prometheus-2.55.1-E6522C?style=for-the-badge&logo=prometheus&logoColor=white" />
   <img alt="Grafana" src="https://img.shields.io/badge/Grafana-11.2.2-F46800?style=for-the-badge&logo=grafana&logoColor=white" />
@@ -69,10 +70,11 @@ The application is the coordinator. It gives the same wager rules to requests fr
 The behind-the-scenes layer keeps the service dependable:
 
 - 🐘 **PostgreSQL** stores wallets, wagers, and the ledger together.
+- 🧾 **MongoDB** stores the append-only audit timeline and the per-caller journey. Both are read models, never the source of a balance.
 - 📬 **Inbox and outbox** help the service handle repeated messages and publish events after a successful save.
-- ☁️ **LocalStack SQS** lets the queue run locally, including retries and a dead-letter queue.
+- ☁️ **LocalStack SQS** lets the queue run locally, including retries and dead-letter queues.
 - 🔎 **Logs and metrics** help explain what happened without putting financial payloads in the logs.
-- 📊 **Prometheus metrics** answer `GET /metrics`, so a scrape sees transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing time.
+- 📊 **Prometheus metrics** answer `GET /metrics`, so a scrape sees transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing time, and the audit and journey counters.
 
 </details>
 
@@ -102,7 +104,7 @@ The topology, the failure drills, and the limits are in [`docs/kubernetes.md`](d
 <details>
 <summary>🌐 Presentation — the front door</summary>
 
-Providers use the HTTP API to open wallets, submit wagers, check results, browse a wallet's ledger, and compare a wallet with its ledger. Health checks answer a simpler question: “Is the service alive, and can it reach what it needs?”
+Providers use the HTTP API to open wallets, submit wagers, check results, browse a wallet's ledger, compare a wallet with its ledger, and read the audit timeline of one wager. Health checks answer a simpler question: “Is the service alive, and can it reach what it needs?”
 
 The front door checks and translates requests. The money rules stay in the rulebook, not in the controller.
 
@@ -170,6 +172,38 @@ flowchart LR
 </details>
 
 <details>
+<summary>🧾 Audit store — the event timeline in MongoDB</summary>
+
+Every integration event that leaves the financial transaction is also appended to an audit timeline in MongoDB. The financial truth stays in PostgreSQL; the audit store is a read model that answers “what happened to this wager, in order?”.
+
+- 📤 The outbox publishes the same event to `wager-events.fifo`; a dedicated consumer maps the envelope and appends one document per `eventId`.
+- 🔒 `eventId` is unique, so a redelivery is acknowledged as a duplicate instead of writing twice.
+- 🔁 A temporary MongoDB failure returns the message to the queue; five receives send it to `wager-events-dlq.fifo`. An invalid event goes there immediately.
+- 🚫 MongoDB is not part of `/health/ready`, and a wager is never rolled back because the audit write failed. The timeline is eventually consistent.
+- 🔎 `GET /wagering/transactions/:transactionId/audit` returns the timeline for the caller provider, ordered by `occurredAt` and then `eventId`, with `eventType`, `from`, `to`, and `limit` filters.
+- 🧱 Only `status`, `kind`, and `direction` enter the metadata; amounts, balances, and personal data stay out.
+
+The application contract lives in [`src/application/audits/spec.md`](src/application/audits/spec.md), the adapter in [`src/infrastructure/audit/spec.md`](src/infrastructure/audit/spec.md), and the decision in [`docs/adr/0010-polyglot-audit-store-with-mongodb.md`](docs/adr/0010-polyglot-audit-store-with-mongodb.md).
+
+</details>
+
+<details>
+<summary>🧭 Journey store — the per-caller view in MongoDB</summary>
+
+The journey is what one request did, stage by stage: it entered the route, reached the use case, wrote the database or rolled back, and handed the event to the queue. It sits in MongoDB next to the audit timeline and never joins the financial SQL transaction.
+
+- 🌐 `ROUTE` is recorded by the HTTP interceptor when the request enters; `USE_CASE`, `DATABASE`, and `QUEUE` are recorded by the use cases, the persistence writers, and the outbox publisher.
+- ✅ Each settled stage carries `SUCCEEDED`, `FAILED`, or `ROLLBACK` and the time it spent, so a slow stage is visible.
+- 🔒 `stepId` is unique, and `flowId` groups one aggregate; `providerId` + `playerId` join the steps of one caller across requests.
+- 🚫 Recording is fire-and-forget. A MongoDB outage loses the observation of that step — never a balance, and never money.
+- 👥 `GET /wagering/transactions/:transactionId/journey` reads the flow that produced a wager; `GET /providers/:providerId/players/:playerId/journey` reads a provider's own players. Both obey the caller's scope.
+- 🧱 No amount, balance, token, or header ever enters a step.
+
+The application contract lives in [`src/application/journeys/spec.md`](src/application/journeys/spec.md), the adapter in [`src/infrastructure/journey/spec.md`](src/infrastructure/journey/spec.md), and the decision in [`docs/adr/0011-journey-read-model-in-mongodb.md`](docs/adr/0011-journey-read-model-in-mongodb.md).
+
+</details>
+
+<details>
 <summary>🧭 Architecture — the ideas behind the code</summary>
 
 Three ideas guide how this project is built:
@@ -193,18 +227,18 @@ flowchart LR
     MessagingAdapter -. "publishes through a protocol" .-> Ports
 ```
 
-The domain is the rulebook. Application is the coordinator. Presentation is the front door. Infrastructure connects those parts to PostgreSQL, SQS, logs, and metrics. The application asks for capabilities through protocols; infrastructure supplies the technical adapters. Changing a database or queue should not rewrite the business rules.
+The domain is the rulebook. Application is the coordinator. Presentation is the front door. Infrastructure connects those parts to PostgreSQL, MongoDB, SQS, logs, and metrics. The application asks for capabilities through protocols; infrastructure supplies the technical adapters. Changing a database or queue should not rewrite the business rules.
 
 Cross-layer imports use the `@application/*`, `@domain/*`, `@infrastructure/*`, and `@presentation/*` TypeScript aliases.
 
-The reasoning behind the shape is in [`docs/adr/`](docs/adr/): nine short records, one per decision, each with the alternative that lost and the cost it carries.
+The reasoning behind the shape is in [`docs/adr/`](docs/adr/): eleven short records, one per decision, each with the alternative that lost and the cost it carries.
 
 </details>
 
 <details>
 <summary>🧪 Testing — prove the delivery</summary>
 
-`bun run verify` lints, type-checks, and runs the unit suite; `bun run verify:full` adds PostgreSQL, LocalStack, migrations, integration, concurrency, and end-to-end tests. Details in [docs/testing.md](docs/testing.md).
+`bun run verify` lints, type-checks, and runs the unit suite; `bun run verify:full` adds PostgreSQL, MongoDB, LocalStack, migrations, integration, audit, concurrency, and end-to-end tests. Details in [docs/testing.md](docs/testing.md).
 
 See the happy path in one command with `bun run demo`, and the reviewer's path in [docs/DELIVERY.md](docs/DELIVERY.md).
 
@@ -233,9 +267,11 @@ These are the coding assistants and model names used to build Fortune Tiger:
 - 🧱 **NestJS** organizes the HTTP service and its background workers.
 - 🟦 **TypeScript** helps catch mistakes while building.
 - 🐘 **PostgreSQL 16** keeps the financial records.
+- 🧾 **MongoDB 7** keeps the append-only audit timeline.
 - 🧩 **MikroORM** connects the code to the database.
+- 📚 **Mongoose** connects the audit adapter to MongoDB.
 - 📨 **SQS on LocalStack** provides a queue that works on a developer's machine.
-- 🐳 **Docker Compose** runs the local database, queue, API, authentication, and observability profiles.
+- 🐳 **Docker Compose** runs the local databases, queue, API, authentication, and observability profiles.
 - ☸️ **Kubernetes on kind** runs the same image on three nodes, with two API replicas and two PostgreSQL instances, declared as Kustomize manifests.
 - 📈 **Prometheus and Grafana** expose and visualize the application's metrics through the optional observability profile.
 - 🔐 **Keycloak** provides the optional JWT identity provider through the auth profile.
@@ -265,7 +301,7 @@ bun run migration:up
 bun run start
 ```
 
-The first three steps install the tools, prepare local settings, and start PostgreSQL and LocalStack. The migration creates the database tables; the last command starts the service.
+The first three steps install the tools, prepare local settings, and start PostgreSQL, MongoDB, and LocalStack. The migration creates the database tables; the last command starts the service.
 
 ### Run everything in containers
 
@@ -297,12 +333,14 @@ bun run demo
 bun run lint
 bun run test:unit
 bun run test:int
+bun run test:audit
+bun run test:journey
 bun run test:concurrency
 bun run test:e2e
 bun run test:load
 ```
 
-`start:dev` restarts the app when files change. `demo` boots the app on a free port and walks the happy path — wallet, bet, replay, loss, ledger, reconciliation, metrics — asserting each result. `test:unit` checks the rules quickly. The integration and concurrency tests use the PostgreSQL and LocalStack services configured in `.env`. `test:e2e` runs HTTP endpoint tests with Supertest. `test:load` measures the running API under concurrency; start it with `bun run start` first, and read [`docs/load.md`](docs/load.md) for the method, the results, and the honest limit.
+`start:dev` restarts the app when files change. `demo` boots the app on a free port and walks the happy path — wallet, bet, replay, loss, ledger, reconciliation, metrics — asserting each result. `test:unit` checks the rules quickly. The integration and concurrency tests use the PostgreSQL and LocalStack services configured in `.env`; `test:audit` and `test:journey` use MongoDB and LocalStack. `test:e2e` runs HTTP endpoint tests with Supertest. `test:load` measures the running API under concurrency; start it with `bun run start` first, and read [`docs/load.md`](docs/load.md) for the method, the results, and the honest limit.
 
 ### Try the API by hand
 
@@ -317,7 +355,7 @@ bun run verify
 bun run verify:full
 ```
 
-`verify` lints, type-checks the code, and runs the unit suite, so it needs nothing running. `verify:full` checks that PostgreSQL and LocalStack answer, then runs the migrations, the integration suite, the concurrency suite, and the end-to-end suite. The first failure stops the run, and the exit code is `1`.
+`verify` lints, type-checks the code, and runs the unit suite, so it needs nothing running. `bun run verify` lints, type-checks the code, and runs the unit suite, so it needs nothing running. `verify:full` checks that PostgreSQL, MongoDB, and LocalStack answer, then runs the migrations, the integration suite, the audit store suite, the journey store suite, the concurrency suite, and the end-to-end suite. The first failure stops the run, and the exit code is `1`.
 
 ### Pick a log style
 
@@ -329,7 +367,7 @@ Set `LOG_PRETTY=true` in `.env` for readable, one-line text output. Leave it uns
 curl http://localhost:3000/metrics
 ```
 
-The route answers the Prometheus text exposition: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing time. `METRICS_BACKEND` chooses the adapter - `prometheus` by default, `memory` for the in-process counters without the Prometheus client.
+The route answers the Prometheus text exposition: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing time, and the audit and journey counters. `METRICS_BACKEND` chooses the adapter - `prometheus` by default, `memory` for the in-process counters without the Prometheus client.
 
 A dashboard comes with the stack:
 

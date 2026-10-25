@@ -7,8 +7,8 @@ The statement is in [`docs/challenge-original.md`](challenge-original.md). The f
 ## Prerequisites
 
 - Bun 1.x
-- Docker with Compose, for PostgreSQL 16 and LocalStack
-- Ports `3000`, `5432`, and `4566` free
+- Docker with Compose, for PostgreSQL 16, MongoDB 7, and LocalStack
+- Ports `3000`, `5432`, `27017`, and `4566` free
 
 ## Five minutes
 
@@ -25,7 +25,7 @@ What each command answers:
 
 | Command | What it proves |
 | --- | --- |
-| `docker compose up -d` | PostgreSQL 16 and LocalStack, with the FIFO queues created by the ready hook in `docker/localstack` |
+| `docker compose up -d` | PostgreSQL 16, MongoDB 7, and LocalStack, with the FIFO queues created by the ready hook in `docker/localstack` |
 | `bun run migration:up` | the schema is versioned and reversible |
 | `bun run verify` | lint, TypeScript strict, and the unit suite pass, with no dependency running |
 | `bun run demo` | the happy path against a live application: wallet, bet, replay, loss, ledger, reconciliation, metrics |
@@ -62,18 +62,18 @@ The `app` service reports `healthy` when `/health/live` answers, and `GET /healt
 bun run cluster:up
 ```
 
-Builds the same image, creates a `kind` cluster with three nodes inside Docker, loads the image into the nodes, applies [`kubernetes/overlays/local`](../kubernetes/overlays/local), waits for both PostgreSQL instances, waits for the migration Job, waits for both API replicas, and checks `http://127.0.0.1:30080/health/ready`. Docker is the only prerequisite: `kind` and `kubectl` are reused from `PATH` or downloaded into `.tools/bin`, and Docker Desktop starts by itself on Windows when it is closed.
+Builds the same image, creates a `kind` cluster with three nodes inside Docker, loads the image into the nodes, applies [`kubernetes/overlays/local`](../kubernetes/overlays/local), waits for both PostgreSQL instances, LocalStack, and Mongo, waits for the migration Job, waits for both API replicas, and checks `http://127.0.0.1:30080/health/ready`. Docker is the only prerequisite: `kind` and `kubectl` are reused from `PATH` or downloaded into `.tools/bin`, and Docker Desktop starts by itself on Windows when it is closed.
 
 | Command | What it proves |
 | --- | --- |
-| `bun run cluster:up` | the application runs as two replicas on two nodes, over a primary with a streaming standby |
+| `bun run cluster:up` | the application runs as two replicas on two nodes, over a primary with a streaming standby, with the datalake in Mongo |
 | `bun run cluster:observability` | Prometheus scrapes each replica and Grafana serves the same dashboard compose serves |
 | `bun run cluster:status` | the nodes, the pods with their node, the endpoints, and readiness |
-| `bun run cluster:verify` | the shape is proven: nodes, endpoints, replication, migration, the financial flow, and both replicas serving |
+| `bun run cluster:verify` | the shape is proven: nodes, endpoints, replication, migration, the financial flow, the datalake collections, and both replicas serving |
 | `bun run cluster:render` | every overlay renders, with no cluster needed |
 | `bun run cluster:down` | the cluster and its volumes are gone |
 
-A repeated wager through the node port still produces one debit, whichever replica answers, because the wallet lock, the outbox claim, and the inbox row live in PostgreSQL. Five pods run at rest: the two `api` replicas on different workers, the PostgreSQL primary on one worker with its streaming standby on the other, and LocalStack; the `api` Service is the load balancer in front of the replicas. [`docs/kubernetes.md`](kubernetes.md) carries the topology, the failure drills, and the limits.
+A repeated wager through the node port still produces one debit, whichever replica answers, because the wallet lock, the outbox claim, and the inbox row live in PostgreSQL. Six pods run at rest: the two `api` replicas on different workers, the PostgreSQL primary on one worker with its streaming standby on the other, LocalStack, and Mongo, where the audit timeline and the journey store live. The `api` Service is the load balancer in front of the replicas. [`docs/kubernetes.md`](kubernetes.md) carries the topology, the failure drills, and the limits.
 
 ## Try the API by hand
 
@@ -93,7 +93,7 @@ The route rules are in [`docs/API.md`](API.md) and in [`src/presentation/http/sp
 bun run verify:full
 ```
 
-The gate reads `.env` through `Environment`, checks that PostgreSQL and LocalStack answer within two seconds, then runs the migrations, the integration suite, the concurrency suite, and the end-to-end suite. The first failure stops the run with exit code `1`.
+The gate reads `.env` through `Environment`, checks that PostgreSQL, MongoDB, and LocalStack answer within two seconds, then runs the migrations, the integration suite, the audit store suite, the journey store suite, the concurrency suite, and the end-to-end suite. The first failure stops the run with exit code `1`.
 
 The concurrency suite starts six independent application processes against the same database: the same bet 50 times becomes one debit, two bets of 80 on a balance of 100 leave one processed and one rejected, two rollbacks of one bet leave one processed, and the stored balance always equals the balance rebuilt from the ledger. The same suite carries the fault injection: a TCP proxy in front of PostgreSQL, `503` during the outage, and recovery without a restart.
 
@@ -112,7 +112,7 @@ The OpenAPI document is checked in; `bun run openapi:export --check` rebuilds it
 - [`EVIDENCE.md`](../EVIDENCE.md) — the last local run: counts, constraints, and the honest limits.
 - [`EVALUATION.md`](../EVALUATION.md) — the section 14 checklist against the code.
 
-The code reads top to bottom: `src/domain` holds `Money`, `Wallet`, `Ledger`, and `Wager`; `src/application` holds the use cases, the idempotency rule, the mediators, and the ports; `src/infrastructure` holds MikroORM, SQS, the inbox and outbox, the logger, and the metrics; `src/presentation` holds HTTP and health.
+The code reads top to bottom: `src/domain` holds `Money`, `Wallet`, `Ledger`, and `Wager`; `src/application` holds the use cases, the idempotency rule, the mediators, the ports, and the audit and journey queries; `src/infrastructure` holds MikroORM, Mongoose, SQS, the inbox and outbox, the logger, and the metrics; `src/presentation` holds HTTP and health.
 
 ## What stands out
 
@@ -127,6 +127,7 @@ The code reads top to bottom: `src/domain` holds `Money`, `Wallet`, `Ledger`, an
 - Delivery is **at-least-once**, not exactly-once. A crash after the commit and before the ack redelivers the message; the inbox keeps the effect single.
 - Ledger immutability is enforced by the application, not by a database grant. The unique `transaction_id` prevents a duplicate row, not an `UPDATE`.
 - Auth has two modes. The default `anonymous` mode keeps `AuthGuard` permissive and `AnonymousProviderIdentity` trusts the caller, so a local run needs no identity provider. `AUTH_MODE=jwt` verifies the bearer token against the Keycloak realm key set and reads the `provider_id` claim; Keycloak itself is an optional compose profile, and the CI keeps `anonymous`.
+- The audit timeline and the journey are **eventually consistent** and live in MongoDB. The audit is fed by the outbox; the journey is recorded stage by stage. Neither is a transactional record, MongoDB is not part of readiness, and a MongoDB outage delays them — never a balance, never a rollback.
 - OpenTelemetry, double-entry accounting, and partial reversal are out. The Prometheus exposition is in.
 - The load test is a measurement, not a gate. `bun run test:load` reports the two waves on the machine it runs on, with no RPS target and no CI job; [`docs/load.md`](load.md) states the method and the limit.
 - The cluster is one machine. Three nodes share a kernel and a disk, the standby has no automatic failover, and no autoscaler is provisioned; [`docs/kubernetes.md`](kubernetes.md) states the rest.

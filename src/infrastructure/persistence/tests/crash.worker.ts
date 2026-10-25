@@ -1,6 +1,7 @@
 import { SQSClient } from '@aws-sdk/client-sqs'
 import type { ClockProtocol } from '@application/time'
 import type { LoggerProtocol } from '@application/observability'
+import type { JourneyService } from '@application/journeys'
 import { IdempotencyService } from '@application/idempotencies'
 import { WagerMediator } from '@application/wagers/mediators'
 import { SubmitWagerUseCase } from '@application/wagers/use-cases'
@@ -26,6 +27,7 @@ const queueConfig = {
 const consumerName = 'wager'
 const signal = 'ACK_PENDING\n'
 const unexpected = 'UNEXPECTED_SETTLEMENT\n'
+const journey = { record: () => Promise.resolve() } as unknown as JourneyService
 
 class AckBarrier extends SqsQueue {
   async delete(): Promise<void> {
@@ -68,8 +70,10 @@ const run = async (): Promise<void> => {
     new WagerEventsMapper(),
     new WagerMediator(),
     new SimpleMetric(),
+    new SystemClock(),
+    journey,
   )
-  const useCase = new SubmitWagerUseCase(writer, idempotency, new SimpleMetric(), new SystemClock())
+  const useCase = new SubmitWagerUseCase(writer, idempotency, new SimpleMetric(), new SystemClock(), journey)
   const mapper = new WagerRequestMapper()
   const wager = new WagerConsumer(useCase, mapper, consumerName)
   const clock: ClockProtocol = { now: () => new Date(receivedAt) }

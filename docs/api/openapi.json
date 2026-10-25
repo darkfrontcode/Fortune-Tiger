@@ -308,6 +308,269 @@
         ]
       }
     },
+    "/wagering/transactions/{transactionId}/audit": {
+      "get": {
+        "operationId": "WagerController_audit",
+        "parameters": [
+          {
+            "name": "X-Provider-Id",
+            "in": "header",
+            "description": "Caller identity in the default `anonymous` auth mode.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Between 1 and 100. Defaults to 50.",
+            "schema": {
+              "example": 50
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "ISO-8601 upper bound on occurredAt.",
+            "schema": {}
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "ISO-8601 lower bound on occurredAt.",
+            "schema": {}
+          },
+          {
+            "name": "eventType",
+            "required": false,
+            "in": "query",
+            "description": "One event type, such as WagerTransactionProcessed.",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The recorded events, ordered by occurredAt and then by eventId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditTimelineOutputDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid eventType, from, to, or limit."
+          },
+          "401": {
+            "description": "Missing, expired, or badly signed bearer token in the `jwt` auth mode."
+          },
+          "404": {
+            "description": "No wager with this identifier for the caller provider."
+          }
+        },
+        "summary": "Read the audit timeline of a wager",
+        "tags": [
+          "Wager"
+        ]
+      }
+    },
+    "/wagering/transactions/{transactionId}/journey": {
+      "get": {
+        "operationId": "WagerController_journey",
+        "parameters": [
+          {
+            "name": "X-Provider-Id",
+            "in": "header",
+            "description": "Caller identity in the default `anonymous` auth mode.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Between 1 and 100. Defaults to 50.",
+            "schema": {
+              "example": 50
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "ISO-8601 upper bound on occurredAt.",
+            "schema": {}
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "ISO-8601 lower bound on occurredAt.",
+            "schema": {}
+          },
+          {
+            "name": "outcome",
+            "required": false,
+            "in": "query",
+            "description": "One outcome, such as SUCCEEDED.",
+            "schema": {}
+          },
+          {
+            "name": "stage",
+            "required": false,
+            "in": "query",
+            "description": "One stage, such as USE_CASE.",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The steps of the flow that produced the wager.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyTimelineOutputDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid stage, outcome, from, to, or limit."
+          },
+          "401": {
+            "description": "Missing, expired, or badly signed bearer token in the `jwt` auth mode."
+          },
+          "404": {
+            "description": "No wager with this identifier for the caller provider."
+          }
+        },
+        "summary": "Read the journey of a wager",
+        "tags": [
+          "Wager"
+        ]
+      }
+    },
+    "/providers/{providerId}/players/{playerId}/journey": {
+      "get": {
+        "operationId": "WagerController_playerJourney",
+        "parameters": [
+          {
+            "name": "X-Provider-Id",
+            "in": "header",
+            "description": "Caller identity in the default `anonymous` auth mode.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "provider-a",
+              "type": "string"
+            }
+          },
+          {
+            "name": "playerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Between 1 and 100. Defaults to 50.",
+            "schema": {
+              "example": 50
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "ISO-8601 upper bound on occurredAt.",
+            "schema": {}
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "ISO-8601 lower bound on occurredAt.",
+            "schema": {}
+          },
+          {
+            "name": "outcome",
+            "required": false,
+            "in": "query",
+            "description": "One outcome, such as SUCCEEDED.",
+            "schema": {}
+          },
+          {
+            "name": "stage",
+            "required": false,
+            "in": "query",
+            "description": "One stage, such as USE_CASE.",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The steps of the flows of the player, for the caller provider.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyTimelineOutputDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid stage, outcome, from, to, or limit."
+          },
+          "401": {
+            "description": "Missing, expired, or badly signed bearer token in the `jwt` auth mode."
+          },
+          "404": {
+            "description": "No journey for this caller and player."
+          }
+        },
+        "summary": "Read the journey of a player",
+        "tags": [
+          "Wager"
+        ]
+      }
+    },
     "/providers/{providerId}/wagering/transactions/{externalTransactionId}": {
       "get": {
         "operationId": "WagerController_findByProvider",
@@ -767,6 +1030,187 @@
           "status",
           "money",
           "createdAt"
+        ]
+      },
+      "AuditActorDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "provider"
+          },
+          "id": {
+            "type": "string",
+            "example": "provider-a"
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ]
+      },
+      "AuditEventOutputDto": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventType": {
+            "type": "string",
+            "example": "WagerTransactionProcessed"
+          },
+          "eventVersion": {
+            "type": "number",
+            "example": 1
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "wagerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "correlationId": {
+            "type": "string",
+            "example": "provider-a:transaction-1"
+          },
+          "causationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source": {
+            "type": "string",
+            "example": "fortune-tiger"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/AuditActorDto"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "status": "PROCESSED"
+            }
+          }
+        },
+        "required": [
+          "eventId",
+          "eventType",
+          "eventVersion",
+          "occurredAt",
+          "recordedAt",
+          "correlationId",
+          "source",
+          "metadata"
+        ]
+      },
+      "AuditTimelineOutputDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEventOutputDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "JourneyStepOutputDto": {
+        "type": "object",
+        "properties": {
+          "stepId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "flowId": {
+            "type": "string",
+            "example": "provider-a:transaction-1"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "ROUTE",
+              "USE_CASE",
+              "DATABASE",
+              "QUEUE"
+            ],
+            "example": "ROUTE"
+          },
+          "operation": {
+            "type": "string",
+            "example": "SubmitWagerUseCase"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "SUCCEEDED",
+              "FAILED",
+              "ROLLBACK"
+            ],
+            "example": "SUCCEEDED"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMs": {
+            "type": "number",
+            "example": 12
+          },
+          "providerId": {
+            "type": "string",
+            "example": "fortune-tiger"
+          },
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "wagerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "walletId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "failureCode": {
+            "type": "string",
+            "example": "INSUFFICIENT_FUNDS"
+          }
+        },
+        "required": [
+          "stepId",
+          "flowId",
+          "stage",
+          "operation",
+          "outcome",
+          "occurredAt",
+          "durationMs"
+        ]
+      },
+      "JourneyTimelineOutputDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JourneyStepOutputDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       }
     }

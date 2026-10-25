@@ -12,6 +12,8 @@ const variables = [
   'SQS_QUEUE_URL',
   'SQS_DEAD_LETTER_QUEUE_URL',
   'SQS_EVENTS_QUEUE_URL',
+  'SQS_EVENTS_DEAD_LETTER_QUEUE_URL',
+  'MONGODB_URL',
   'AUTH_MODE',
   'OIDC_ISSUER',
   'OIDC_AUDIENCE',
@@ -57,6 +59,8 @@ describe('Environment', () => {
     expect(environment.queueUrl).toBe(String())
     expect(environment.deadLetterQueueUrl).toBe(String())
     expect(environment.eventsQueueUrl).toBe(String())
+    expect(environment.eventsDeadLetterQueueUrl).toBe(String())
+    expect(environment.mongoUrl).toBe('mongodb://127.0.0.1:27017/fortune_tiger_audit')
     expect(environment.databaseUrl).toBeUndefined()
     expect(environment.authMode).toBe('anonymous')
     expect(environment.oidcIssuer).toBeUndefined()
@@ -70,6 +74,8 @@ describe('Environment', () => {
     process.env.SQS_QUEUE_URL = 'http://queue'
     process.env.SQS_DEAD_LETTER_QUEUE_URL = 'http://dead-letter'
     process.env.SQS_EVENTS_QUEUE_URL = 'http://events'
+    process.env.SQS_EVENTS_DEAD_LETTER_QUEUE_URL = 'http://events-dead-letter'
+    process.env.MONGODB_URL = 'mongodb://database:27017/audit'
     process.env.AWS_REGION = 'eu-west-1'
     process.env.AWS_ENDPOINT_URL = 'http://localstack'
     process.env.AWS_ACCESS_KEY_ID = 'access-key'
@@ -89,6 +95,8 @@ describe('Environment', () => {
     expect(environment.queueUrl).toBe('http://queue')
     expect(environment.deadLetterQueueUrl).toBe('http://dead-letter')
     expect(environment.eventsQueueUrl).toBe('http://events')
+    expect(environment.eventsDeadLetterQueueUrl).toBe('http://events-dead-letter')
+    expect(environment.mongoUrl).toBe('mongodb://database:27017/audit')
     expect(environment.databaseUrl).toBe('postgresql://database')
   })
 

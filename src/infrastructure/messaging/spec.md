@@ -4,13 +4,14 @@ FIFO queues on LocalStack. The statement also allows MiniStack. Decision: LocalS
 
 - `wager-transactions.fifo` — the inbound channel; the consumer reads requests here.
 - `wager-transactions-dlq.fifo` — the dead-letter queue of the inbound channel.
-- `wager-events.fifo` — the outbound channel; the publisher writes integration events here.
+- `wager-events.fifo` — the outbound channel; the publisher writes integration events here and the audit consumer reads them.
+- `wager-events-dlq.fifo` — the dead-letter queue of the outbound channel.
 
 The two directions do not share a queue. A deployment can scale the consumer and the publisher independently, a poison request can never sit in front of an event, and a downstream reader can drain the events without competing with the API's own consumer. The inbound and the outbound queue are both FIFO, and uniqueness still lives in Postgres.
 
 ## Layout
 
-`messaging` has six folders. `events/` holds the integration event contract in `integration-event.ts` and `types.ts`, plus one folder per concept that records an event: `events/wager` and `events/wallet`. Each concept folder holds its events, its `types.ts` with `{Concept}EventType`, and an `index.ts`. `messages/` holds the inbox row, the outbox row, the inbound wager request, its guard, and its error text. `mappers/` holds the projection from a wager to outbox rows and the projection from a wager request to a transaction input. `publishers/` holds the outbox publisher, the SQS adapter, and the worker. `consumers/` holds the SQS queue adapter, the SQS consumer, the wager consumer, its outcome enum, its types, and the queue readiness probe. `factories/` builds the SQS client and the `ConsumerType.Config` from the environment. A namespace lives in the `types.ts` of the concept that owns it. `index.ts` reexports the child folders with `export *`.
+`messaging` has six folders. `events/` holds the integration event contract in `integration-event.ts` and `types.ts`, plus one folder per concept that records an event: `events/wager` and `events/wallet`. Each concept folder holds its events, its `types.ts` with `{Concept}EventType`, and an `index.ts`. `messages/` holds the inbox row, the outbox row, the inbound wager request, its guard, the audit event guard, and the error text. `mappers/` holds the projection from a wager to outbox rows, the projection from a wager request to a transaction input, and the projection from an event envelope to an audit event. `publishers/` holds the outbox publisher, the SQS adapter, and the worker. `consumers/` holds the SQS queue adapter, the poll loop, the SQS consumer, the wager consumer, the audit queue, the audit consumer, the audit SQS consumer, its outcome enum, its types, and the queue readiness probe. `factories/` builds the SQS client and the `ConsumerType.Config` from the environment. A namespace lives in the `types.ts` of the concept that owns it. `index.ts` reexports the child folders with `export *`.
 
 ## Inbox
 
@@ -77,7 +78,7 @@ The attempt limit before the DLQ is 5. A transient failure under the limit retur
 
 `SqsConsumer` counts `consumer_retries_total` when it schedules another attempt and `consumer_dead_letters_total` when it sends a message to the dead-letter queue.
 
-`consumers/sqs.consumer.ts` holds `SqsConsumer`. `open` starts one long-poll loop. `close` stops the loop and awaits the in-flight batch. A receive failure logs a warning, waits `1s × 2^(failures - 1)` capped at 60 seconds, and retries. A process killed before the commit or before the ack leaves the message for redelivery, and the inbox keeps the effect single. The boot wires `SIGTERM` to `close`.
+`consumers/sqs.consumer.ts` holds `SqsConsumer`. `open` starts one long-poll loop. `close` aborts the idle long poll, so a shutdown does not wait for the full wait time, and it awaits the in-flight batch. A receive failure logs a warning, waits `1s × 2^(failures - 1)` capped at 60 seconds, and retries. A receive aborted by `close` is not a failure and writes no warning. A process killed before the commit or before the ack leaves the message for redelivery, and the inbox keeps the effect single. The boot wires `SIGTERM` to `close`.
 
 The message envelope is `messageId`, `type`, `occurredAt`, and `data`. `type` is `WagerTransactionRequested`. `data` carries the wager fields plus `idempotencyKey`. The consumer calls the use case in `src/application/wagers`.
 
@@ -93,24 +94,34 @@ The publisher reads due outbox rows with `FOR UPDATE SKIP LOCKED`. Several publi
 
 Events are not published before the financial commit.
 
+## Audit consumer
+
+`consumers/audit.queue.ts` holds `AuditQueue`, which extends `SqsQueue` and reads `AUDIT_QUEUE_CONFIG`: it long-polls `wager-events.fifo` and dead-letters to `wager-events-dlq.fifo`.
+
+`consumers/audit.consumer.ts` holds `AuditConsumer`. It maps the envelope through `AuditEventMapper` and `AuditEventGuard` and records it through `AUDIT_STORE`. A stored event counts `audit_events_persisted_total` and is acked. A duplicate `eventId` counts `audit_events_duplicates_total` and is acked as a successful duplicate. A body the guard refuses is dead-lettered immediately with `INVALID_AUDIT_EVENT_MESSAGE`. A store failure counts `audit_events_failures_total`, logs `AUDIT_STORE_FAILURE_MESSAGE`, and retries with the same backoff; the fifth receive dead-letters. The ack happens after the document exists, never before.
+
+`consumers/queue.loop.ts` holds `QueueLoop`, the poll loop the two consumers share: `open`, `close` with the aborted long poll, the sequential batch, the settle, and the retry and dead-letter metrics. `SqsConsumer` and `AuditSqsConsumer` extend it with their own queue and consumer.
+
+The audit consumer is the only reader of `wager-events.fifo`, and it acks each event once the document exists. A second reader of that channel needs its own queue or a fan-out, which this delivery does not build.
+
 ## Module
 
-`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `WagersModule`, and `ObservabilityModule`, and it provides the whole channel. `SQSClient`, `QUEUE_CONFIG`, and `PUBLISH_CONFIG` are built once from `Environment`; the tokens live in `tokens/`, and `factories/queue.factory.ts` holds `createQueueConfig` and `createPublishConfig`.
+`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `WagersModule`, `AuditStoreModule`, and `ObservabilityModule`, and it provides the whole channel. `SQSClient`, `QUEUE_CONFIG`, `PUBLISH_CONFIG`, and `AUDIT_QUEUE_CONFIG` are built once from `Environment`; the tokens live in `tokens/` and `factories/`, and `factories/queue.factory.ts` holds `createQueueConfig`, `createPublishConfig`, and `createAuditQueueConfig`.
 
-`SqsQueue`, `SqsPublisher`, `QueueReadiness`, `OutboxPublisher`, `OutboxWorker`, `WagerConsumer`, and `SqsConsumer` are `@Injectable()`. They receive `SQSClient` and `MikroORM` by class token, `CLOCK`, `LOGGER`, and `PUBLISHER` by their tokens, `QUEUE_CONFIG` for the inbound queue and the poll limits, and `PUBLISH_CONFIG` for the events queue. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`.
+`SqsQueue`, `AuditQueue`, `SqsPublisher`, `QueueReadiness`, `OutboxPublisher`, `OutboxWorker`, `WagerConsumer`, `SqsConsumer`, `AuditConsumer`, and `AuditSqsConsumer` are `@Injectable()`. They receive `SQSClient` and `MikroORM` by class token, `CLOCK`, `LOGGER`, `METRIC`, `AUDIT_STORE`, and `PUBLISHER` by their tokens, `QUEUE_CONFIG` for the inbound queue, `AUDIT_QUEUE_CONFIG` for the events queue, and `PUBLISH_CONFIG` for publishing. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`.
 
 `PUBLISHER` and `PublisherProtocol` are owned by messaging; the token lives in `tokens/` and the protocol stays beside the publisher consumer. `CLOCK` lives in `application/time/tokens`; `LOGGER` lives in `application/observability/tokens`.
 
 The consumer name is `wager`. It is the `CONSUMER_NAME` token in `consumers/consumer-name.token.ts`, bound with `useValue`, and `WagerConsumer` receives it in the constructor.
 
-`OutboxWorker`, `SqsConsumer`, and `QueueReadiness` are exported. `RuntimeService` is not: the root provides it, because it starts all three workers.
+`OutboxWorker`, `SqsConsumer`, `AuditSqsConsumer`, and `QueueReadiness` are exported. `RuntimeService` is not: the root provides it, because it starts all the workers.
 
 ## Environment
 
-`Environment` is the only reader of the variables below. `AWS_REGION` defaults to `us-east-1`, and `AWS_ENDPOINT_URL` points to LocalStack. `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`, and `SQS_EVENTS_QUEUE_URL` carry the absolute queue URLs. The consumer name is `wager`. `factories/sqs.factory.ts` builds the client with `maxAttempts` 1, and `factories/queue.factory.ts` builds both configs: `ConsumerType.Config` for the inbound channel with `maxMessages` 10, `waitTimeSeconds` 20, and `visibilityTimeout` 30, and `PublisherType.Config` for the outbound channel. `QUEUE_CONFIG` and `PUBLISH_CONFIG` are the tokens.
+`Environment` is the only reader of the variables below. `AWS_REGION` defaults to `us-east-1`, and `AWS_ENDPOINT_URL` points to LocalStack. `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`, `SQS_EVENTS_QUEUE_URL`, and `SQS_EVENTS_DEAD_LETTER_QUEUE_URL` carry the absolute queue URLs. The consumer name is `wager`. `factories/sqs.factory.ts` builds the client with `maxAttempts` 1, and `factories/queue.factory.ts` builds all three configs: `ConsumerType.Config` for the inbound channel and for the events channel, each with `maxMessages` 10, `waitTimeSeconds` 20, and `visibilityTimeout` 30, and `PublisherType.Config` for the outbound channel. `QUEUE_CONFIG`, `AUDIT_QUEUE_CONFIG`, and `PUBLISH_CONFIG` are the tokens.
 
-Compose starts Postgres 16 and LocalStack, and the ready script in `docker/localstack` creates `wager-transactions.fifo`, `wager-transactions-dlq.fifo`, and `wager-events.fifo`. Every queue is FIFO, and the deduplication id is the event id.
+Compose starts Postgres 16, MongoDB, and LocalStack, and the ready script in `docker/localstack` creates `wager-transactions.fifo`, `wager-transactions-dlq.fifo`, `wager-events.fifo`, and `wager-events-dlq.fifo`. Every queue is FIFO, and the deduplication id is the event id.
 
-The boot starts `OutboxWorker`, `ReferenceWorker`, and `SqsConsumer` once, and the shutdown closes them in that order. A close that throws goes to the logger as a warning, and the shutdown continues.
+The boot starts `OutboxWorker`, `ReferenceWorker`, `SqsConsumer`, and `AuditSqsConsumer` once, and the shutdown closes them in that order and closes the ORM last. A close that throws goes to the logger as a warning, and the shutdown continues.
 
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

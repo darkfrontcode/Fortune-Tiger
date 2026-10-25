@@ -1,3 +1,5 @@
+export * from './audit-output.dto'
+export * from './journey-output.dto'
 export * from './ledger-output.dto'
 export * from './money.dto'
 export * from './reconciliation-output.dto'

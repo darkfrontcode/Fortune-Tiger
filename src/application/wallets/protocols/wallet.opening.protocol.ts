@@ -2,6 +2,7 @@ import type { Money } from '@domain/money/money'
 import type { Wallet } from '@domain/wallet/wallet'
 
 export type WalletOpeningInput = {
+  id: string
   playerId: string
   initialBalance: Money
   openedAt: Date

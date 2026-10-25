@@ -125,6 +125,8 @@ const verification = {
   completed: '1',
   settle: 5,
   counter: 'wager_transactions_processed_total',
+  mongo: 'app=mongo',
+  collections: 'audit_events journey_steps',
 }
 
 const check = {
@@ -138,6 +140,7 @@ const check = {
   replay: 'A repeated bet replays',
   ledger: 'The ledger holds one entry per change',
   reconciliation: 'The stored balance matches the ledger',
+  datalake: 'MongoDB answers and the datalake writes',
   balancing: 'Both replicas process requests',
 }
 
@@ -664,6 +667,66 @@ const migrationCheck = async (): Promise<Array<Check>> => single(expect(
   verification.completed,
 ))
 
+const mongoPods = async (): Promise<Array<string>> => {
+  const text = await output([
+    tools.kubectl,
+    '--namespace',
+    cluster.namespace,
+    'get',
+    'pods',
+    '--selector',
+    verification.mongo,
+    '--output',
+    'jsonpath={.items[*].metadata.name}',
+  ])
+
+  return text.split(' ').filter((name) => name !== '')
+}
+
+const mongoCollections = async (pod: string): Promise<Array<string>> => {
+  const text = await output([
+    tools.kubectl,
+    '--namespace',
+    cluster.namespace,
+    'exec',
+    pod,
+    '--',
+    'mongosh',
+    '--quiet',
+    '--eval',
+    'db.getSiblingDB("fortune_tiger_audit").getCollectionNames().sort().join(" ")',
+  ])
+
+  return lines(text)
+}
+
+const eager = async (pod: string, remaining: number): Promise<Array<string>> => {
+  const found = await mongoCollections(pod)
+  const wanted = verification.collections.split(' ')
+
+  if (wanted.every((collection) => found.includes(collection))) { return found }
+  if (remaining === EMPTY_NUMBER) { return found }
+
+  await Bun.sleep(retryDelay)
+
+  return eager(pod, remaining - 1)
+}
+
+const datalake = async (): Promise<Check> => {
+  const pods = await mongoPods()
+  const settled = pods.length > EMPTY_NUMBER ? await eager(pods[0] ?? '', verification.settle) : []
+  const passing = pods.length > EMPTY_NUMBER && settled.length === verification.collections.split(' ').length
+  const detail = pods.length > EMPTY_NUMBER ? settled.join(' ') : 'no mongo pod'
+
+  return {
+    name: check.datalake,
+    detail,
+    passing,
+  }
+}
+
+const datalakeCheck = async (): Promise<Array<Check>> => single(await datalake())
+
 const balancingCheck = async (): Promise<Array<Check>> => single(await balancing())
 
 const verify = async (): Promise<void> => {
@@ -684,6 +747,7 @@ const verify = async (): Promise<void> => {
     ...await guarded(check.replication, replicationCheck),
     ...await guarded(check.migration, migrationCheck),
     ...await guarded(check.flow, financial),
+    ...await guarded(check.datalake, datalakeCheck),
     ...await guarded(check.balancing, balancingCheck),
   ]
 
@@ -716,6 +780,7 @@ const up = async (): Promise<void> => {
   await rollout('statefulset/postgres-primary')
   await rollout('statefulset/postgres-replica')
   await rollout('deployment/localstack')
+  await rollout('deployment/mongo')
   await migrate()
   await rollout('deployment/api')
   await smoke()

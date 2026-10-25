@@ -8,9 +8,9 @@ Local orchestration. No business rule, no adapter, and no import from the domain
 
 ## verify:full
 
-The argument `full` turns the same script into the complete gate: the local preflight, the static gate, the migrations, the integration suite, the concurrency suite, and the end-to-end suite. Use it when PostgreSQL and LocalStack are running.
+The argument `full` turns the same script into the complete gate: the local preflight, the static gate, the migrations, the integration suite, the audit store suite, the concurrency suite, and the end-to-end suite. Use it when PostgreSQL, MongoDB, and LocalStack are running.
 
-The preflight reads `Environment`, never `process.env`, so `.env` supplies the targets. `DATABASE_URL` is the PostgreSQL target and `AWS_ENDPOINT_URL` is the LocalStack target. A variable that is missing, or a port that does not answer within two seconds, stops the run with the dependency name and the `docker compose up -d` hint. The script does not start a container.
+The preflight reads `Environment`, never `process.env`, so `.env` supplies the targets. `DATABASE_URL` is the PostgreSQL target, `AWS_ENDPOINT_URL` is the LocalStack target, and `MONGODB_URL` is the MongoDB target. A variable that is missing, or a port that does not answer within two seconds, stops the run with the dependency name and the `docker compose up -d` hint. The script does not start a container.
 
 ## Behavior
 
@@ -95,16 +95,16 @@ The output is one line per check. A failed assertion prints the name, the expect
 
 | Command | What it does |
 | --- | --- |
-| `bun run cluster:up` | resolves `docker`, `kind`, and `kubectl`, starts Docker Desktop when it is not answering, creates or resumes the cluster, waits for the API and the three nodes, builds and loads the image, applies `kubernetes/overlays/local`, waits for both database instances and the queue, runs the migration Job, waits for both API replicas, and checks `/health/ready` through the node port |
+| `bun run cluster:up` | resolves `docker`, `kind`, and `kubectl`, starts Docker Desktop when it is not answering, creates or resumes the cluster, waits for the API and the three nodes, builds and loads the image, applies `kubernetes/overlays/local`, waits for both database instances, the queue, and Mongo, runs the migration Job, waits for both API replicas, and checks `/health/ready` through the node port |
 | `bun run cluster:observability` | applies `kubernetes/overlays/observability` on top of the local one and waits for Prometheus and Grafana |
 | `bun run cluster:status` | prints the nodes, the pods with their node, the services, the endpoints, and the readiness body |
-| `bun run cluster:verify` | checks that the three nodes are `Ready`, the `api` Service has two endpoints, the standby answers `streaming`, the migration Job reports one success, the financial flow runs, and a burst of requests reaches both replicas; it prints one line per check and exits `1` on the first failure |
+| `bun run cluster:verify` | checks that the three nodes are `Ready`, the `api` Service has two endpoints, the standby answers `streaming`, the migration Job reports one success, the financial flow runs, the datalake collections exist in Mongo, and a burst of requests reaches both replicas; it prints one line per check and exits `1` on the first failure |
 | `bun run cluster:render` | renders every overlay with `kubectl kustomize` and needs no cluster |
 | `bun run cluster:down` | deletes the cluster and its volumes |
 
 The migration Job is deleted before the apply, so every `cluster:up` runs the migrations again and waits for `condition=complete`. The API tolerates the window: the process boots, readiness waits on PostgreSQL and the queue, and the Deployment rolls with `maxUnavailable: 0`.
 
-The verification reads the cluster instead of assuming it. The financial flow opens a wallet, debits it, replays the same request, reads the ledger, and compares the stored balance; the load split reads `wager_transactions_processed_total` from each `api` pod before and after a burst, so the balance is proven, not the counter of one process. `cluster:verify` is the second step of the `cluster` CI job, after `cluster:up`, and it is the shape the pull request is green on.
+The verification reads the cluster instead of assuming it. The financial flow opens a wallet, debits it, replays the same request, reads the ledger, and compares the stored balance; the datalake check lists `audit_events` and `journey_steps` in Mongo after that flow; the load split reads `wager_transactions_processed_total` from each `api` pod before and after a burst, so the balance is proven, not the counter of one process. `cluster:verify` is the second step of the `cluster` CI job, after `cluster:up`, and it is the shape the pull request is green on.
 
 The script owns its tooling. `kind` and `kubectl` are resolved with `Bun.which`; when one is absent, the pinned release is downloaded into `.tools/bin` and that path is used, so Docker is the only manual install. `.tools` is ignored by git. The Docker probe is bounded, because the CLI hangs instead of failing while the engine is down: fifteen seconds is enough to tell "not answering" from "slow", and the Windows start path waits for the engine to answer. A cluster that already exists is resumed with `docker start` on its node containers before the API is awaited, so a run after a Docker restart converges on the existing volumes instead of failing or recreating.
 

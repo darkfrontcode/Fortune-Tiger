@@ -14,6 +14,8 @@ resources:
   - postgres/postgres-replica-init.configmap.yaml
   - localstack/localstack.deployment.yaml
   - localstack/localstack.service.yaml
+  - mongo/mongo.deployment.yaml
+  - mongo/mongo.service.yaml
   - api/api.service.yaml
   - api/api.pdb.yaml
   - api/migrate.job.yaml

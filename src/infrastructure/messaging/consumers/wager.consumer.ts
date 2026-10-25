@@ -3,13 +3,14 @@ import { SubmitWagerUseCase } from '@application/wagers/use-cases'
 import { WagerRequestMapper } from '../mappers'
 import { WagerRequest } from '../messages'
 import { CONSUMER_NAME } from './consumer-name.token'
+import type { ConsumerProtocol } from './consumer.protocol'
 import { ConsumerOutcome } from './enums'
 import type { ConsumerType } from './types'
 
 const maxAttempts = 5
 
 @Injectable()
-export class WagerConsumer {
+export class WagerConsumer implements ConsumerProtocol {
   constructor(
     private readonly submitWager: SubmitWagerUseCase,
     private readonly mapper: WagerRequestMapper,

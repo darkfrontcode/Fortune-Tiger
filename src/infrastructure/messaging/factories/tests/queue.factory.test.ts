@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { Environment } from '../../../environment'
-import { createPublishConfig, createQueueConfig } from '../queue.factory'
+import { createAuditQueueConfig, createPublishConfig, createQueueConfig } from '../queue.factory'
 
-const variables = ['SQS_QUEUE_URL', 'SQS_DEAD_LETTER_QUEUE_URL', 'SQS_EVENTS_QUEUE_URL']
+const variables = [
+  'SQS_QUEUE_URL',
+  'SQS_DEAD_LETTER_QUEUE_URL',
+  'SQS_EVENTS_QUEUE_URL',
+  'SQS_EVENTS_DEAD_LETTER_QUEUE_URL',
+]
 
 const original: NodeJS.ProcessEnv = { ...process.env }
 
@@ -48,5 +53,21 @@ describe('queue factory', () => {
 
     expect(config).toEqual({ eventsQueueUrl: 'http://events' })
     expect(config.eventsQueueUrl).not.toBe(environment.queueUrl)
+  })
+
+  test('WHEN the events dead letter variable is set SHOULD read the events channel', () => {
+    process.env.SQS_EVENTS_QUEUE_URL = 'http://events'
+    process.env.SQS_EVENTS_DEAD_LETTER_QUEUE_URL = 'http://events-dead'
+
+    const environment = new Environment()
+    const config = createAuditQueueConfig(environment)
+
+    expect(config).toEqual({
+      queueUrl: 'http://events',
+      deadLetterQueueUrl: 'http://events-dead',
+      maxMessages: 10,
+      waitTimeSeconds: 20,
+      visibilityTimeout: 30,
+    })
   })
 })

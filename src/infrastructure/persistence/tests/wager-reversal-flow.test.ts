@@ -19,6 +19,7 @@ import { WagerSubmitWriter } from '../wager/wager-submit.writer'
 import { WagerTransactionRepository } from '../wager/wager-transaction.repository'
 import { WalletRepository } from '../wallet/wallet.repository'
 import { PersistenceHarness } from './persistence.harness'
+import { clock, journey } from './journey.stubs'
 
 const currency = {
   brl: 'BRL',
@@ -110,6 +111,8 @@ beforeAll(async () => {
     new WagerEventsMapper(),
     new WagerMediator(),
     new SimpleMetric(),
+    clock,
+    journey,
   )
 })
 

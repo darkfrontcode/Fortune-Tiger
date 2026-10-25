@@ -14,7 +14,7 @@ The gate is additive: it lands over the delivered code and rewrites no line of i
 
 `bun run verify` is the static gate: `bun run build` and `bun run test:unit`. It needs no Docker, database, or queue.
 
-`bun run verify:full` is the complete gate. It reads `.env` through `Environment`, checks that `DATABASE_URL` and `AWS_ENDPOINT_URL` answer within two seconds, and then runs the migrations plus the integration, concurrency, and end-to-end suites. A missing variable or a port that does not answer stops the run with the dependency name and the `docker compose up -d` hint. The first failing step ends the run with exit code `1`.
+`bun run verify:full` is the complete gate. It reads `.env` through `Environment`, checks that `DATABASE_URL`, `AWS_ENDPOINT_URL`, and `MONGODB_URL` answer within two seconds, and then runs the migrations plus the integration, audit store, journey store, concurrency, and end-to-end suites. A missing variable or a port that does not answer stops the run with the dependency name and the `docker compose up -d` hint. The first failing step ends the run with exit code `1`.
 
 Both commands live in `scripts/verify.ts`, and the folder spec is `scripts/spec.md`.
 
@@ -26,7 +26,7 @@ Both commands live in `scripts/verify.ts`, and the folder spec is `scripts/spec.
 
 `bun run test:coverage` runs the unit suite with Bun coverage and writes `coverage/lcov.info`, which the pipeline keeps as an artifact. The reporters are `text` and `lcov` in `bunfig.toml`.
 
-The unit suite must cover **100% of executable lines**. The line threshold is enforced at `1.0` in `bunfig.toml`. Bun reports implicit class constructors as functions even when they contain no domain behavior; those constructors are not added merely to inflate the function metric. The latest report is **100% lines and 92.45% functions**. Persistence and the HTTP end-to-end suites stay out of that number on purpose: they need PostgreSQL and SQS, so their coverage belongs to `bun run verify:full`, not to a gate that runs with nothing up.
+The unit suite must cover **100% of executable lines**. The line threshold is enforced at `1.0` in `bunfig.toml`. Bun reports implicit class constructors as functions even when they contain no domain behavior; those constructors are not added merely to inflate the function metric. The latest report is **100% lines and 92.79% functions**. Persistence, the MongoDB audit adapter, and the HTTP end-to-end suites stay out of that number on purpose: they need PostgreSQL, MongoDB, and SQS, so their coverage belongs to `bun run verify:full`, not to a gate that runs with nothing up.
 
 The badge on the README reads the line number. It is updated by hand when the number moves, so it never claims a value the run did not produce.
 
@@ -34,7 +34,7 @@ The badge on the README reads the line number. It is updated by hand when the nu
 
 Unit tests sit in `tests/` beside the module they cover. The file name is `{subject}.test.ts`.
 
-`Money`: scale, invalid input, currency conflict. `Wallet`: balance and version. `BET`, `WIN`, `LOSS`, `REFUND`, `ROLLBACK`. Same key with a different payload. Factories `create` and `rehydrate`.
+`Money`: scale, invalid input, currency conflict. `Wallet`: balance and version. `BET`, `WIN`, `LOSS`, `REFUND`, `ROLLBACK`. Same key with a different payload. Factories `create` and `rehydrate`. The audit use case, the event guard, the mapper, and the consumer are unit-tested too: valid projection, duplicate acknowledgement, retry under the limit, dead letter on the fifth receive, and an invalid body that never reaches the store.
 
 A unit case is a theory. The `Theory` type lives in `src/infrastructure/protocols/theory.protocol.ts`. A case carries `params` and `expected`; each test supplies its own `WHEN` … `SHOULD` description. Production code does not import this type.
 
@@ -45,6 +45,33 @@ A unit case is a theory. The `Theory` type lives in `src/infrastructure/protocol
 Real PostgreSQL and LocalStack. Migrations and constraints. Atomicity of wallet, ledger, inbox, and outbox. Inbox redelivery after process termination. Concurrent publishers. Retry and DLQ. Reversals that arrive before their references. Consistency after a restart.
 
 `bun run test:int` runs these integration scenarios.
+
+## Audit store
+
+Real MongoDB and LocalStack, through `bun run test:audit`. The suite covers:
+
+- one document per `eventId`, and a second delivery of the same event answered as a duplicate;
+- filters by `wagerId`, `correlationId`, `eventType`, and an inclusive time range;
+- ordering by `occurredAt` and then `eventId`, with the limit applied;
+- the unique index on `eventId`;
+- an actual outbox event envelope projected into the timeline, including the `WalletBalanceChanged` event and its `direction` metadata;
+- the same correlation across the lifecycle;
+- an unreachable MongoDB refusing the write instead of acknowledging it;
+- an invalid event dead-lettered without a write.
+
+The HTTP timeline is covered by `audit.e2e.test.ts`: it submits a wager, waits for the outbox and the audit consumer, and reads the timeline back with its filters and its provider scoping. `test/audit-channel.e2e.ts` gives that file its own FIFO pair on LocalStack and clears the pending outbox rows before the app boots, so a backlog left by another suite cannot sit in front of its events. `audit-independence.e2e.test.ts` boots the HTTP module with an unreachable MongoDB and proves a wallet and a wager still succeed.
+
+## Journey store
+
+The journey is the per-caller view of the stages: route, use case, database, queue. Real MongoDB, through `bun run test:journey`. The suite covers:
+
+- one document per `stepId`, and a second write of the same step refused as a duplicate;
+- one aggregate in `occurredAt` order, with the tie broken by `stepId`;
+- filters by `flowId`, `playerId`, `providerId`, `stage`, `outcome`, and an inclusive time range;
+- a bounded page by `limit`;
+- an unreachable MongoDB refusing the record instead of buffering it.
+
+The HTTP routes are covered by `journey.e2e.test.ts`: it opens a wallet, submits a wager, and reads the wager journey and the player journey back with their filters and their provider scoping. `journey-independence.e2e.test.ts` boots the HTTP module with an unreachable MongoDB and proves a wallet and a wager still succeed, so the journey store is never on the financial path.
 
 ## Properties
 
@@ -85,7 +112,7 @@ The proxy is part of the test, not of the product. It destroys open sockets on s
 
 Status table in `src/presentation/http/spec.md`, invalid payload, and idempotent replay. It enters the README only when the test exists.
 
-`swagger.e2e.test.ts` reads `GET /docs-json` and proves the provider paths, the request and response schemas, the required `Idempotency-Key` header, and that health and metrics stay out of the document. It also reads `GET /docs` and proves the UI answers.
+`swagger.e2e.test.ts` reads `GET /docs-json` and proves the provider paths, the request and response schemas, the required `Idempotency-Key` header, and that health and metrics stay out of the document. It also reads `GET /docs` and proves the UI answers. `audit.e2e.test.ts` proves the timeline route, its filters, and its provider scoping against a live stack.
 
 `bun run openapi:export --check` goes one step further than the route test: it rebuilds the document from the code and compares it with the checked-in `docs/api/openapi.json`. A route, a DTO, or a header that changes without the file fails the pipeline, so the contract in the repository stays the contract the service serves. `bun run openapi:export` rewrites the file.
 

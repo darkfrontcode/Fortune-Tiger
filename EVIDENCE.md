@@ -1,6 +1,6 @@
 # Quality Evidence Matrix
 
-The current branch was verified locally with Docker Compose (`postgres:16`, `localstack:3`) on **2026-10-23**. `bun run verify:full` passed the complete gate, including migrations, unit tests, persistence integration, six-process concurrency tests, and HTTP end-to-end tests. The load numbers below come from the measured full-stack run described in their own section.
+The current branch was verified locally with Docker Compose (`postgres:16`, `localstack:3`, `mongo:7`) on **2026-10-24**. `bun run verify:full` passed the complete gate, including migrations, unit tests, persistence integration, the audit store suite, the journey store suite, six-process concurrency tests, and HTTP end-to-end tests. The load numbers below come from the measured full-stack run described in their own section.
 
 ## Test Suite Results
 
@@ -13,15 +13,15 @@ The current branch was verified locally with Docker Compose (`postgres:16`, `loc
 ### Coverage
 - **Status**: PASS (local)
 - **Command**: `bun run test:coverage`
-- **Functions**: 92.45% (Bun counts implicit class constructors in this metric)
+- **Functions**: 93.16% (Bun counts implicit class constructors in this metric)
 - **Lines**: 100%
 - **Report**: `coverage/lcov.info`, kept by the pipeline as an artifact
-- **Scope**: the unit suite; persistence and HTTP end-to-end paths need PostgreSQL and SQS, so they are measured by `verify:full` and stay out of this number
+- **Scope**: the unit suite; persistence, the MongoDB adapters (audit and journey), and HTTP end-to-end paths need their services, so they are measured by `verify:full` and stay out of this number
 
 ### Unit Tests
 - **Status**: PASS (local)
-- **Count**: 367 tests across 66 files
-- **Duration**: ~1s
+- **Count**: 455 tests across 78 files
+- **Duration**: ~4s
 - **Coverage**: Domain, application use cases, messaging adapters (no persistence integration), plus `fast-check` properties for money arithmetic, wallet balance, ledger equation, idempotency digest, and wager transitions; 100% of executable unit-scope lines are covered
 - **Command**: `bun run test:unit`
 - **Database**: Not required
@@ -35,6 +35,22 @@ The current branch was verified locally with Docker Compose (`postgres:16`, `loc
 - **Command**: `bun run test:int`
 - **Prerequisites**: `DATABASE_URL`, `AWS_ENDPOINT_URL`, `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`, `SQS_EVENTS_QUEUE_URL` (LocalStack queues created in CI or compose)
 - **Scope**: `bunfig.int.toml` → `src/infrastructure/persistence/tests`
+
+### Audit Store Tests
+- **Status**: PASS (local)
+- **Count**: 15 tests across 2 files
+- **Command**: `bun run test:audit`
+- **Coverage**: real MongoDB — one document per `eventId` with a duplicate answered as a duplicate, event type, correlation, time-range and page filters, ordering by `occurredAt` then `eventId`, the unique index, an outbox envelope projected into the timeline (including `WalletBalanceChanged`), an unreachable MongoDB refusing the write, and an invalid event dead-lettered
+- **Prerequisites**: `MONGODB_URL` (the `mongo:7` compose service or the CI service), Postgres and LocalStack for the envelope setup
+- **Scope**: `bunfig.audit.toml` → `src/infrastructure/audit/tests`
+
+### Journey Store Tests
+- **Status**: PASS (local)
+- **Count**: 11 tests across 1 file
+- **Command**: `bun run test:journey`
+- **Coverage**: real MongoDB — one document per `stepId` with a duplicate refused, one aggregate in `occurredAt` order with the `stepId` tie-break, filters by `flowId`, `playerId`, `providerId`, `stage`, `outcome`, and an inclusive time range, a bounded page by `limit`, and an unreachable MongoDB refusing the record instead of buffering it
+- **Prerequisites**: `MONGODB_URL` (the `mongo:7` compose service or the CI service)
+- **Scope**: `bunfig.journey.toml` → `src/infrastructure/journey/tests`
 
 ### Concurrency Tests
 - **Status**: PASS (local)
@@ -59,8 +75,8 @@ The current branch was verified locally with Docker Compose (`postgres:16`, `loc
 
 ### E2E Tests
 - **Status**: PASS (local)
-- **Count**: 47 tests across 8 files
-- **Duration**: ~5s
+- **Count**: 102 tests across 17 files
+- **Duration**: ~11s
 - **Command**: `bun run test:e2e`
 - **Scope**: `bunfig.e2e.toml` → `src/presentation/**/tests/*.e2e.test.ts` (mapper/filter unit files excluded via `package.json` ignore patterns)
 - **Prerequisites**: `DATABASE_URL` and SQS env vars (full `AppModule` boots)
@@ -68,7 +84,7 @@ The current branch was verified locally with Docker Compose (`postgres:16`, `loc
 ### OpenAPI
 - **Status**: PASS (local)
 - **Command**: `bun run openapi:export --check`
-- **Coverage**: `docs/api/openapi.json` matches the document the application builds from its route metadata: 7 provider paths and 9 schemas, `Idempotency-Key` on the submit, and health and metrics absent; `bun run openapi:export` rewrites the file
+- **Coverage**: `docs/api/openapi.json` matches the document the application builds from its route metadata: 10 provider paths and 14 schemas, `Idempotency-Key` on the submit, the journey routes, and health and metrics absent; `bun run openapi:export` rewrites the file
 - **Prerequisites**: PostgreSQL for the boot; the pipeline step and the contract are in [`scripts/spec.md`](scripts/spec.md) and [`docs/API.md`](docs/API.md)
 
 ### Queues
@@ -106,8 +122,8 @@ The current branch was verified locally with Docker Compose (`postgres:16`, `loc
 - **Status**: PASS (local, 2026-10-24)
 - **Command**: `bun run cluster:up`, then `bun run cluster:verify`; optionally `bun run cluster:observability`
 - **Cluster**: `kind` 0.33 with `kindest/node:v1.32.0`, one control plane and two workers, and `standard` as the storage class
-- **Coverage**: `cluster:up` built the image, loaded it into the three nodes, applied `overlays/local`, waited for both PostgreSQL instances and LocalStack, ran the migration Job, rolled both API replicas out, and answered `ready` on `http://127.0.0.1:30080/health/ready`
-- **Instances**: five pods at rest — `postgres-primary-0`, `postgres-replica-0`, `localstack`, and two `api` replicas on different workers (`10.244.1.x` and `10.244.2.x`, both listed in `kubectl get endpoints api`); the primary and the streaming standby also landed on different workers, the primary on `fortune-tiger-worker` and the standby on `fortune-tiger-worker2`. `pg_stat_replication` on the primary reported `state: streaming`, `sync_state: async`
+- **Coverage**: `cluster:up` built the image, loaded it into the three nodes, applied `overlays/local`, waited for both PostgreSQL instances, LocalStack, and Mongo, ran the migration Job, rolled both API replicas out, and answered `ready` on `http://127.0.0.1:30080/health/ready`
+- **Instances**: six pods at rest — `postgres-primary-0`, `postgres-replica-0`, `localstack`, `mongo`, and two `api` replicas on different workers (`10.244.1.x` and `10.244.2.x`, both listed in `kubectl get endpoints api`); the primary and the streaming standby also landed on different workers, the primary on `fortune-tiger-worker` and the standby on `fortune-tiger-worker2`. `pg_stat_replication` on the primary reported `state: streaming`, `sync_state: async`
 - **Financial path through the node port**: wallet `201` with `100.00`, `BET 30.00` answering `200 PROCESSED` with `70.00`, the repeat answering `200` with the same `transactionId`, `idempotentReplay: true`, and `70.00`, the ledger returning two entries (`CREDIT`, `DEBIT`), reconciliation `consistent: true` with `difference 0.00` over two entries, and `/metrics` answering `200` with `wager_transactions_processed_total`
 - **Failure drills**: deleting one API pod kept `/health/ready` at `200` while the Deployment started a replacement; deleting `postgres-replica-0` returned it to `1/1` and `streaming` again
 - **Load balancing**: `kubectl get endpoints api` listed two pod addresses on two workers; twenty independent requests through `30080` split `13` and `7` between the pods, read from each pod's `wager_transactions_processed_total`, and the wallet was debited exactly twenty times

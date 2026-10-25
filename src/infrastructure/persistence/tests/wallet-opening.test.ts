@@ -12,6 +12,7 @@ import { WagerTransactionRepository } from '../wager/wager-transaction.repositor
 import { WalletOpeningWriter } from '../wallet/wallet-opening.writer'
 import { WalletRepository } from '../wallet/wallet.repository'
 import { PersistenceHarness } from './persistence.harness'
+import { clock, journey } from './journey.stubs'
 
 const currency = {
   brl: 'BRL',
@@ -52,7 +53,7 @@ beforeAll(async () => {
   Suite.wallets = new WalletRepository(Suite.orm.em)
   Suite.wagers = new WagerTransactionRepository(Suite.orm.em)
   Suite.ledger = new WalletLedgerRepository(Suite.orm.em)
-  Suite.writer = new WalletOpeningWriter(Suite.orm, new IdempotencyService(), new WagerMediator())
+  Suite.writer = new WalletOpeningWriter(Suite.orm, new IdempotencyService(), new WagerMediator(), clock, journey)
 })
 
 beforeEach(async () => {
@@ -68,6 +69,7 @@ describe('Wallet opening', () => {
     const playerId = uuidv7()
     const initialBalance = Money.from({ amount: amount.hundred, currency: currency.brl })
     const input = {
+      id: uuidv7(),
       playerId,
       initialBalance,
       openedAt: instant.open,
@@ -96,6 +98,7 @@ describe('Wallet opening', () => {
     const playerId = uuidv7()
     const initialBalance = Money.zero(currency.brl)
     const input = {
+      id: uuidv7(),
       playerId,
       initialBalance,
       openedAt: instant.open,
@@ -119,6 +122,7 @@ describe('Wallet opening', () => {
     const playerId = uuidv7()
     const initialBalance = Money.from({ amount: amount.hundred, currency: currency.brl })
     const input = {
+      id: uuidv7(),
       playerId,
       initialBalance,
       openedAt: instant.open,

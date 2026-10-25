@@ -44,6 +44,8 @@ const command = {
   unit: ['bun', 'run', 'test:unit'],
   migration: ['bun', 'run', 'migration:up'],
   integration: ['bun', 'run', 'test:int'],
+  audit: ['bun', 'run', 'test:audit'],
+  journey: ['bun', 'run', 'test:journey'],
   concurrency: ['bun', 'run', 'test:concurrency'],
   e2e: ['bun', 'run', 'test:e2e'],
 }
@@ -57,6 +59,8 @@ const steps: { static: Array<Step>, full: Array<Step> } = {
   full: [
     { name: 'Migrations', command: command.migration },
     { name: 'Integration tests', command: command.integration },
+    { name: 'Audit store integration tests', command: command.audit },
+    { name: 'Journey store integration tests', command: command.journey },
     { name: 'Concurrency tests', command: command.concurrency },
     { name: 'End-to-end tests', command: command.e2e },
   ],
@@ -106,6 +110,7 @@ const dependencies = (): Array<Dependency> => {
   return [
     { name: 'PostgreSQL', url: database },
     { name: 'LocalStack', url: endpoint },
+    { name: 'MongoDB', url: environment.mongoUrl },
   ]
 }
 

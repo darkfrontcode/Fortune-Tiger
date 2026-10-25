@@ -104,6 +104,11 @@ src/
       tests/
   application/
     AGENTS.md
+    audits/
+      enums/
+      protocols/
+      tokens/
+      use-cases/tests/
     health/
       enums/
       protocols/
@@ -114,6 +119,13 @@ src/
       guards/tests/
       patterns/tests/
       tests/
+    journeys/
+      data/
+      enums/
+      protocols/
+      services/tests/
+      tokens/
+      use-cases/tests/
     observability/
       data/
       maps/
@@ -145,6 +157,11 @@ src/
   infrastructure/
     AGENTS.md
     protocols/
+    audit/
+      tests/
+    journey/
+      tests/
+    mongo/
     environment/tests/
     messaging/
       consumers/enums/
@@ -178,6 +195,7 @@ src/
       factories/
       filters/
       guards/
+      interceptors/
       mappers/
       maps/
       providers/
@@ -190,15 +208,15 @@ src/
       tests/
 ```
 
-`main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` imports the layer modules, and `runtime.service.ts` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.
+`main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` imports the layer modules, and `runtime.service.ts` starts the outbox worker, the reference worker, the request consumer, and the audit consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.
 
-Beside `src`, the repository keeps `docs/` for the statement, the plan, the API and its checked-in OpenAPI document, the ADRs, the delivery path, testing, and the load note; `scripts/` for `verify`, `verify:full`, `demo`, `load`, `auth`, `openapi`, and `cluster`; `docker/` for the queue bootstrap, the optional Keycloak realm, and the Prometheus and Grafana provisioning; `kubernetes/` for the cluster, the Kustomize tree, and the overlay that adds the observability pair; and `test/` for the end-to-end setup file. `EVIDENCE.md` records the last local run, and `EVALUATION.md` is the section 14 checklist against the code.
+Beside `src`, the repository keeps `docs/` for the statement, the plan, the API and its checked-in OpenAPI document, the ADRs, the delivery path, testing, and the load note; `scripts/` for `verify`, `verify:full`, `demo`, `load`, `auth`, `openapi`, and `cluster`; `docker/` for the queue bootstrap, the optional Keycloak realm, and the Prometheus and Grafana provisioning; `kubernetes/` for the cluster, the Kustomize tree, and the overlay that adds the observability pair; and `test/` for the end-to-end setup file and the audit channel used by the timeline suite. `EVIDENCE.md` records the last local run, and `EVALUATION.md` is the section 14 checklist against the code.
 
 Files follow the Nest name (`health.controller.ts`, `health.module.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, `patterns/` holds concrete rule classes, and `guards/` holds one class per rule with its own `spec.md`. Application ports live in the consuming capability's `protocols/` folder; adapter-internal contracts and presentation-specific extension contracts stay with their consumer. A port token lives in a `tokens/` folder under the owning module, with one `Symbol` per file and an `index.ts` barrel. Unit tests live in `tests/` next to the module they cover. The file is `{subject}.test.ts`. Production barrels do not reexport tests.
 
 ## Composition
 
-A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, and `health.module.ts` build the adapters and the controller. `http.module.ts` provides wallet use cases alongside the HTTP controller and persistence ports. `wagers.module.ts`, `reconciliations.module.ts`, and `references.module.ts` build their use cases.
+A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, `audit.store.module.ts`, `journey.store.module.ts`, and `health.module.ts` build the adapters and the controller. `http.module.ts` provides wallet use cases alongside the HTTP controller and persistence ports. `wagers.module.ts`, `reconciliations.module.ts`, `references.module.ts`, `audits.module.ts`, and `journeys.module.ts` build their use cases.
 
 A port is a protocol plus a token. The protocol is the contract and carries no runtime value. The token is one `Symbol` in `tokens/` under its owning module, one file each, named after the protocol without the suffix. Cross-cutting application tokens live with their `observability` or `time` contracts. The owning module binds the token with `useExisting`, so one instance answers to both names, and the consumer injects only the token.
 
@@ -235,29 +253,41 @@ Keycloak itself is optional infrastructure. A production deployment would add th
 
 Delivery is at-least-once. FIFO is an optimization, not the guarantee: `MessageGroupId` is the aggregate id, so one wallet keeps its order and two wallets may interleave. Uniqueness lives in Postgres — the inbox row, the unique idempotency key, and the unique `(provider_id, external_transaction_id)`.
 
-The channel has two directions. `wager-transactions.fifo` carries requests into the consumer, with `wager-transactions-dlq.fifo` behind it; `wager-events.fifo` carries integration events out of the publisher. A poison request never sits in front of an event, and the two sides scale on their own.
+The channel has two directions. `wager-transactions.fifo` carries requests into the consumer, with `wager-transactions-dlq.fifo` behind it; `wager-events.fifo` carries integration events out of the publisher, with `wager-events-dlq.fifo` behind it. A poison request never sits in front of an event, and the two sides scale on their own.
+
+A second consumer reads `wager-events.fifo` and appends the audit timeline to MongoDB. It maps the same envelope the publisher wrote, stores one document per `eventId`, and acknowledges a duplicate as a successful duplicate. A storage failure retries with the same ladder and moves to `wager-events-dlq.fifo` on the fifth receive; an invalid event goes there immediately. The audit store is a read model: the financial commit never waits for it.
 
 The inbox, the wager, the wallet, the ledger, and the outbox commit in one SQL transaction. The ack happens after that commit, and the publisher sends outside it, so an event never leaves before the financial change is durable. A publisher that dies after the send republishes, and the consumer inbox keeps the effect single.
 
 The retry ladder is data, not a loop: `attempts` and `nextAttemptAt` decide the next attempt on both the outbox row and the pending reference, with `1s × 2^(attempts - 1)` capped at 60 seconds. The consumer moves a message to the dead-letter queue after five receives, and a permanent failure goes there immediately. The outbox has no dead-letter: it keeps retrying, and the lag metric makes a backlog visible before it becomes a delay.
 
+## Journey
+
+The journey is the per-caller view of a request, stage by stage. Where the audit answers "which events did this wager produce", the journey answers "what did this request do, stage by stage". It is a read model in MongoDB, next to the audit timeline, and it never joins the financial SQL transaction.
+
+The stages are recorded by the code that owns the step: `ROUTE` by `JourneyInterceptor` in the presentation, `USE_CASE` by the use cases, `DATABASE` by the persistence writers, and `QUEUE` by the outbox publisher. Each settled stage reports `SUCCEEDED`, `FAILED`, or `ROLLBACK` and the time it spent. `flowId` groups one aggregate — a wager uses its `idempotencyKey` — and `providerId` + `playerId` join the steps of one caller across requests. One document per `stepId`, unique, with indexes for the aggregate order, the caller across requests, and a provider over time.
+
+`JourneyService.record` is fire-and-forget: it never throws and never awaits a caller. A store failure increments `journey_events_failures_total`, logs a warning, and leaves the financial answer unchanged; a MongoDB outage loses the observation of that step, never a balance. The providers are provider-scoped through the existing guard: `GET /wagering/transactions/:transactionId/journey` answers a foreign wager like the wager route, and `GET /providers/:providerId/players/:playerId/journey` answers `404` when a provider reads someone else's picture of a player. MongoDB is not part of `/health/ready`.
+
+`JourneyStoreProtocol` and `JOURNEY_STORE` are owned by `application/journeys`; the Mongoose adapter lives only in `infrastructure/journey`, and the connection is `MongoConnection` in `infrastructure/mongo`, shared with the audit store.
+
 ## Observability
 
 `LoggerProtocol` writes one line per event, JSON by default and text under `LOG_PRETTY`, with `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId` attached through `child`. An amount and a wager body never enter a log line.
 
-`MetricProtocol` carries counters and observations. `PrometheusMetric` is the default adapter and answers `GET /metrics` with the Prometheus text exposition; `SimpleMetric` serves `METRICS_BACKEND=memory` and the unit tests. The names live in `application/observability/data` and the help text lives in its `maps`, so no adapter invents a name. The instrumented families are transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing latency.
+`MetricProtocol` carries counters and observations. `PrometheusMetric` is the default adapter and answers `GET /metrics` with the Prometheus text exposition; `SimpleMetric` serves `METRICS_BACKEND=memory` and the unit tests. The names live in `application/observability/data` and the help text lives in its `maps`, so no adapter invents a name. The instrumented families are transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing latency, the audit persisted, duplicate, and failure counters, and the journey recorded and failure counters.
 
-`GET /health/live` reads the process, and `GET /health/ready` asks PostgreSQL and SQS at the same time with a two-second abort, so a dead dependency answers `503` instead of hanging the check.
+`GET /health/live` reads the process, and `GET /health/ready` asks PostgreSQL and SQS at the same time with a two-second abort, so a dead dependency answers `503` instead of hanging the check. MongoDB stays out of readiness: the audit timeline and the journey are not on the financial path.
 
 ## Kubernetes
 
 The delivery also runs on a real cluster: `kind` starts one control plane and two workers as Docker containers, and `scripts/cluster.ts` is the only entry. `bun run cluster:up` resolves `kind` and `kubectl` (downloading the pinned releases into `.tools/bin` when they are missing), starts Docker when it is not answering, builds and loads the image, applies the Kustomize tree, runs the migration Job, and waits for both replicas before it checks `/health/ready`.
 
-`kubernetes/base` holds the namespace, the ConfigMaps, the secret, the two PostgreSQL statefulsets with their headless services, LocalStack, the migration Job, the API Deployment, its services, and its PodDisruptionBudget. `kubernetes/overlays/local` is the delivery and turns the `api` Service into a `NodePort` on `30080`; `kubernetes/overlays/observability` adds Prometheus and Grafana. The cluster definition lives in `kubernetes/kind`, and every folder explains its own rule in its `spec.md`.
+`kubernetes/base` holds the namespace, the ConfigMaps, the secret, the two PostgreSQL statefulsets with their headless services, LocalStack, Mongo, the migration Job, the API Deployment, its services, and its PodDisruptionBudget. `kubernetes/overlays/local` is the delivery and turns the `api` Service into a `NodePort` on `30080`; `kubernetes/overlays/observability` adds Prometheus and Grafana. The cluster definition lives in `kubernetes/kind`, and every folder explains its own rule in its `spec.md`.
 
-Five pods run at rest. Two `api` replicas sit behind the Service, which is the load balancer: kube-proxy spreads connections across both endpoints, and the balance is per connection, not per request. PostgreSQL runs a primary and a streaming standby on different workers, and the API writes only to the primary. LocalStack is the one workload with a single replica on purpose: it is the broker, and two replicas would hold two separate queue sets.
+Six pods run at rest. Two `api` replicas sit behind the Service, which is the load balancer: kube-proxy spreads connections across both endpoints, and the balance is per connection, not per request. PostgreSQL runs a primary and a streaming standby on different workers, and the API writes only to the primary. LocalStack is the one workload with a single replica on purpose: it is the broker, and two replicas would hold two separate queue sets. `mongo` is the read model, a single replica: the audit timeline and the journey are observations, not financial state, and the API keeps working while the store is down.
 
-`bun run cluster:verify` reads the shape instead of assuming it: nodes, endpoints, replication, the migration, the financial flow with a replay, and a per-pod counter after a burst of requests. The `CI` workflow runs `cluster:up` and then `cluster:verify`, so the manifests are proven on a real cluster on every push to `main` and every pull request.
+`bun run cluster:verify` reads the shape instead of assuming it: nodes, endpoints, replication, the migration, the financial flow with a replay, the MongoDB collections of the datalake, and a per-pod counter after a burst of requests. The `CI` workflow runs `cluster:up` and then `cluster:verify`, so the manifests are proven on a real cluster on every push to `main` and every pull request.
 
 ## Limits
 
@@ -268,14 +298,14 @@ Stated here so the delivery is read for what it is:
 - Reconciliation compares the stored balance with the ledger and reports the difference. It never repairs, so a divergence needs an operator.
 - A wallet holds one currency, and a reversal is all-or-nothing: partial reversal is out.
 - The `anonymous` auth mode trusts the caller, because a local run and the CI should not need an identity provider. `AUTH_MODE=jwt` is the mode that verifies a token.
-- OpenTelemetry, a dashboard, and an audit store are out. The Prometheus exposition is in.
+- The audit timeline and the journey are eventually consistent. They are read models in MongoDB — the audit fed by the outbox, the journey recorded stage by stage — not transactional records; a MongoDB outage delays them and never rolls back a wager. OpenTelemetry and a dashboard stay out. The Prometheus exposition is in.
 - The load script measures the running API on one machine. It is not a CI gate, it has no RPS target, and its numbers are not a capacity claim.
 - The cluster runs on one machine. Three nodes share a kernel and a disk, the standby has no automatic failover, and no autoscaler is provisioned.
 - The queue runs as one LocalStack pod. A managed SQS brings its own redundancy; two LocalStack replicas would hold two separate queue sets, so the broker stays single and readiness reports it when it is gone.
 
 ## Decisions
 
-Ten records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, the split between inbound and outbound queues, and the local cluster. A decision that changes gets a new record; the old one keeps its number.
+Twelve records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, the split between inbound and outbound queues, the local cluster, the polyglot audit store, and the journey read model in MongoDB. A decision that changes gets a new record; the old one keeps its number.
 
 ## Stack
 
@@ -285,11 +315,12 @@ Ten records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the
 | Language | TypeScript strict |
 | Framework | NestJS |
 | Database | PostgreSQL 16 |
+| Read models | MongoDB 7 with Mongoose — the audit timeline and the journey |
 | Queue | LocalStack. The statement also allows MiniStack. |
 | ORM | MikroORM |
 | Local cluster | kind 0.33 with Kustomize, on Kubernetes 1.32 |
 
-Section 4 of the statement prefers MikroORM and also accepts TypeORM. It excludes Prisma. The database stays PostgreSQL.
+Section 4 of the statement prefers MikroORM and also accepts TypeORM. It excludes Prisma. The database stays PostgreSQL. MongoDB holds only the append-only audit timeline and the per-caller journey; it is not a second source of financial truth.
 
 `README.md` stays at the repository root. It is short: the four folders and the stack. It is updated whenever a phase lands. Setup, commands, and `LOG_PRETTY` join it when the app exists. It does not list every spec.
 

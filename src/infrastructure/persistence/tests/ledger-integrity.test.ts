@@ -6,6 +6,7 @@ import { WagerMediator } from '@application/wagers/mediators'
 import { Money } from '@domain/money/money'
 import { WalletOpeningWriter } from '../wallet/wallet-opening.writer'
 import { PersistenceHarness } from './persistence.harness'
+import { clock, journey } from './journey.stubs'
 
 const currency = 'BRL'
 const amount = '100.00'
@@ -28,7 +29,7 @@ class Suite {
 
 beforeAll(async () => {
   Suite.orm = await PersistenceHarness.open()
-  Suite.writer = new WalletOpeningWriter(Suite.orm, new IdempotencyService(), new WagerMediator())
+  Suite.writer = new WalletOpeningWriter(Suite.orm, new IdempotencyService(), new WagerMediator(), clock, journey)
 })
 
 beforeEach(async () => {
@@ -42,6 +43,7 @@ afterAll(async () => {
 describe('Ledger database integrity', () => {
   test('WHEN a ledger row is mutated directly SHOULD refuse update and delete', async () => {
     const wallet = await Suite.writer.open({
+      id: uuidv7(),
       playerId: uuidv7(),
       initialBalance: Money.from({ amount, currency }),
       openedAt: instant,
@@ -69,6 +71,7 @@ describe('Ledger database integrity', () => {
 
   test('WHEN a ledger row references another transaction SHOULD refuse the insert', async () => {
     const wallet = await Suite.writer.open({
+      id: uuidv7(),
       playerId: uuidv7(),
       initialBalance: Money.zero(currency),
       openedAt: instant,
