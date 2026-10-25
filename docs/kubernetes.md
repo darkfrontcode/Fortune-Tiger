@@ -39,6 +39,8 @@ flowchart TB
     prom["prometheus :30090"] -. "scrape every pod" .-> api1
     prom -. "scrape every pod" .-> api2
     graf["grafana :30030"] --> prom
+    am["alertmanager :30093"] --> email["darkfrontcode@gmail.com"]
+    prom -. "alerts" .-> am
 ```
 
 The control plane is tainted, so it runs no workload: the two API replicas and the two database instances split across the two workers, and the scheduler is free to place `localstack` and `mongo` on either. The picture is one healthy arrangement.
@@ -107,6 +109,7 @@ The first run pulls `postgres:16`, `localstack/localstack:3`, `mongo:7`, and the
 | `http://127.0.0.1:30080/metrics` | the exposition of the pod that served the request |
 | `http://127.0.0.1:30090` | Prometheus, after `bun run cluster:observability` |
 | `http://127.0.0.1:30030` | Grafana, anonymous viewer |
+| `http://127.0.0.1:30093` | Alertmanager |
 
 ```bash
 bun run cluster:status
@@ -138,9 +141,9 @@ The last one shows the replication lag honestly: the standby trails the primary 
 bun run cluster:observability
 ```
 
-applies the `observability` overlay on top of the local one: Prometheus on `30090`, Grafana on `30030`, the datasource and the dashboard from `docker/grafana`. Prometheus discovers the API pods through the headless service, so a scrape covers both replicas instead of one address the service happened to pick.
+applies the `observability` overlay on top of the local one: Prometheus on `30090`, Grafana on `30030`, Alertmanager on `30093`, and the ConfigMaps generated from `docker/alerting` and `docker/grafana`. Prometheus discovers the API pods through the headless service, so a scrape covers both replicas instead of one address the service happened to pick.
 
-`http://127.0.0.1:30090/api/v1/targets` lists one target per replica, both `up`.
+`http://127.0.0.1:30090/api/v1/targets` lists one target per replica, both `up`. `http://127.0.0.1:30090/alerts` shows the alert rules from `docker/alerting/rules`, and `http://127.0.0.1:30093` is the Alertmanager UI, whose `email` receiver is addressed to `darkfrontcode@gmail.com`. Before relying on email delivery, put a real Gmail App Password in the `alertmanager-smtp` Secret (see `kubernetes/overlays/observability/alertmanager/alertmanager.smtp.secret.yaml`).
 
 ## Images
 
@@ -157,7 +160,7 @@ rebuilds the image, loads it again, and rolls the Deployment with `maxUnavailabl
 | Command | Purpose |
 | --- | --- |
 | `bun run cluster:up` | build, create, load, apply, migrate, wait |
-| `bun run cluster:observability` | add Prometheus and Grafana |
+| `bun run cluster:observability` | add Prometheus, Grafana, and Alertmanager |
 | `bun run cluster:status` | nodes, pods, services, endpoints, readiness |
 | `bun run cluster:verify` | prove the shape: nodes, endpoints, replication, migration, the financial flow, the datalake collections, and both replicas serving |
 | `bun run cluster:render` | render every overlay, no cluster needed |

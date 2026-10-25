@@ -305,7 +305,7 @@ Stated here so the delivery is read for what it is:
 
 ## Decisions
 
-Twelve records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, the split between inbound and outbound queues, the local cluster, the polyglot audit store, and the journey read model in MongoDB. A decision that changes gets a new record; the old one keeps its number.
+Thirteen records in [`docs/adr/`](docs/adr/): the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, the split between inbound and outbound queues, the local cluster, the polyglot audit store, the journey read model in MongoDB, and the Alertmanager email alert set. A decision that changes gets a new record; the old one keeps its number.
 
 ## Stack
 

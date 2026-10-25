@@ -20,6 +20,7 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
   <img alt="SQS on LocalStack" src="https://img.shields.io/badge/SQS-LocalStack%203-FF9900?style=for-the-badge&logo=amazonsqs&logoColor=white" />
   <img alt="Prometheus" src="https://img.shields.io/badge/Prometheus-2.55.1-E6522C?style=for-the-badge&logo=prometheus&logoColor=white" />
   <img alt="Grafana" src="https://img.shields.io/badge/Grafana-11.2.2-F46800?style=for-the-badge&logo=grafana&logoColor=white" />
+  <img alt="Alertmanager" src="https://img.shields.io/badge/Alertmanager-0.28.1-E6522C?style=for-the-badge&logo=prometheus&logoColor=white" />
   <img alt="Keycloak" src="https://img.shields.io/badge/Keycloak-26.0-4D4D4D?style=for-the-badge&logo=keycloak&logoColor=white" />
 </p>
 
@@ -75,6 +76,7 @@ The behind-the-scenes layer keeps the service dependable:
 - ☁️ **LocalStack SQS** lets the queue run locally, including retries and dead-letter queues.
 - 🔎 **Logs and metrics** help explain what happened without putting financial payloads in the logs.
 - 📊 **Prometheus metrics** answer `GET /metrics`, so a scrape sees transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing time, and the audit and journey counters.
+- 📨 **Alertmanager** evaluates the Prometheus rules and emails `darkfrontcode@gmail.com` when the API is down, memory is high, or a metric signals trouble - dead letters, outbox lag, store failures, or a reconciliation divergence.
 
 </details>
 
@@ -88,7 +90,7 @@ The cluster lives in [`kubernetes/`](kubernetes/) and starts with one command. I
 - ⚙️ two API replicas behind one service, spread across the workers, with a disruption budget and a zero-downtime rollout;
 - 📨 one LocalStack pod, with the queues created by the same script compose uses;
 - 🧾 one migration Job, recreated on every apply, waited on before the run reports success;
-- 📈 an optional Prometheus and Grafana overlay that scrapes each replica through the headless service.
+- 📈 an optional Prometheus, Grafana, and Alertmanager overlay that scrapes each replica through the headless service and emails the operator when a rule fires.
 
 Two replicas are safe because the guarantees already exist: the wallet row lock, `FOR UPDATE SKIP LOCKED` on the outbox, and the inbox row. A repeated bet still produces one debit, whichever pod answers.
 
@@ -97,7 +99,7 @@ bun run cluster:up
 bun run cluster:verify
 ```
 
-The topology, the failure drills, and the limits are in [`docs/kubernetes.md`](docs/kubernetes.md). The manifests are Kustomize: `overlays/local` for the cluster, `overlays/observability` for the dashboards. The `CI` workflow raises this same cluster on a runner and runs `cluster:verify` after it, so the pull request is green on the real cluster, not on the manifest only.
+The topology, the failure drills, and the limits are in [`docs/kubernetes.md`](docs/kubernetes.md). The manifests are Kustomize: `overlays/local` for the cluster, `overlays/observability` for the dashboards and the alerting pair. The `CI` workflow raises this same cluster on a runner and runs `cluster:verify` after it, so the pull request is green on the real cluster, not on the manifest only.
 
 </details>
 
@@ -231,7 +233,7 @@ The domain is the rulebook. Application is the coordinator. Presentation is the 
 
 Cross-layer imports use the `@application/*`, `@domain/*`, `@infrastructure/*`, and `@presentation/*` TypeScript aliases.
 
-The reasoning behind the shape is in [`docs/adr/`](docs/adr/): eleven short records, one per decision, each with the alternative that lost and the cost it carries.
+The reasoning behind the shape is in [`docs/adr/`](docs/adr/): thirteen short records, one per decision, each with the alternative that lost and the cost it carries.
 
 </details>
 
@@ -273,7 +275,7 @@ These are the coding assistants and model names used to build Fortune Tiger:
 - 📨 **SQS on LocalStack** provides a queue that works on a developer's machine.
 - 🐳 **Docker Compose** runs the local databases, queue, API, authentication, and observability profiles.
 - ☸️ **Kubernetes on kind** runs the same image on three nodes, with two API replicas and two PostgreSQL instances, declared as Kustomize manifests.
-- 📈 **Prometheus and Grafana** expose and visualize the application's metrics through the optional observability profile.
+- 📈 **Prometheus and Grafana** expose and visualize the application's metrics through the optional observability profile, and **Alertmanager** emails the operator when a rule fires.
 - 🔐 **Keycloak** provides the optional JWT identity provider through the auth profile.
 - 📘 **Swagger** publishes the HTTP contract at `/docs`.
 
@@ -321,7 +323,7 @@ bun run cluster:status
 bun run cluster:down
 ```
 
-`cluster:up` builds the image, creates the kind cluster when it is absent, starts it again after a Docker restart, loads the image into the nodes, applies the manifests, waits for PostgreSQL, LocalStack, the migration, and both API replicas, and checks `/health/ready`. The API answers on `http://127.0.0.1:30080`, Prometheus on `30090`, and Grafana on `30030`. It needs Docker only: `kind` and `kubectl` are reused from `PATH` or downloaded into `.tools/bin`, and on Windows Docker Desktop starts by itself. The versions and the troubleshooting are in [`docs/kubernetes.md`](docs/kubernetes.md).
+`cluster:up` builds the image, creates the kind cluster when it is absent, starts it again after a Docker restart, loads the image into the nodes, applies the manifests, waits for PostgreSQL, LocalStack, the migration, and both API replicas, and checks `/health/ready`. The API answers on `http://127.0.0.1:30080`, Prometheus on `30090`, Grafana on `30030`, and Alertmanager on `30093`. It needs Docker only: `kind` and `kubectl` are reused from `PATH` or downloaded into `.tools/bin`, and on Windows Docker Desktop starts by itself. The versions and the troubleshooting are in [`docs/kubernetes.md`](docs/kubernetes.md).
 
 `cluster:render` renders every overlay without a cluster, and the pipeline runs it, so a broken manifest fails before a cluster exists. `cluster:verify` proves the running shape — nodes, endpoints, replication, the migration, the financial flow with a replay, and both replicas serving a burst — which is the second step of the `cluster` CI job on every push to `main` or `staging` and every pull request.
 
@@ -375,7 +377,7 @@ A dashboard comes with the stack:
 docker compose --profile app --profile observability up -d
 ```
 
-Prometheus scrapes the API on `http://localhost:9090`, and Grafana answers `http://localhost:3001` with the provisioned `Fortune Tiger` dashboard: transactions by status, replays, retries, dead letters, processing latency, outbox lag, and lock conflicts. Anonymous viewing is on in that profile; the panel queries read the same names the application publishes.
+Prometheus scrapes the API on `http://localhost:9090`, Grafana answers `http://localhost:3001` with the provisioned `Fortune Tiger` dashboard: transactions by status, replays, retries, dead letters, processing latency, outbox lag, and lock conflicts. Alertmanager answers `http://localhost:9093` and emails `darkfrontcode@gmail.com` when a rule in `docker/alerting` fires. Anonymous viewing is on in that profile; the panel queries read the same names the application publishes. Add a Gmail App Password to `docker/alerting/smtp-password` before relying on the email.
 
 ### Require a token (optional)
 

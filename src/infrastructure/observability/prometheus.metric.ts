@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { Counter, Registry, Summary } from 'prom-client'
+import { collectDefaultMetrics, Counter, Registry, Summary } from 'prom-client'
 import { MetricDescriptionMap } from '@application/observability'
 import type { MetricProtocol } from '@application/observability'
 
@@ -11,6 +11,10 @@ export class PrometheusMetric implements MetricProtocol {
   private readonly descriptions = new MetricDescriptionMap()
   private readonly counters = new Map<string, Counter>()
   private readonly summaries = new Map<string, Summary>()
+
+  constructor() {
+    collectDefaultMetrics({ register: this.registry, labels: {} })
+  }
 
   increment(name: string): void {
     this.counter(name).inc()
