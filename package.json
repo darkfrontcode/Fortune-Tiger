@@ -19,6 +19,12 @@
     "auth:smoke": "bun run scripts/auth.ts",
     "openapi:export": "bun run scripts/openapi.ts",
     "test:load": "bun run scripts/load.ts",
+    "cluster:up": "bun run scripts/cluster.ts up",
+    "cluster:down": "bun run scripts/cluster.ts down",
+    "cluster:status": "bun run scripts/cluster.ts status",
+    "cluster:render": "bun run scripts/cluster.ts render",
+    "cluster:verify": "bun run scripts/cluster.ts verify",
+    "cluster:observability": "bun run scripts/cluster.ts observability",
     "migration:up": "bunx --bun mikro-orm migration:up --config ./mikro-orm.config.ts",
     "migration:down": "bunx --bun mikro-orm migration:down --config ./mikro-orm.config.ts",
     "migration:pending": "bunx --bun mikro-orm migration:pending --config ./mikro-orm.config.ts"

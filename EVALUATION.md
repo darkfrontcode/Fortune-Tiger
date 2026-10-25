@@ -329,13 +329,15 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 **Delivery docs:**
 - `docs/DELIVERY.md` — the reviewer's path: commands, expected output, reading map, and limits
 - `docs/API.md` and `docs/api/openapi.json` — routes, headers, status table, error bodies, failure codes, and the checked-in machine-readable contract
-- `docs/adr/` — nine records, one per decision, each with the alternative that lost and the cost it carries
+- `docs/adr/` — ten records, one per decision, each with the alternative that lost and the cost it carries
 - `docs/testing.md` — what each suite covers: lint, coverage, properties, concurrency, fault injection, auth, and why the load test stays out of CI
 - `docs/load.md` — the load method, the waves, the results, and the bottleneck
+- `docs/kubernetes.md` — the kind cluster: topology, commands, failure drills, and limits
 - `docker/spec.md` — the services, the image, the queues, and the dashboards
+- `kubernetes/spec.md` — the workloads, the probes, the replication, and the overlays
 - `requests.http` — the happy path and the failure cases by hand
 - `EVIDENCE.md` — the last local run: counts, constraints, and the honest limits
-- `bun run verify`, `bun run verify:full`, `bun run demo`, `bun run auth:smoke`, and `bun run openapi:export --check` — one command proves each part of the delivery
+- `bun run verify`, `bun run verify:full`, `bun run demo`, `bun run auth:smoke`, `bun run openapi:export --check`, `bun run cluster:up`, and `bun run cluster:verify` - each command proves a part of the delivery
 
 **Evaluation:** ✅ **5/5 points**
 - README complete and well-structured
@@ -389,6 +391,16 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 - **Status: implemented** as `bun run test:load`.
 - `docs/load.md` records the environment, the method, throughput, p50/p95/p99, the error rate, the lock contention, and the bottleneck.
 - The script is a measurement, not a gate: no RPS target, no CI job, and the numbers belong to the machine that ran them.
+
+### Kubernetes
+- **Status: implemented** as `bun run cluster:up`.
+- A `kind` cluster with one control plane and two workers runs the same image as compose: two API replicas behind one service on different workers, a PostgreSQL primary with a streaming standby on the other worker, LocalStack, and a migration Job, declared as Kustomize manifests in `kubernetes/`.
+- The `api` Service is the load balancer: twenty independent requests through the node port split across both replicas, and a repeated wager still produced a single debit.
+- The two replicas exercise the guarantees the concurrency suite already proves: the wallet row lock, `FOR UPDATE SKIP LOCKED` on the outbox, and the inbox row. A repeated wager still produces one debit, whichever pod answers.
+- `bun run cluster:observability` adds Prometheus and Grafana, and Prometheus scrapes every replica through the headless service.
+- `bun run cluster:render` runs in CI and needs no cluster, so a broken manifest fails the build.
+- The `CI` workflow adds a `cluster` job that runs `bun run cluster:up` and then `bun run cluster:verify` on an `ubuntu-latest` runner on every push to `main` and every pull request, so the manifests are raised and verified on a real cluster, not only rendered. The verification checks the nodes, the two endpoints, `streaming` replication, the migration, the financial flow with a replay, and that a burst of requests reaches both replicas; a failing check keeps the job red.
+- It is a local cluster on one machine: no ingress, no TLS, no automatic failover, and no autoscaler, as `docs/kubernetes.md` states.
 
 ---
 

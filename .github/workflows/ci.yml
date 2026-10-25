@@ -104,5 +104,38 @@ jobs:
       - name: Check the OpenAPI document
         run: bun run openapi:export --check
 
+      - name: Render the Kubernetes manifests
+        run: bun run cluster:render
+
       - name: Build the container image
         run: docker build -t fortune-tiger:ci .
+
+  cluster:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 1.4.3
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Start the cluster
+        run: bun run cluster:up
+
+      - name: Verify the cluster
+        run: bun run cluster:verify
+
+      - name: Print the cluster state
+        if: failure()
+        run: |
+          KUBECTL=$(command -v kubectl || echo .tools/bin/kubectl)
+          "$KUBECTL" get nodes -o wide
+          "$KUBECTL" --namespace fortune-tiger get pods -o wide
+          "$KUBECTL" --namespace fortune-tiger get events --sort-by=.lastTimestamp | tail -40

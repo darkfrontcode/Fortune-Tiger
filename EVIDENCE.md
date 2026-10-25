@@ -102,6 +102,24 @@ The current branch was verified locally with Docker Compose (`postgres:16`, `loc
 - **Coverage**: two measured waves against a running API — 50 distinct wallets and 50 bets on one hot wallet, 25 requests in flight. Default run: `43.5 req/s` and p95 `762 ms` on distinct wallets; `22.4 req/s` and p95 `1325 ms` on the hot wallet; zero HTTP errors. Every wallet ended at the expected balance, reconciliation was consistent, the processed counter grew by 100, and the duplicate counter stayed at zero
 - **Prerequisites**: `docker compose up -d`, `bun run migration:up`, and `bun run start`; the method and the limits are in [`docs/load.md`](docs/load.md)
 
+### Kubernetes
+- **Status**: PASS (local, 2026-10-24)
+- **Command**: `bun run cluster:up`, then `bun run cluster:verify`; optionally `bun run cluster:observability`
+- **Cluster**: `kind` 0.33 with `kindest/node:v1.32.0`, one control plane and two workers, and `standard` as the storage class
+- **Coverage**: `cluster:up` built the image, loaded it into the three nodes, applied `overlays/local`, waited for both PostgreSQL instances and LocalStack, ran the migration Job, rolled both API replicas out, and answered `ready` on `http://127.0.0.1:30080/health/ready`
+- **Instances**: five pods at rest — `postgres-primary-0`, `postgres-replica-0`, `localstack`, and two `api` replicas on different workers (`10.244.1.x` and `10.244.2.x`, both listed in `kubectl get endpoints api`); the primary and the streaming standby also landed on different workers, the primary on `fortune-tiger-worker` and the standby on `fortune-tiger-worker2`. `pg_stat_replication` on the primary reported `state: streaming`, `sync_state: async`
+- **Financial path through the node port**: wallet `201` with `100.00`, `BET 30.00` answering `200 PROCESSED` with `70.00`, the repeat answering `200` with the same `transactionId`, `idempotentReplay: true`, and `70.00`, the ledger returning two entries (`CREDIT`, `DEBIT`), reconciliation `consistent: true` with `difference 0.00` over two entries, and `/metrics` answering `200` with `wager_transactions_processed_total`
+- **Failure drills**: deleting one API pod kept `/health/ready` at `200` while the Deployment started a replacement; deleting `postgres-replica-0` returned it to `1/1` and `streaming` again
+- **Load balancing**: `kubectl get endpoints api` listed two pod addresses on two workers; twenty independent requests through `30080` split `13` and `7` between the pods, read from each pod's `wager_transactions_processed_total`, and the wallet was debited exactly twenty times
+- **Verification**: `bun run cluster:verify` printed all ten checks green — `3` nodes `Ready`, `2` endpoints, `streaming` replication, migration `1`, wallet `100.00`, bet `PROCESSED 70.00`, replay `true true`, ledger `2` entries, reconciliation `true 2`, and a burst reaching both pods `+13 / +7` — exit `0`
+- **Suites against the cluster**: with the API scaled to zero, the integration (`51`), concurrency (`6`), and end-to-end (`47`) suites ran against the cluster's PostgreSQL and LocalStack through `kubectl port-forward`, so the managed instances serve the application and not only the probes
+- **Idempotent apply**: a second `cluster:up` reused the cluster, rebuilt and reloaded the image, re-ran the migration Job (completed on the first attempt), and rolled the Deployment again
+- **Cold start**: with the cluster deleted, `fortune-tiger:local` removed, `.tools` absent, and no `kind` on `PATH`, one `bun run cluster:up` downloaded `kind` into `.tools/bin`, created the three nodes, built and loaded the image, applied the tree, migrated, rolled both replicas out, and answered `ready` — exit `0` in 6.8 minutes
+- **Full cycle**: `bun run cluster:down` removed the cluster and its volumes in 31 seconds; the next `bun run cluster:up` recreated it from zero in 12.2 minutes, and a later down/up after a manifest change finished in 6.8 minutes, the difference being the image pulls inside the fresh nodes. On the rebuilt cluster the nodes were `Ready`, both `api` endpoints were distinct, `pg_stat_replication` reported `streaming`, a `WIN` of `10.00` over a `50.00` wallet answered `200 PROCESSED` with `60.00`, the ledger held two entries, and reconciliation answered `consistent: true`
+- **Docker restart**: with Docker Desktop stopped and every node container down, one `bun run cluster:up` started Docker Desktop, resumed the three node containers, waited for the API and the nodes, rebuilt, reapplied, migrated, and answered `ready` — exit `0` in 1.3 minutes
+- **Observability overlay**: Prometheus discovered both API pods through `api-headless` and reported both targets `up`; Grafana answered `{"database":"ok"}` on `30030` and provisioned the `Fortune Tiger` dashboard from `docker/grafana`
+- **Prerequisites**: Docker only. `cluster:up` reuses `kind` and `kubectl` from `PATH` or downloads the pinned releases into `.tools/bin`; the topology, the drills, and the limits are in [`docs/kubernetes.md`](docs/kubernetes.md), and the manifests are in [`kubernetes/`](kubernetes/)
+
 ## Delivery Docs
 
 - `docs/API.md` — routes, headers, status table, error bodies, failure codes, queue events
@@ -109,7 +127,9 @@ The current branch was verified locally with Docker Compose (`postgres:16`, `loc
 - `requests.http` — the same happy path by hand, plus conflict, rejection, and not-found cases
 - `docs/testing.md` — what each suite covers
 - `docs/load.md` — the load method, the two waves, the results, and the limits
-- `scripts/spec.md` — `verify`, `verify:full`, `demo`, and `load` behavior
+- `docs/kubernetes.md` — the cluster topology, the commands, the failure drills, and the limits
+- `kubernetes/spec.md` — the cluster, the workloads, and the guarantees the manifests carry
+- `scripts/spec.md` — `verify`, `verify:full`, `demo`, `load`, and `cluster` behavior
 
 ## PostgreSQL Constraints Audit
 
@@ -180,7 +200,8 @@ Wallet, wager, health, and Swagger suites: validation, idempotency conflict, pag
 - PostgreSQL 16 + LocalStack 3 services with health checks
 - Env: `DATABASE_URL`, `AWS_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`, `SQS_EVENTS_QUEUE_URL`
 - FIFO queues created before migrations/tests
-- Pipeline: `bun run build` → `test:unit` → `test:int` → `test:concurrency` → `test:e2e`
+- Pipeline: `bun run build` → `test:unit` → `test:int` → `test:concurrency` → `test:e2e` → `openapi:export --check` → `cluster:render`
+- The `cluster` job runs in parallel with `test`: `bun run cluster:up` raises the kind cluster on the runner and `bun run cluster:verify` proves the shape (nodes, endpoints, replication, migration, financial flow, both replicas serving); a failure prints the nodes, the pods, and the last events
 
 ## Delivery Guarantees (honest)
 

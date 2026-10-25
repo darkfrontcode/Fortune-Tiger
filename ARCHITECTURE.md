@@ -192,7 +192,7 @@ src/
 
 `main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` imports the layer modules, and `runtime.service.ts` starts the outbox worker, the reference worker, and the queue consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.
 
-Beside `src`, the repository keeps `docs/` for the statement, the plan, the API and its checked-in OpenAPI document, the ADRs, the delivery path, testing, and the load note; `scripts/` for `verify`, `verify:full`, `demo`, `load`, `auth`, and `openapi`; `docker/` for the queue bootstrap, the optional Keycloak realm, and the Prometheus and Grafana provisioning; and `test/` for the end-to-end setup file. `EVIDENCE.md` records the last local run, and `EVALUATION.md` is the section 14 checklist against the code.
+Beside `src`, the repository keeps `docs/` for the statement, the plan, the API and its checked-in OpenAPI document, the ADRs, the delivery path, testing, and the load note; `scripts/` for `verify`, `verify:full`, `demo`, `load`, `auth`, `openapi`, and `cluster`; `docker/` for the queue bootstrap, the optional Keycloak realm, and the Prometheus and Grafana provisioning; `kubernetes/` for the cluster, the Kustomize tree, and the overlay that adds the observability pair; and `test/` for the end-to-end setup file. `EVIDENCE.md` records the last local run, and `EVALUATION.md` is the section 14 checklist against the code.
 
 Files follow the Nest name (`health.controller.ts`, `health.module.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, `patterns/` holds concrete rule classes, and `guards/` holds one class per rule with its own `spec.md`. Application ports live in the consuming capability's `protocols/` folder; adapter-internal contracts and presentation-specific extension contracts stay with their consumer. A port token lives in a `tokens/` folder under the owning module, with one `Symbol` per file and an `index.ts` barrel. Unit tests live in `tests/` next to the module they cover. The file is `{subject}.test.ts`. Production barrels do not reexport tests.
 
@@ -249,6 +249,16 @@ The retry ladder is data, not a loop: `attempts` and `nextAttemptAt` decide the 
 
 `GET /health/live` reads the process, and `GET /health/ready` asks PostgreSQL and SQS at the same time with a two-second abort, so a dead dependency answers `503` instead of hanging the check.
 
+## Kubernetes
+
+The delivery also runs on a real cluster: `kind` starts one control plane and two workers as Docker containers, and `scripts/cluster.ts` is the only entry. `bun run cluster:up` resolves `kind` and `kubectl` (downloading the pinned releases into `.tools/bin` when they are missing), starts Docker when it is not answering, builds and loads the image, applies the Kustomize tree, runs the migration Job, and waits for both replicas before it checks `/health/ready`.
+
+`kubernetes/base` holds the namespace, the ConfigMaps, the secret, the two PostgreSQL statefulsets with their headless services, LocalStack, the migration Job, the API Deployment, its services, and its PodDisruptionBudget. `kubernetes/overlays/local` is the delivery and turns the `api` Service into a `NodePort` on `30080`; `kubernetes/overlays/observability` adds Prometheus and Grafana. The cluster definition lives in `kubernetes/kind`, and every folder explains its own rule in its `spec.md`.
+
+Five pods run at rest. Two `api` replicas sit behind the Service, which is the load balancer: kube-proxy spreads connections across both endpoints, and the balance is per connection, not per request. PostgreSQL runs a primary and a streaming standby on different workers, and the API writes only to the primary. LocalStack is the one workload with a single replica on purpose: it is the broker, and two replicas would hold two separate queue sets.
+
+`bun run cluster:verify` reads the shape instead of assuming it: nodes, endpoints, replication, the migration, the financial flow with a replay, and a per-pod counter after a burst of requests. The `CI` workflow runs `cluster:up` and then `cluster:verify`, so the manifests are proven on a real cluster on every push to `main` and every pull request.
+
 ## Limits
 
 Stated here so the delivery is read for what it is:
@@ -260,10 +270,12 @@ Stated here so the delivery is read for what it is:
 - The `anonymous` auth mode trusts the caller, because a local run and the CI should not need an identity provider. `AUTH_MODE=jwt` is the mode that verifies a token.
 - OpenTelemetry, a dashboard, and an audit store are out. The Prometheus exposition is in.
 - The load script measures the running API on one machine. It is not a CI gate, it has no RPS target, and its numbers are not a capacity claim.
+- The cluster runs on one machine. Three nodes share a kernel and a disk, the standby has no automatic failover, and no autoscaler is provisioned.
+- The queue runs as one LocalStack pod. A managed SQS brings its own redundancy; two LocalStack replicas would hold two separate queue sets, so the broker stays single and readiness reports it when it is gone.
 
 ## Decisions
 
-Nine records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, and the split between inbound and outbound queues. A decision that changes gets a new record; the old one keeps its number.
+Ten records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, the split between inbound and outbound queues, and the local cluster. A decision that changes gets a new record; the old one keeps its number.
 
 ## Stack
 
@@ -275,6 +287,7 @@ Nine records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: th
 | Database | PostgreSQL 16 |
 | Queue | LocalStack. The statement also allows MiniStack. |
 | ORM | MikroORM |
+| Local cluster | kind 0.33 with Kustomize, on Kubernetes 1.32 |
 
 Section 4 of the statement prefers MikroORM and also accepts TypeORM. It excludes Prisma. The database stays PostgreSQL.
 

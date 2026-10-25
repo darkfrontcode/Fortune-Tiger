@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-replica
+  labels:
+    app.kubernetes.io/part-of: fortune-tiger
+spec:
+  serviceName: postgres-replica
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-replica
+  template:
+    metadata:
+      labels:
+        app: postgres-replica
+        app.kubernetes.io/component: database
+    spec:
+      securityContext:
+        fsGroup: 999
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: database
+      initContainers:
+        - name: basebackup
+          image: postgres:16
+          command:
+            - /bin/sh
+            - /scripts/01-basebackup.sh
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 999
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          env:
+            - name: PRIMARY_HOST
+              value: postgres-primary
+            - name: PRIMARY_PORT
+              value: '5432'
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fortune-tiger-secrets
+                  key: REPLICATION_PASSWORD
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: scripts
+              mountPath: /scripts
+      containers:
+        - name: postgres
+          image: postgres:16
+          args:
+            - -c
+            - hot_standby=on
+            - -c
+            - max_connections=100
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          ports:
+            - name: postgres
+              containerPort: 5432
+          startupProbe:
+            exec:
+              command:
+                - pg_isready
+                - --username
+                - postgres
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - --username
+                - postgres
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - --username
+                - postgres
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: scripts
+          configMap:
+            name: postgres-replica-init
+            defaultMode: 493
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi

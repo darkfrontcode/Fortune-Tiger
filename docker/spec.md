@@ -26,6 +26,8 @@ The image holds the HTTP API, the outbox publisher, the reference worker, and th
 
 `docker/localstack/01-queues.sh` runs on the LocalStack ready hook and creates `wager-transactions.fifo` for requests, `wager-transactions-dlq.fifo` behind it, and `wager-events.fifo` for integration events. Creating a queue twice is a no-op for LocalStack, so a restart is safe.
 
+The same script is mounted by the Kubernetes LocalStack pod, generated from this file, so the two paths cannot drift. The cluster itself lives in `kubernetes/`, and `docs/kubernetes.md` is its operator guide.
+
 ## Observability
 
 ```bash
