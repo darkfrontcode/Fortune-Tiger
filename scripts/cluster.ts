@@ -806,6 +806,7 @@ const observability = async (): Promise<void> => {
   await apply(cluster.observability)
   await rollout('deployment/prometheus')
   await rollout('deployment/grafana')
+  await rollout('deployment/alertmanager')
 }
 
 const report = async (): Promise<void> => {

@@ -35,10 +35,11 @@ describe('PrometheusMetric', () => {
     expect(text).toContain('wager_processing_milliseconds_sum 25')
   })
 
-  it('answers an empty exposition before the first record', async () => {
+  it('answers the process metrics before the first record', async () => {
     const metric = new PrometheusMetric()
     const text = await metric.render()
 
-    expect(text.trim()).toBe('')
+    expect(text).toContain('process_resident_memory_bytes')
+    expect(text).toContain('process_resident_memory_bytes ')
   })
 })

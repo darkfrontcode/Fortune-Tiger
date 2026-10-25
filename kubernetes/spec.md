@@ -27,6 +27,7 @@ The control plane publishes three host ports:
 | `30080` | `30080` | `api` |
 | `30090` | `30090` | Prometheus |
 | `30030` | `30030` | Grafana |
+| `30093` | `30093` | Alertmanager |
 
 The default storage class of `kind` is `standard`, backed by the local path provisioner, and both database volumes use it.
 
@@ -85,9 +86,11 @@ The deployment mounts a ConfigMap generated from `docker/localstack/01-queues.sh
 
 ## Observability
 
-`overlays/observability` adds Prometheus and Grafana to the `local` overlay.
+`overlays/observability` adds Prometheus, Grafana, and Alertmanager to the `local` overlay.
 
 Prometheus scrapes through a DNS service discovery on `api-headless`, so each scrape reaches every pod address instead of the one pod a `ClusterIP` would pick. The scrape keeps the `fortune-tiger` job name, and the Grafana datasource and dashboard are the files under `docker/grafana`, mounted from generated ConfigMaps. Nothing is copied, so the panel and the compose profile cannot drift.
+
+The alert rules under `docker/alerting/rules` and the `alertmanager.yml` under `docker/alerting` are mounted the same way, from the `prometheus-rules` and `alertmanager-config` ConfigMaps. Prometheus evaluates the rules with the `fortune-tiger` job, and `alerting.alertmanagers` points at the `alertmanager` Service. Alertmanager routes every alert to the `email` receiver addressed to `darkfrontcode@gmail.com`; the SMTP password mounts from the `alertmanager-smtp` Secret, so a rule that fires reaches the mailbox once the operator fills the credential.
 
 ## Commands
 
