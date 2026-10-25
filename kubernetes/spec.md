@@ -119,7 +119,7 @@ Every check prints a line with `✅` or `❌` and the measured value, and any fa
 
 ## Continuous integration
 
-The `CI` workflow carries two jobs. `test` runs lint, the type-check, the unit suite, the coverage gate, and the three server suites against PostgreSQL and LocalStack service containers. `cluster` runs `bun run cluster:up` and then `bun run cluster:verify` on an `ubuntu-latest` runner, so every push to `main` and every pull request raises the real cluster and proves the manifests, the migration, the replica, and the financial path.
+The `CI` workflow carries two jobs. `test` runs lint, the type-check, the unit suite, the coverage gate, and the three server suites against PostgreSQL and LocalStack service containers. `cluster` runs `bun run cluster:up` and then `bun run cluster:verify` on an `ubuntu-latest` runner, so every push to `main` or `staging` and every pull request raises the real cluster and proves the manifests, the migration, the replica, and the financial path.
 
 The job installs Bun and nothing else: the runner has Docker, and the script downloads `kind` and `kubectl` into `.tools/bin` exactly as it does on a workstation. A failing job prints the nodes, the pods, and the last events before it ends.
 

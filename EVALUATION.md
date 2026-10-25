@@ -399,7 +399,7 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 - The two replicas exercise the guarantees the concurrency suite already proves: the wallet row lock, `FOR UPDATE SKIP LOCKED` on the outbox, and the inbox row. A repeated wager still produces one debit, whichever pod answers.
 - `bun run cluster:observability` adds Prometheus and Grafana, and Prometheus scrapes every replica through the headless service.
 - `bun run cluster:render` runs in CI and needs no cluster, so a broken manifest fails the build.
-- The `CI` workflow adds a `cluster` job that runs `bun run cluster:up` and then `bun run cluster:verify` on an `ubuntu-latest` runner on every push to `main` and every pull request, so the manifests are raised and verified on a real cluster, not only rendered. The verification checks the nodes, the two endpoints, `streaming` replication, the migration, the financial flow with a replay, and that a burst of requests reaches both replicas; a failing check keeps the job red.
+- The `CI` workflow adds a `cluster` job that runs `bun run cluster:up` and then `bun run cluster:verify` on an `ubuntu-latest` runner on every push to `main` or `staging` and every pull request, so the manifests are raised and verified on a real cluster, not only rendered. The verification checks the nodes, the two endpoints, `streaming` replication, the migration, the financial flow with a replay, and that a burst of requests reaches both replicas; a failing check keeps the job red.
 - It is a local cluster on one machine: no ingress, no TLS, no automatic failover, and no autoscaler, as `docs/kubernetes.md` states.
 
 ---
