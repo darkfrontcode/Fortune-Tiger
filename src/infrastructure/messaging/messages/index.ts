@@ -1,3 +1,4 @@
+export * from './audit-event.guard'
 export * from './data'
 export * from './inbox-message'
 export * from './outbox-message'

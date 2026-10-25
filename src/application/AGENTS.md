@@ -22,3 +22,5 @@ History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request
 - `idempotencies` — `idempotency.service.ts`. Key, hash, and replay.
 - `wallets/use-cases` — one explicit application operation per wallet route. `WalletNotFoundError` is an application error and does not depend on HTTP.
 - `health` — liveness and readiness use cases. Readiness composes probes through `READINESS`; the HTTP layer translates `HealthReadinessError`.
+- `audits` — `use-cases/find-wager-audit.use-case.ts`. Reads the append-only timeline through `AUDIT_STORE`; the Mongoose adapter lives in infrastructure and the domain has no Mongo type.
+- `journeys` — `services/journey.service.ts` and `use-cases/find-journey.use-case.ts`. `JourneyService.record` is fire-and-forget and never throws; the adapter owns `JOURNEY_STORE`. The `USE_CASE` stage and the read operations live here.

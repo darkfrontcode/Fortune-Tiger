@@ -1,6 +1,6 @@
 # Base
 
-`base/` holds what every overlay shares: the namespace, the demo secret, the API and PostgreSQL ConfigMaps, the primary and standby statefulsets with their headless services, LocalStack, the migration Job, the API Deployment, its services, and its PodDisruptionBudget.
+`base/` holds what every overlay shares: the namespace, the demo secret, the API and PostgreSQL ConfigMaps, the primary and standby statefulsets with their headless services, LocalStack, Mongo, the migration Job, the API Deployment, its services, and its PodDisruptionBudget.
 
 `kustomization.yaml` lists the resources and sets the namespace, so an object does not repeat `fortune-tiger` in its own metadata. It also generates the LocalStack ready ConfigMap from `docker/localstack/01-queues.sh`, which keeps one queue bootstrap for compose and for the cluster.
 

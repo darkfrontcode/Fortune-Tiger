@@ -147,6 +147,12 @@ POST {{host}}/wallets/{{openWallet.response.body.$.id}}/reconciliation
 ### Wager by transaction id — 200
 GET {{host}}/wagering/transactions/{{bet.response.body.$.transactionId}}
 
+### Audit timeline — 200, eventually consistent, ordered by occurredAt then eventId
+GET {{host}}/wagering/transactions/{{bet.response.body.$.transactionId}}/audit?limit=10
+
+### Audit timeline filtered by event type — 200
+GET {{host}}/wagering/transactions/{{bet.response.body.$.transactionId}}/audit?eventType=WalletBalanceChanged
+
 ### Wager by provider pair — 200
 GET {{host}}/providers/{{providerId}}/wagering/transactions/{{externalBetId}}
 
@@ -181,5 +187,5 @@ Content-Type: application/json
 # and WalletBalanceChanged after the financial commit. Read them with:
 #
 # docker exec fortune-tiger-localstack-1 awslocal sqs receive-message \
-#   --queue-url http://localhost:4566/000000000000/wager-transactions.fifo \
+#   --queue-url http://localhost:4566/000000000000/wager-events.fifo \
 #   --max-number-of-messages 10

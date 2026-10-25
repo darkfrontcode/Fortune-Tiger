@@ -1,6 +1,7 @@
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Module } from '@nestjs/common'
 import { IdempotenciesModule } from '@application/idempotencies/idempotencies.module'
+import { JourneysModule } from '@application/journeys'
 import { RECONCILIATION_GATEWAY } from '@application/reconciliations/tokens'
 import { REFERENCE_GATEWAY, REFERENCE_READER } from '@application/references/tokens'
 import { WAGER_GATEWAY, WAGER_READER } from '@application/wagers/tokens'
@@ -23,7 +24,7 @@ import { WalletReader } from './wallet/wallet.reader'
 
 const openOrm = (environment: Environment) => createOrm(environment.databaseUrl)
 
-const moduleImports = [EnvironmentModule, IdempotenciesModule, ObservabilityModule]
+const moduleImports = [EnvironmentModule, IdempotenciesModule, ObservabilityModule, JourneysModule]
 
 const moduleExports = [
   MikroORM,

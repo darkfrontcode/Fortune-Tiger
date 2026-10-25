@@ -20,6 +20,8 @@ The persistence-owned adapters bind the tokens from their application contexts w
 
 `WagerBetWriter` is not part of the delivery: it only repeated `WagerSubmitWriter.submit`, and `WagerSubmitWriter` is the adapter.
 
+`RuntimeService` closes `MikroORM` last on shutdown, after the outbox, the reference worker, and the two consumers, so no batch loses its pool while stopping.
+
 A repository is built with the `EntityManager` of the transaction it serves, which is the Unit of Work. Its mapper is a pure helper, so the repository builds it with `new`.
 
 Tables: `wallets`, `wager_transactions`, `wallet_ledger_entries`, `inbox_messages`, `outbox_messages`.

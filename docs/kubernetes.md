@@ -22,6 +22,7 @@ flowchart TB
                 api2["api replica"]
                 pg2["postgres-replica"]
                 ls["localstack"]
+                mg["mongo"]
             end
             lb --> api1
             lb --> api2
@@ -32,13 +33,15 @@ flowchart TB
     api2 --> pg1
     api1 --> ls
     api2 --> ls
+    api1 --> mg
+    api2 --> mg
     pg1 -. "streaming replication" .-> pg2
     prom["prometheus :30090"] -. "scrape every pod" .-> api1
     prom -. "scrape every pod" .-> api2
     graf["grafana :30030"] --> prom
 ```
 
-The control plane is tainted, so it runs no workload: the two API replicas and the two database instances split across the two workers, and the scheduler is free to place `localstack` on either. The picture is one healthy arrangement.
+The control plane is tainted, so it runs no workload: the two API replicas and the two database instances split across the two workers, and the scheduler is free to place `localstack` and `mongo` on either. The picture is one healthy arrangement.
 
 ## Shape
 
@@ -48,6 +51,7 @@ The control plane is tainted, so it runs no workload: the two API replicas and t
 | `postgres-primary` | 1 | the only writer |
 | `postgres-replica` | 1 | streaming standby, scheduled on the node without a database pod |
 | `localstack` | 1 | it is the broker; two replicas would be two queue sets, and a message published to one would never be consumed from the other |
+| `mongo` | 1 | the read models live here; the audit timeline and the journey store are not financial state, so the API keeps working while it is down |
 | `migrate` | 1 | a Job that completes and stays as evidence |
 
 The API scales horizontally: `kubectl -n fortune-tiger scale deploy/api --replicas=3` adds a third endpoint, and the spread keeps the pods balanced across both workers. The database pair and the broker stay as they are, for the reasons above.
@@ -89,10 +93,10 @@ The command does eight things:
 4. builds `fortune-tiger:local` from the root `Dockerfile`;
 5. loads the image into the three nodes, so no registry is needed;
 6. applies `kubernetes/overlays/local`;
-7. waits for both database instances and the queue, runs the migration Job, and waits for both API replicas;
+7. waits for both database instances, the queue, and Mongo, runs the migration Job, and waits for both API replicas;
 8. calls `GET /health/ready` through the node port and fails the run when it does not answer `ready`.
 
-The first run pulls `postgres:16`, `localstack/localstack:3`, and the node image; with those layers cached it finished in under seven minutes on a laptop, and a machine that has to download them takes longer. Later runs reuse everything, rebuild only what changed, and finish in about a minute. Running it twice in a row is safe: the cluster, the volumes, and the data stay.
+The first run pulls `postgres:16`, `localstack/localstack:3`, `mongo:7`, and the node image; with those layers cached it finished in under seven minutes on a laptop, and a machine that has to download them takes longer. Later runs reuse everything, rebuild only what changed, and finish in about a minute. Running it twice in a row is safe: the cluster, the volumes, and the data stay.
 
 ## Read it
 
@@ -123,6 +127,7 @@ The cluster is there to be broken. Each drill is one command and one expectation
 | kill the standby | `kubectl -n fortune-tiger delete pod postgres-replica-0` | the pod returns `1/1` and `pg_stat_replication` shows `streaming` again |
 | drain a node | `kubectl drain fortune-tiger-worker --ignore-daemonsets --delete-emptydir-data` | the PDB moves one API pod at a time, and the service keeps answering |
 | stop the queue | `kubectl -n fortune-tiger scale deploy/localstack --replicas=0` | readiness turns `503` and the pods leave the endpoints, while liveness stays `200` |
+| stop the datalake | `kubectl -n fortune-tiger scale deploy/mongo --replicas=0` | the API keeps serving `200` because readiness ignores Mongo; a later `bun run cluster:verify` fails its datalake check until the store is back |
 | read the standby | `kubectl -n fortune-tiger exec postgres-replica-0 -- psql -U postgres -d fortune_tiger -c 'select count(*) from wallets'` | the same count as the primary, a moment later |
 
 The last one shows the replication lag honestly: the standby trails the primary by the time a WAL segment takes to arrive, which is why the API does not read from it.
@@ -154,7 +159,7 @@ rebuilds the image, loads it again, and rolls the Deployment with `maxUnavailabl
 | `bun run cluster:up` | build, create, load, apply, migrate, wait |
 | `bun run cluster:observability` | add Prometheus and Grafana |
 | `bun run cluster:status` | nodes, pods, services, endpoints, readiness |
-| `bun run cluster:verify` | prove the shape: nodes, endpoints, replication, migration, the financial flow, and both replicas serving |
+| `bun run cluster:verify` | prove the shape: nodes, endpoints, replication, migration, the financial flow, the datalake collections, and both replicas serving |
 | `bun run cluster:render` | render every overlay, no cluster needed |
 | `bun run cluster:down` | delete the cluster and its volumes |
 
@@ -171,6 +176,7 @@ That is the same two commands that start and check the cluster locally, so what 
 - No automatic failover. The standby is a recovery target, and promoting it is manual.
 - `anonymous` auth. The `jwt` mode needs Keycloak, which has no manifest here.
 - The database and queue are single-writer by design. Two PostgreSQL instances are one primary and one standby, not a sharded pair.
+- Mongo is one instance, not a replica set: it holds the audit timeline and the journey store, observations the financial path never reads.
 - The secrets are demo values inside the repository.
 
 ## Troubleshooting

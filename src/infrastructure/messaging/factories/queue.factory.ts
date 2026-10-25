@@ -8,15 +8,22 @@ const visibilityTimeout = 30
 
 export const QUEUE_CONFIG = Symbol('QueueConfig')
 
-export const createQueueConfig = (environment: Environment): ConsumerType.Config => ({
-  queueUrl: environment.queueUrl,
-  deadLetterQueueUrl: environment.deadLetterQueueUrl,
+export const AUDIT_QUEUE_CONFIG = Symbol('AuditQueueConfig')
+
+const consumerConfig = (queueUrl: string, deadLetterQueueUrl: string): ConsumerType.Config => ({
+  queueUrl,
+  deadLetterQueueUrl,
   maxMessages,
   waitTimeSeconds,
   visibilityTimeout,
 })
 
+export const createQueueConfig = (environment: Environment): ConsumerType.Config =>
+  consumerConfig(environment.queueUrl, environment.deadLetterQueueUrl)
+
+export const createAuditQueueConfig = (environment: Environment): ConsumerType.Config =>
+  consumerConfig(environment.eventsQueueUrl, environment.eventsDeadLetterQueueUrl)
+
 export const createPublishConfig = (environment: Environment): PublisherType.Config => ({
   eventsQueueUrl: environment.eventsQueueUrl,
 })
-

@@ -6,6 +6,9 @@ import { metricNames, METRIC } from '@application/observability'
 import type { MetricProtocol } from '@application/observability'
 import { IdempotencyService } from '@application/idempotencies/idempotency.service'
 import { IdempotencyOutcome } from '@application/idempotencies/enums'
+import { JourneyOutcome, JourneyService, JourneyStage } from '@application/journeys'
+import type { ClockProtocol } from '@application/time'
+import { CLOCK } from '@application/time'
 import type { WagerGatewayProtocol } from '@application/wagers'
 import { WagerMediator } from '@application/wagers/mediators'
 import type { WagersType } from '@application/wagers'
@@ -25,6 +28,7 @@ type SubmitOutput = WagersType.SubmitOutput
 type QueueInbox = WagersType.QueueInbox
 
 const idempotencyConstraint = 'wager_transactions_idempotency_key_unique'
+const operation = 'wager_transactions'
 
 @Injectable()
 export class WagerSubmitWriter implements WagerGatewayProtocol {
@@ -34,9 +38,12 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
     private readonly events: WagerEventsMapper,
     private readonly mediator: WagerMediator,
     @Inject(METRIC) private readonly metric: MetricProtocol,
+    @Inject(CLOCK) private readonly clock: ClockProtocol,
+    private readonly journey: JourneyService,
   ) {}
 
   async submit(wager: WagerTransaction, at: Date, inbox?: QueueInbox): Promise<SubmitOutput> {
+    const startedAt = this.clock.now()
     const commit = async () => {
       return this.orm.em.transactional(async (manager) => {
         const wallets = new WalletRepository(manager)
@@ -94,8 +101,13 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
     }
 
     try {
-      return await commit()
+      const output = await commit()
+      this.track(wager, startedAt, JourneyOutcome.SUCCEEDED, output.failureCode)
+
+      return output
     } catch (error) {
+      this.track(wager, startedAt, JourneyOutcome.ROLLBACK, undefined)
+
       const conflict = WagerSubmitWriter.isLockConflict(error)
 
       if (conflict) { this.metric.increment(metricNames.lockConflict) }
@@ -106,6 +118,26 @@ export class WagerSubmitWriter implements WagerGatewayProtocol {
 
       return await this.resolveIdempotencyRace(wager, error)
     }
+  }
+
+  private track(
+    wager: WagerTransaction,
+    startedAt: Date,
+    outcome: JourneyOutcome,
+    failureCode: string | undefined,
+  ): void {
+    void this.journey.record({
+      flowId: wager.idempotencyKey,
+      stage: JourneyStage.DATABASE,
+      operation: operation,
+      outcome,
+      startedAt,
+      providerId: wager.providerId,
+      playerId: wager.playerId,
+      wagerId: wager.id,
+      walletId: wager.walletId,
+      failureCode,
+    })
   }
 
   private async resolveIdempotencyRace(wager: WagerTransaction, error: unknown): Promise<SubmitOutput> {

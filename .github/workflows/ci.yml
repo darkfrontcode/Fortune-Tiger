@@ -19,6 +19,8 @@ jobs:
       SQS_QUEUE_URL: http://localhost:4566/000000000000/wager-transactions.fifo
       SQS_DEAD_LETTER_QUEUE_URL: http://localhost:4566/000000000000/wager-transactions-dlq.fifo
       SQS_EVENTS_QUEUE_URL: http://localhost:4566/000000000000/wager-events.fifo
+      SQS_EVENTS_DEAD_LETTER_QUEUE_URL: http://localhost:4566/000000000000/wager-events-dlq.fifo
+      MONGODB_URL: mongodb://localhost:27017/fortune_tiger_audit
 
     services:
       postgres:
@@ -47,6 +49,16 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,6 +81,9 @@ jobs:
             --attributes FifoQueue=true
           aws --endpoint-url="$AWS_ENDPOINT_URL" sqs create-queue \
             --queue-name wager-events.fifo \
+            --attributes FifoQueue=true
+          aws --endpoint-url="$AWS_ENDPOINT_URL" sqs create-queue \
+            --queue-name wager-events-dlq.fifo \
             --attributes FifoQueue=true
 
       - name: Run migrations
@@ -94,6 +109,12 @@ jobs:
 
       - name: Run integration tests
         run: bun run test:int
+
+      - name: Run audit store integration tests
+        run: bun run test:audit
+
+      - name: Run journey store integration tests
+        run: bun run test:journey
 
       - name: Run concurrency tests
         run: bun run test:concurrency

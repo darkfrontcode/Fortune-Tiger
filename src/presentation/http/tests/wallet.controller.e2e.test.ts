@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { createApp } from '../../../../test/test-setup.e2e'
@@ -24,7 +24,9 @@ describe('WalletController (e2e)', () => {
     walletId = response.body.id
   })
 
-
+  afterAll(async () => {
+    await app.close()
+  })
 
   describe('POST /wallets', () => {
     it('should create a wallet with valid payload', async () => {

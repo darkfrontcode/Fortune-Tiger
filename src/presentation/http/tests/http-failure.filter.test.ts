@@ -6,6 +6,7 @@ import { HealthReadinessError, HealthStatus } from '@application/health'
 import { WalletNotFoundError } from '@application/wallets'
 import { WalletReconciliationNotFoundError } from '@application/reconciliations'
 import { WagerNotFoundError } from '@application/wagers'
+import { JourneyNotFoundError } from '@application/journeys'
 import { INFRASTRUCTURE_FAILURE_MESSAGE, INVALID_CREDENTIAL_MESSAGE } from '../data'
 import { ProviderIdentityError } from '../errors'
 import type { HttpType } from '../types'
@@ -77,6 +78,20 @@ describe('HttpFailureFilter', () => {
 
     expect(response.statusCode).toBe(HttpStatus.NOT_FOUND)
     expect(response.body).toEqual({ walletId, failureCode: error.failureCode })
+    expect(logger.warnings).toHaveLength(0)
+  })
+
+  test('journey not found - WHEN a foreign player journey is requested SHOULD answer 404', () => {
+    const response = new Response()
+    const host = new ExecutionContextHost([undefined, response, undefined])
+    const logger = new Logger()
+    const filter = new HttpFailureFilter(logger)
+    const error = new JourneyNotFoundError()
+
+    filter.catch(error, host)
+
+    expect(response.statusCode).toBe(HttpStatus.NOT_FOUND)
+    expect(response.body).toBe(error.message)
     expect(logger.warnings).toHaveLength(0)
   })
 

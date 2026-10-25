@@ -7,6 +7,8 @@ import type { ClockProtocol } from '@application/time'
 import { IdempotencyService } from '../../../idempotencies'
 import type { WagerGatewayProtocol } from '../../protocols'
 import { WagersType } from '../../types'
+import { JourneyOutcome } from '@application/journeys'
+import type { JourneyService, JourneyStoreProtocol, JourneyType } from '@application/journeys'
 import { SubmitWagerUseCase } from '../submit-wager.use-case'
 
 type SubmitInput = WagersType.SubmitInput
@@ -74,10 +76,31 @@ const base = (): SubmitInput => ({
   at: instant,
 })
 
+class Journey implements JourneyStoreProtocol {
+  readonly steps: Array<JourneyType.Schema> = []
+
+  record(step: JourneyType.Schema): Promise<void> {
+    this.steps.push(step)
+
+    return Promise.resolve()
+  }
+
+  timeline(): Promise<Array<JourneyType.Schema>> {
+    return Promise.resolve(this.steps)
+  }
+}
+
 describe('SubmitWagerUseCase', () => {
   test('opening - WHEN kind is OPENING SHOULD reject without calling the gateway', async () => {
     const gateway = new Gateway()
-    const useCase = new SubmitWagerUseCase(gateway, new IdempotencyService(), new Metric(), new Clock())
+    const journey = new Journey()
+    const useCase = new SubmitWagerUseCase(
+      gateway,
+      new IdempotencyService(),
+      new Metric(),
+      new Clock(),
+      journey as unknown as JourneyService,
+    )
     const input = base()
     const opening = { ...input, kind: WagerTransactionKind.OPENING }
     const output = await useCase.execute(opening)
@@ -86,23 +109,39 @@ describe('SubmitWagerUseCase', () => {
     expect(output.status).toBe(WagerTransactionStatus.REJECTED)
     expect(output.failureCode).toBe(FailureCode.OPENING_NOT_ALLOWED)
     expect(output.idempotentReplay).toBe(false)
+    expect(journey.steps[0]?.outcome).toBe(JourneyOutcome.FAILED)
+    expect(journey.steps[0]?.failureCode).toBe(FailureCode.OPENING_NOT_ALLOWED)
   })
 
   test('bet - WHEN kind is BET SHOULD hash the payload and call the gateway', async () => {
     const gateway = new Gateway()
-    const useCase = new SubmitWagerUseCase(gateway, new IdempotencyService(), new Metric(), new Clock())
+    const journey = new Journey()
+    const useCase = new SubmitWagerUseCase(
+      gateway,
+      new IdempotencyService(),
+      new Metric(),
+      new Clock(),
+      journey as unknown as JourneyService,
+    )
     const input = base()
     const output = await useCase.execute(input)
 
     expect(gateway.calls).toHaveLength(1)
     expect(gateway.calls[0]?.payloadHash).toHaveLength(64)
     expect(output).toEqual(gateway.output)
+    expect(journey.steps[0]?.outcome).toBe(JourneyOutcome.SUCCEEDED)
   })
 
   test('metric - WHEN the gateway answers processed SHOULD count the status and observe the duration', async () => {
     const gateway = new Gateway()
     const metric = new Metric()
-    const useCase = new SubmitWagerUseCase(gateway, new IdempotencyService(), metric, new Clock())
+    const useCase = new SubmitWagerUseCase(
+      gateway,
+      new IdempotencyService(),
+      metric,
+      new Clock(),
+      new Journey() as unknown as JourneyService,
+    )
     const output = await useCase.execute(base())
 
     expect(output.status).toBe(WagerTransactionStatus.PROCESSED)
@@ -119,10 +158,28 @@ describe('SubmitWagerUseCase', () => {
       new IdempotencyService(),
       metric,
       new Clock(),
+      new Journey() as unknown as JourneyService,
     )
     const output = await useCase.execute(base())
 
     expect(output.idempotentReplay).toBe(true)
     expect(metric.counts.get('idempotency_duplicates_total')).toBe(1)
+  })
+
+  test('journey - WHEN the gateway fails SHOULD record a failed step and rethrow', async () => {
+    const journey = new Journey()
+    const useCase = new SubmitWagerUseCase(
+      { submit: () => Promise.reject(new Error('infrastructure')) },
+      new IdempotencyService(),
+      new Metric(),
+      new Clock(),
+      journey as unknown as JourneyService,
+    )
+
+    await expect(useCase.execute(base())).rejects.toThrow('infrastructure')
+
+    expect(journey.steps[0]?.outcome).toBe(JourneyOutcome.FAILED)
+    expect(journey.steps[0]?.flowId).toBe('provider:ext-1')
+    expect(journey.steps[0]?.wagerId).toBe('tx-1')
   })
 })

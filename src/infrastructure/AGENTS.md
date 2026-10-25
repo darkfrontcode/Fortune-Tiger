@@ -11,6 +11,9 @@ All project text is English, including the root `README.md`.
 History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this folder starts doing something.
 
 - `persistence` — MikroORM, schema, lock
+- `audit` — the Mongoose adapter for the append-only audit timeline. `AuditStoreModule` binds `AUDIT_STORE`; the application contract is owned by `application/audits`.
+- `journey` — the Mongoose adapter for the per-caller journey. `JourneyStoreModule` binds `JOURNEY_STORE`; the application contract is owned by `application/journeys`.
+- `mongo` — `MongoConnection`, the Mongoose connection shared by the audit adapter and the journey adapter.
 - `messaging` — one spec: queue, consumer, inbox, outbox, and the event envelope
 - `observability` — `SimpleLogger`, the application clock adapter, and metrics. The logger and metric contracts are owned by application `observability`; the clock contract is owned by application `time`.
 - `environment` — the only reader of `process.env`. One getter per variable, no business rule.

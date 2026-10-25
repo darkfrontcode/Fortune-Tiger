@@ -3,6 +3,7 @@ const defaultRegion = 'us-east-1'
 const defaultCredential = 'test'
 const defaultMetricsBackend = 'prometheus'
 const defaultAuthMode = 'anonymous'
+const defaultMongoUrl = 'mongodb://127.0.0.1:27017/fortune_tiger_audit'
 const empty = String()
 
 export class Environment {
@@ -48,6 +49,14 @@ export class Environment {
 
   get eventsQueueUrl(): string {
     return process.env.SQS_EVENTS_QUEUE_URL ?? empty
+  }
+
+  get eventsDeadLetterQueueUrl(): string {
+    return process.env.SQS_EVENTS_DEAD_LETTER_QUEUE_URL ?? empty
+  }
+
+  get mongoUrl(): string {
+    return process.env.MONGODB_URL ?? defaultMongoUrl
   }
 
   get authMode(): string {

@@ -6,6 +6,7 @@ import type {
   WagerTransactionKind,
   WagerTransactionStatus,
 } from '@domain/wager/enums'
+import type { JourneyOutcome, JourneyStage } from '@application/journeys'
 
 export namespace HttpType {
   export type MoneyOutput = {
@@ -14,6 +15,7 @@ export namespace HttpType {
   }
 
   export type WalletInput = {
+    id: string
     playerId: string
     initialBalance: Money
   }
@@ -57,6 +59,36 @@ export namespace HttpType {
     nextCursor: string | undefined
   }
 
+  export type AuditActorOutput = {
+    type: string
+    id: string
+  }
+
+  export type AuditEventOutput = {
+    eventId: string
+    eventType: string
+    eventVersion: number
+    occurredAt: Date
+    recordedAt: Date
+    wagerId: string | undefined
+    correlationId: string
+    causationId: string | undefined
+    source: string
+    actor: AuditActorOutput | undefined
+    metadata: Record<string, string>
+  }
+
+  export type AuditTimelineOutput = {
+    items: Array<AuditEventOutput>
+  }
+
+  export type AuditQuery = {
+    eventType: string | undefined
+    from: Date | undefined
+    to: Date | undefined
+    limit: number
+  }
+
   export type WagerSubmitOutput = {
     transactionId: string
     status: WagerTransactionStatus
@@ -82,10 +114,38 @@ export namespace HttpType {
 
   export type Query = Record<string, string | undefined>
 
+  export type JourneyQuery = {
+    stage: JourneyStage | undefined
+    outcome: JourneyOutcome | undefined
+    from: Date | undefined
+    to: Date | undefined
+    limit: number
+  }
+
+  export type JourneyStepOutput = {
+    stepId: string
+    flowId: string
+    stage: JourneyStage
+    operation: string
+    outcome: JourneyOutcome
+    occurredAt: Date
+    durationMs: number
+    providerId: string | undefined
+    playerId: string | undefined
+    wagerId: string | undefined
+    walletId: string | undefined
+    failureCode: string | undefined
+  }
+
+  export type JourneyTimelineOutput = {
+    items: Array<JourneyStepOutput>
+  }
+
   export type Request = {
     body: Record<string, unknown> | undefined
     headers: Record<string, string | undefined>
-    provider: ProviderIdentity
+    provider: ProviderIdentity | undefined
+    flowId: string | undefined
   }
 
   export type Response = {

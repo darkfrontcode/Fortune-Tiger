@@ -2,7 +2,10 @@ import { MikroORM } from '@mikro-orm/postgresql'
 import { Inject, Injectable } from '@nestjs/common'
 import { uuidv7 } from 'uuidv7'
 import { IdempotencyService } from '@application/idempotencies/idempotency.service'
-import type { WalletOpeningInput, WalletOpeningProtocol } from '@application/wallets'
+import { JourneyOutcome, JourneyService, JourneyStage } from '@application/journeys'
+import type { ClockProtocol } from '@application/time'
+import { CLOCK } from '@application/time'
+import { platformProvider, WalletOpeningInput, WalletOpeningProtocol } from '@application/wallets'
 import { WagerMediator } from '@application/wagers/mediators'
 import type { Ledger } from '@domain/ledger/ledger'
 import { Money as MoneyValue } from '@domain/money/money'
@@ -14,10 +17,12 @@ import { WalletLedgerRepository } from '../ledger/wallet-ledger.repository'
 import { WagerTransactionRepository } from '../wager/wager-transaction.repository'
 import { WalletRepository } from './wallet.repository'
 
-const platform = 'fortune-tiger'
+const operation = 'wallets'
+const openingPrefix = 'opening'
+const separator = ':'
 const scope = {
-  provider: platform,
-  game: platform,
+  provider: platformProvider,
+  game: platformProvider,
 }
 
 @Injectable()
@@ -26,19 +31,22 @@ export class WalletOpeningWriter implements WalletOpeningProtocol {
     @Inject(MikroORM) private readonly orm: MikroORM,
     private readonly idempotency: IdempotencyService,
     private readonly mediator: WagerMediator,
+    @Inject(CLOCK) private readonly clock: ClockProtocol,
+    private readonly journey: JourneyService,
   ) {}
 
   async open(input: WalletOpeningInput): Promise<Wallet> {
-    const walletId = uuidv7()
+    const startedAt = this.clock.now()
     const zero = MoneyValue.zero(input.initialBalance.currency)
     const start = input.initialBalance.isZero() ? input.initialBalance : zero
     const walletInput = {
-      id: walletId,
+      id: input.id,
       playerId: input.playerId,
       balance: start,
       openedAt: input.openedAt,
     }
     const wallet = Wallet.open(walletInput)
+    const flowId = `${openingPrefix}${separator}${wallet.id}`
 
     const run = async () => {
       await this.orm.em.transactional(async (manager) => {
@@ -72,9 +80,38 @@ export class WalletOpeningWriter implements WalletOpeningProtocol {
       })
     }
 
-    await run()
+    try {
+      await run()
 
-    return wallet
+      this.track(flowId, input.playerId, input.id, startedAt, JourneyOutcome.SUCCEEDED)
+
+      return wallet
+    } catch (error) {
+      this.track(flowId, input.playerId, input.id, startedAt, JourneyOutcome.ROLLBACK)
+
+      throw error
+    }
+  }
+
+  private track(
+    flowId: string,
+    playerId: string,
+    walletId: string,
+    startedAt: Date,
+    outcome: JourneyOutcome,
+  ): void {
+    void this.journey.record({
+      flowId,
+      stage: JourneyStage.DATABASE,
+      operation: operation,
+      outcome,
+      startedAt,
+      providerId: platformProvider,
+      playerId,
+      wagerId: undefined,
+      walletId,
+      failureCode: undefined,
+    })
   }
 
   private opening(wallet: Wallet, input: WalletOpeningInput): WagerTransaction {
