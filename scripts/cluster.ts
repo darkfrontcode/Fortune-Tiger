@@ -697,7 +697,7 @@ const mongoCollections = async (pod: string): Promise<Array<string>> => {
     'db.getSiblingDB("fortune_tiger_audit").getCollectionNames().sort().join(" ")',
   ])
 
-  return lines(text)
+  return text.split(' ').map((name) => name.trim()).filter((name) => name !== '')
 }
 
 const eager = async (pod: string, remaining: number): Promise<Array<string>> => {
@@ -715,7 +715,8 @@ const eager = async (pod: string, remaining: number): Promise<Array<string>> => 
 const datalake = async (): Promise<Check> => {
   const pods = await mongoPods()
   const settled = pods.length > EMPTY_NUMBER ? await eager(pods[0] ?? '', verification.settle) : []
-  const passing = pods.length > EMPTY_NUMBER && settled.length === verification.collections.split(' ').length
+  const wanted = verification.collections.split(' ')
+  const passing = pods.length > EMPTY_NUMBER && wanted.every((collection) => settled.includes(collection))
   const detail = pods.length > EMPTY_NUMBER ? settled.join(' ') : 'no mongo pod'
 
   return {

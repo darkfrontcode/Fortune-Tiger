@@ -287,7 +287,7 @@ The delivery also runs on a real cluster: `kind` starts one control plane and tw
 
 Six pods run at rest. Two `api` replicas sit behind the Service, which is the load balancer: kube-proxy spreads connections across both endpoints, and the balance is per connection, not per request. PostgreSQL runs a primary and a streaming standby on different workers, and the API writes only to the primary. LocalStack is the one workload with a single replica on purpose: it is the broker, and two replicas would hold two separate queue sets. `mongo` is the read model, a single replica: the audit timeline and the journey are observations, not financial state, and the API keeps working while the store is down.
 
-`bun run cluster:verify` reads the shape instead of assuming it: nodes, endpoints, replication, the migration, the financial flow with a replay, the MongoDB collections of the datalake, and a per-pod counter after a burst of requests. The `CI` workflow runs `cluster:up` and then `cluster:verify`, so the manifests are proven on a real cluster on every push to `main` and every pull request.
+`bun run cluster:verify` reads the shape instead of assuming it: nodes, endpoints, replication, the migration, the financial flow with a replay, the MongoDB collections of the datalake, and a per-pod counter after a burst of requests. The `CI` workflow runs `cluster:up` and then `cluster:verify`, so the manifests are proven on a real cluster on every push to `main` or `staging` and every pull request.
 
 ## Limits
 
