@@ -13,6 +13,8 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
 <p>
   <strong>Infrastructure</strong><br />
   <img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
+  <img alt="Kubernetes on kind" src="https://img.shields.io/badge/Kubernetes-1.32%20on%20kind-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" />
+  <img alt="Kustomize" src="https://img.shields.io/badge/Kustomize-manifests-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" />
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
   <img alt="SQS on LocalStack" src="https://img.shields.io/badge/SQS-LocalStack%203-FF9900?style=for-the-badge&logo=amazonsqs&logoColor=white" />
   <img alt="Prometheus" src="https://img.shields.io/badge/Prometheus-2.55.1-E6522C?style=for-the-badge&logo=prometheus&logoColor=white" />
@@ -71,6 +73,29 @@ The behind-the-scenes layer keeps the service dependable:
 - ☁️ **LocalStack SQS** lets the queue run locally, including retries and a dead-letter queue.
 - 🔎 **Logs and metrics** help explain what happened without putting financial payloads in the logs.
 - 📊 **Prometheus metrics** answer `GET /metrics`, so a scrape sees transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing time.
+
+</details>
+
+<details>
+<summary>☸️ Kubernetes — the same app on three nodes</summary>
+
+The cluster lives in [`kubernetes/`](kubernetes/) and starts with one command. It is a real kind cluster inside Docker, not a mock:
+
+- 🖥️ three nodes: one control plane and two workers;
+- 🐘 two PostgreSQL instances: a primary and a streaming standby (`pg_basebackup -R`);
+- ⚙️ two API replicas behind one service, spread across the workers, with a disruption budget and a zero-downtime rollout;
+- 📨 one LocalStack pod, with the queues created by the same script compose uses;
+- 🧾 one migration Job, recreated on every apply, waited on before the run reports success;
+- 📈 an optional Prometheus and Grafana overlay that scrapes each replica through the headless service.
+
+Two replicas are safe because the guarantees already exist: the wallet row lock, `FOR UPDATE SKIP LOCKED` on the outbox, and the inbox row. A repeated bet still produces one debit, whichever pod answers.
+
+```bash
+bun run cluster:up
+bun run cluster:verify
+```
+
+The topology, the failure drills, and the limits are in [`docs/kubernetes.md`](docs/kubernetes.md). The manifests are Kustomize: `overlays/local` for the cluster, `overlays/observability` for the dashboards. The `CI` workflow raises this same cluster on a runner and runs `cluster:verify` after it, so the pull request is green on the real cluster, not on the manifest only.
 
 </details>
 
@@ -211,6 +236,7 @@ These are the coding assistants and model names used to build Fortune Tiger:
 - 🧩 **MikroORM** connects the code to the database.
 - 📨 **SQS on LocalStack** provides a queue that works on a developer's machine.
 - 🐳 **Docker Compose** runs the local database, queue, API, authentication, and observability profiles.
+- ☸️ **Kubernetes on kind** runs the same image on three nodes, with two API replicas and two PostgreSQL instances, declared as Kustomize manifests.
 - 📈 **Prometheus and Grafana** expose and visualize the application's metrics through the optional observability profile.
 - 🔐 **Keycloak** provides the optional JWT identity provider through the auth profile.
 - 📘 **Swagger** publishes the HTTP contract at `/docs`.
@@ -248,6 +274,20 @@ docker compose --profile app up -d --build
 ```
 
 The `app` profile builds the root `Dockerfile` once, applies the migrations in a one-shot `migrate` service, and starts the API with its workers on `3000`. `docker compose --profile app ps` shows `healthy` when `/health/live` answers, and `http://localhost:3000/health/ready` answers `ready` when PostgreSQL and SQS answer too. The containers keep the database and the queues from the manual setup, so the two ways share one stack; `docker compose down` stops everything.
+
+### Run it on Kubernetes
+
+```bash
+bun run cluster:up
+bun run cluster:verify
+bun run cluster:observability
+bun run cluster:status
+bun run cluster:down
+```
+
+`cluster:up` builds the image, creates the kind cluster when it is absent, starts it again after a Docker restart, loads the image into the nodes, applies the manifests, waits for PostgreSQL, LocalStack, the migration, and both API replicas, and checks `/health/ready`. The API answers on `http://127.0.0.1:30080`, Prometheus on `30090`, and Grafana on `30030`. It needs Docker only: `kind` and `kubectl` are reused from `PATH` or downloaded into `.tools/bin`, and on Windows Docker Desktop starts by itself. The versions and the troubleshooting are in [`docs/kubernetes.md`](docs/kubernetes.md).
+
+`cluster:render` renders every overlay without a cluster, and the pipeline runs it, so a broken manifest fails before a cluster exists. `cluster:verify` proves the running shape — nodes, endpoints, replication, the migration, the financial flow with a replay, and both replicas serving a burst — which is the second step of the `cluster` CI job on every push to `main` and every pull request.
 
 ### Try the commands
 

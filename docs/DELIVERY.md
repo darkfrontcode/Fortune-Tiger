@@ -56,6 +56,25 @@ docker compose --profile app ps
 
 The `app` service reports `healthy` when `/health/live` answers, and `GET /health/ready` answers `ready` when PostgreSQL and SQS are reachable. The image is the root `Dockerfile`, and [`docker/spec.md`](../docker/spec.md) describes what it carries.
 
+## The cluster
+
+```bash
+bun run cluster:up
+```
+
+Builds the same image, creates a `kind` cluster with three nodes inside Docker, loads the image into the nodes, applies [`kubernetes/overlays/local`](../kubernetes/overlays/local), waits for both PostgreSQL instances, waits for the migration Job, waits for both API replicas, and checks `http://127.0.0.1:30080/health/ready`. Docker is the only prerequisite: `kind` and `kubectl` are reused from `PATH` or downloaded into `.tools/bin`, and Docker Desktop starts by itself on Windows when it is closed.
+
+| Command | What it proves |
+| --- | --- |
+| `bun run cluster:up` | the application runs as two replicas on two nodes, over a primary with a streaming standby |
+| `bun run cluster:observability` | Prometheus scrapes each replica and Grafana serves the same dashboard compose serves |
+| `bun run cluster:status` | the nodes, the pods with their node, the endpoints, and readiness |
+| `bun run cluster:verify` | the shape is proven: nodes, endpoints, replication, migration, the financial flow, and both replicas serving |
+| `bun run cluster:render` | every overlay renders, with no cluster needed |
+| `bun run cluster:down` | the cluster and its volumes are gone |
+
+A repeated wager through the node port still produces one debit, whichever replica answers, because the wallet lock, the outbox claim, and the inbox row live in PostgreSQL. Five pods run at rest: the two `api` replicas on different workers, the PostgreSQL primary on one worker with its streaming standby on the other, and LocalStack; the `api` Service is the load balancer in front of the replicas. [`docs/kubernetes.md`](kubernetes.md) carries the topology, the failure drills, and the limits.
+
 ## Try the API by hand
 
 ```bash
@@ -86,9 +105,10 @@ The OpenAPI document is checked in; `bun run openapi:export --check` rebuilds it
 - [`ARCHITECTURE.md`](../ARCHITECTURE.md) — the layer rules and the composition.
 - [`docs/API.md`](API.md) — routes, headers, status, error bodies, and failure codes.
 - [`docs/api/openapi.json`](api/openapi.json) — the same contract, machine-readable and checked in.
-- [`docs/adr/`](adr/) — nine records, one per decision, with the alternative that lost.
+- [`docs/adr/`](adr/) — ten records, one per decision, with the alternative that lost.
 - [`docs/testing.md`](testing.md) — what each suite covers and why.
 - [`docs/load.md`](load.md) — the load method, the measured waves, and the honest limit.
+- [`docs/kubernetes.md`](kubernetes.md) — the cluster, the drills, and the limits.
 - [`EVIDENCE.md`](../EVIDENCE.md) — the last local run: counts, constraints, and the honest limits.
 - [`EVALUATION.md`](../EVALUATION.md) — the section 14 checklist against the code.
 
@@ -109,3 +129,4 @@ The code reads top to bottom: `src/domain` holds `Money`, `Wallet`, `Ledger`, an
 - Auth has two modes. The default `anonymous` mode keeps `AuthGuard` permissive and `AnonymousProviderIdentity` trusts the caller, so a local run needs no identity provider. `AUTH_MODE=jwt` verifies the bearer token against the Keycloak realm key set and reads the `provider_id` claim; Keycloak itself is an optional compose profile, and the CI keeps `anonymous`.
 - OpenTelemetry, double-entry accounting, and partial reversal are out. The Prometheus exposition is in.
 - The load test is a measurement, not a gate. `bun run test:load` reports the two waves on the machine it runs on, with no RPS target and no CI job; [`docs/load.md`](load.md) states the method and the limit.
+- The cluster is one machine. Three nodes share a kernel and a disk, the standby has no automatic failover, and no autoscaler is provisioned; [`docs/kubernetes.md`](kubernetes.md) states the rest.

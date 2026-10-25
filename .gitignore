@@ -23,6 +23,9 @@ lerna-debug.log*
 .temp
 .tmp
 
+# cluster tooling downloaded on demand
+/.tools
+
 # IDEs and editors
 .idea
 .vscode

@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-replica-init
+  labels:
+    app.kubernetes.io/part-of: fortune-tiger
+data:
+  01-basebackup.sh: |
+    #!/bin/sh
+    set -eu
+
+    if [ -f "$PGDATA/PG_VERSION" ]; then
+      exit 0
+    fi
+
+    until pg_isready --host "$PRIMARY_HOST" --port "$PRIMARY_PORT" --username "$REPLICATION_USER" > /dev/null 2>&1; do
+      sleep 2
+    done
+
+    mkdir -p "$PGDATA"
+
+    pg_basebackup \
+      --host "$PRIMARY_HOST" \
+      --port "$PRIMARY_PORT" \
+      --username "$REPLICATION_USER" \
+      --pgdata "$PGDATA" \
+      --format plain \
+      --wal-method stream \
+      --write-recovery-conf \
+      --progress

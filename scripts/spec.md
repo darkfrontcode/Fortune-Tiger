@@ -89,4 +89,27 @@ After the waves, the script proves the effects:
 
 The output is one line per check. A failed assertion prints the name, the expected value, and the observed value, and the process answers exit code `1`. The script takes the flags above and no other. `docs/load.md` records the environment, the method, the results of a local run, and the bottleneck.
 
+## cluster
+
+`scripts/cluster.ts` is the only entry to the local Kubernetes cluster. It takes one subcommand and reads no environment variable: the cluster name, the namespace, the overlays, the image tag, and the timeouts are constants at the top of the file.
+
+| Command | What it does |
+| --- | --- |
+| `bun run cluster:up` | resolves `docker`, `kind`, and `kubectl`, starts Docker Desktop when it is not answering, creates or resumes the cluster, waits for the API and the three nodes, builds and loads the image, applies `kubernetes/overlays/local`, waits for both database instances and the queue, runs the migration Job, waits for both API replicas, and checks `/health/ready` through the node port |
+| `bun run cluster:observability` | applies `kubernetes/overlays/observability` on top of the local one and waits for Prometheus and Grafana |
+| `bun run cluster:status` | prints the nodes, the pods with their node, the services, the endpoints, and the readiness body |
+| `bun run cluster:verify` | checks that the three nodes are `Ready`, the `api` Service has two endpoints, the standby answers `streaming`, the migration Job reports one success, the financial flow runs, and a burst of requests reaches both replicas; it prints one line per check and exits `1` on the first failure |
+| `bun run cluster:render` | renders every overlay with `kubectl kustomize` and needs no cluster |
+| `bun run cluster:down` | deletes the cluster and its volumes |
+
+The migration Job is deleted before the apply, so every `cluster:up` runs the migrations again and waits for `condition=complete`. The API tolerates the window: the process boots, readiness waits on PostgreSQL and the queue, and the Deployment rolls with `maxUnavailable: 0`.
+
+The verification reads the cluster instead of assuming it. The financial flow opens a wallet, debits it, replays the same request, reads the ledger, and compares the stored balance; the load split reads `wager_transactions_processed_total` from each `api` pod before and after a burst, so the balance is proven, not the counter of one process. `cluster:verify` is the second step of the `cluster` CI job, after `cluster:up`, and it is the shape the pull request is green on.
+
+The script owns its tooling. `kind` and `kubectl` are resolved with `Bun.which`; when one is absent, the pinned release is downloaded into `.tools/bin` and that path is used, so Docker is the only manual install. `.tools` is ignored by git. The Docker probe is bounded, because the CLI hangs instead of failing while the engine is down: fifteen seconds is enough to tell "not answering" from "slow", and the Windows start path waits for the engine to answer. A cluster that already exists is resumed with `docker start` on its node containers before the API is awaited, so a run after a Docker restart converges on the existing volumes instead of failing or recreating.
+
+Kustomize refuses a file above its root, and the base mounts the queue bootstrap from `docker/localstack`. Every render therefore passes `--load-restrictor LoadRestrictionsNone`, and the apply pipes the rendered document to `kubectl apply --filename -`, because `kubectl apply -k` has no such flag. The reader types neither.
+
+A failed step prints the step and stops with exit code `1`. The readiness check retries for 90 seconds, so a slow first pull does not fail the run. `cluster:render` is the step the pipeline runs, because it needs `kubectl` and no cluster.
+
 All project text is English, including the root `README.md`. History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this behavior lands.

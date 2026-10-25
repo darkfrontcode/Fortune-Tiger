@@ -1,0 +1,20 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: fortune-tiger
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.32.0
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 30080
+        protocol: TCP
+      - containerPort: 30090
+        hostPort: 30090
+        protocol: TCP
+      - containerPort: 30030
+        hostPort: 30030
+        protocol: TCP
+  - role: worker
+    image: kindest/node:v1.32.0
+  - role: worker
+    image: kindest/node:v1.32.0
