@@ -13,6 +13,7 @@ All project text is English, including the root `README.md`.
 History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request into `main`. The rule is in the root `AGENTS.md`. The root `README.md` is updated when this folder starts doing something.
 
 - `persistence` — MikroORM, schema, lock. One folder per kind: `entities/`, `mappers/`, `repositories/`, `readers/`, `writers/`, `workers/`, `queries/`, `factories/` (`OrmFactory`), and `readiness/` (`DatabaseReadiness`).
+- `cache` — `RedisFactory` (`factories/`), `RedisCache` (`redis.cache.ts`), the cache-aside `CachedWalletReader` and `CachedWagerReader` (`readers/`), and `CacheModule`, which binds `CACHE` to `RedisCache` with `useExisting`. `CacheModule` is imported by `PersistenceModule`, which binds `WALLET_READER` and `WAGER_READER` to the cached readers over the SQL readers.
 - `audit` — the Mongoose adapter for the append-only audit timeline. `AuditStoreModule` binds `AUDIT_STORE`; the application contract is owned by `application/audits`.
 - `journey` — the Mongoose adapter for the per-caller journey. `JourneyStoreModule` binds `JOURNEY_STORE`; the application contract is owned by `application/journeys`.
 - `mongo` — `MongoConnection` (`connections/`), the Mongoose connection shared by the audit adapter and the journey adapter.

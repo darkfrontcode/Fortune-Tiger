@@ -26,7 +26,7 @@ Both commands live in `scripts/verify.ts`, and the folder spec is `scripts/spec.
 
 `bun run test:coverage` runs the unit suite with Bun coverage and writes `coverage/lcov.info`, which the pipeline keeps as an artifact. The reporters are `text` and `lcov` in `bunfig.toml`.
 
-The unit suite must cover **100% of executable lines**. The line threshold is enforced at `1.0` in `bunfig.toml`. Bun reports implicit class constructors as functions even when they contain no domain behavior; those constructors are not added merely to inflate the function metric. The latest report is **100% lines and 92.79% functions**. Persistence, the MongoDB audit adapter, and the HTTP end-to-end suites stay out of that number on purpose: they need PostgreSQL, MongoDB, and SQS, so their coverage belongs to `bun run verify:full`, not to a gate that runs with nothing up.
+The unit suite must cover **100% of executable lines**. The line threshold is enforced at `1.0` in `bunfig.toml`. Bun reports implicit class constructors as functions even when they contain no domain behavior; those constructors are not added merely to inflate the function metric. The latest report is **100% lines and 93.53% functions**. Persistence, the MongoDB audit adapter, and the HTTP end-to-end suites stay out of that number on purpose: they need PostgreSQL, MongoDB, and SQS, so their coverage belongs to `bun run verify:full`, not to a gate that runs with nothing up.
 
 The badge on the README reads the line number. It is updated by hand when the number moves, so it never claims a value the run did not produce.
 

@@ -17,6 +17,7 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
   <img alt="Kustomize" src="https://img.shields.io/badge/Kustomize-manifests-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" />
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
   <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-7-47A248?style=for-the-badge&logo=mongodb&logoColor=white" />
+  <img alt="Redis" src="https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white" />
   <img alt="SQS on LocalStack" src="https://img.shields.io/badge/SQS-LocalStack%203-FF9900?style=for-the-badge&logo=amazonsqs&logoColor=white" />
   <img alt="Prometheus" src="https://img.shields.io/badge/Prometheus-2.55.1-E6522C?style=for-the-badge&logo=prometheus&logoColor=white" />
   <img alt="Grafana" src="https://img.shields.io/badge/Grafana-11.2.2-F46800?style=for-the-badge&logo=grafana&logoColor=white" />
@@ -71,6 +72,7 @@ The application is the coordinator. It gives the same wager rules to requests fr
 The behind-the-scenes layer keeps the service dependable:
 
 - 🐘 **PostgreSQL** stores wallets, wagers, and the ledger together.
+- ⚡ **Redis** accelerates the wallet and wager reads with a cache-aside; it is an accelerator, never a source of truth, and a cache outage changes no financial answer.
 - 🧾 **MongoDB** stores the append-only audit timeline, the per-caller journey, and the `searchable_events` read model. All are read models, never the source of a balance.
 - 📬 **Inbox and outbox** help the service handle repeated messages and publish events after a successful save.
 - ☁️ **LocalStack SQS** lets the queue run locally, including retries and dead-letter queues.
@@ -89,6 +91,7 @@ The cluster lives in [`kubernetes/`](kubernetes/) and starts with one command. I
 - 🐘 two PostgreSQL instances: a primary and a streaming standby (`pg_basebackup -R`);
 - ⚙️ two API replicas behind one service, spread across the workers, with a disruption budget and a zero-downtime rollout;
 - 📨 one LocalStack pod, with the queues created by the same script compose uses;
+- ⚡ one Redis pod, shared by the API replicas for the wallet and wager read cache;
 - 🧾 one migration Job, recreated on every apply, waited on before the run reports success;
 - 📈 an optional Prometheus, Grafana, and Alertmanager overlay that scrapes each replica through the headless service and emails the operator when a rule fires.
 
@@ -245,7 +248,7 @@ The domain is the rulebook. Application is the coordinator. Presentation is the 
 
 Cross-layer imports use the `@application/*`, `@domain/*`, `@infrastructure/*`, and `@presentation/*` TypeScript aliases.
 
-The reasoning behind the shape is in [`docs/adr/`](docs/adr/): fourteen short records, one per decision, each with the alternative that lost and the cost it carries.
+The reasoning behind the shape is in [`docs/adr/`](docs/adr/): fifteen short records, one per decision, each with the alternative that lost and the cost it carries.
 
 </details>
 
@@ -281,6 +284,7 @@ These are the coding assistants and model names used to build Fortune Tiger:
 - 🧱 **NestJS** organizes the HTTP service and its background workers.
 - 🟦 **TypeScript** helps catch mistakes while building.
 - 🐘 **PostgreSQL 16** keeps the financial records.
+- ⚡ **Redis 7** backs the wallet and wager read cache.
 - 🧾 **MongoDB 7** keeps the append-only audit timeline.
 - 🧩 **MikroORM** connects the code to the database.
 - 📚 **Mongoose** connects the audit adapter to MongoDB.
@@ -318,7 +322,7 @@ bun run migration:up
 bun run start
 ```
 
-The first three steps install the tools, prepare local settings, and start PostgreSQL, MongoDB, and LocalStack. The migration creates the database tables; the last command starts the service.
+The first three steps install the tools, prepare local settings, and start PostgreSQL, MongoDB, Redis, and LocalStack. The migration creates the database tables; the last command starts the service.
 
 ### Run everything in containers
 
@@ -338,9 +342,9 @@ bun run cluster:status
 bun run cluster:down
 ```
 
-`cluster:up` builds the image, creates the kind cluster when it is absent, starts it again after a Docker restart, loads the image into the nodes, applies the manifests, waits for PostgreSQL, LocalStack, the migration, and both API replicas, and checks `/health/ready`. The API answers on `http://127.0.0.1:30080`, Prometheus on `30090`, Grafana on `30030`, and Alertmanager on `30093`. It needs Docker only: `kind` and `kubectl` are reused from `PATH` or downloaded into `.tools/bin`, and on Windows Docker Desktop starts by itself. The versions and the troubleshooting are in [`docs/kubernetes.md`](docs/kubernetes.md).
+`cluster:up` builds the image, creates the kind cluster when it is absent, starts it again after a Docker restart, loads the image into the nodes, applies the manifests, waits for PostgreSQL, LocalStack, Mongo, Redis, the migration, and both API replicas, and checks `/health/ready`. The API answers on `http://127.0.0.1:30080`, Prometheus on `30090`, Grafana on `30030`, and Alertmanager on `30093`. It needs Docker only: `kind` and `kubectl` are reused from `PATH` or downloaded into `.tools/bin`, and on Windows Docker Desktop starts by itself. The versions and the troubleshooting are in [`docs/kubernetes.md`](docs/kubernetes.md).
 
-`cluster:render` renders every overlay without a cluster, and the pipeline runs it, so a broken manifest fails before a cluster exists. `cluster:verify` proves the running shape — nodes, endpoints, replication, the migration, the financial flow with a replay, and both replicas serving a burst — which is the second step of the `cluster` CI job on every push to `main` or `staging` and every pull request.
+`cluster:render` renders every overlay without a cluster, and the pipeline runs it, so a broken manifest fails before a cluster exists. `cluster:verify` proves the running shape — nodes, endpoints, replication, the migration, the financial flow with a replay, the Redis cache hit counter, and both replicas serving a burst — which is the second step of the `cluster` CI job on every push to `main` or `staging` and every pull request.
 
 ### Try the commands
 
@@ -384,7 +388,7 @@ Set `LOG_PRETTY=true` in `.env` for readable, one-line text output. Leave it uns
 curl http://localhost:3000/metrics
 ```
 
-The route answers the Prometheus text exposition: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing time, and the audit and journey counters. `METRICS_BACKEND` chooses the adapter - `prometheus` by default, `memory` for the in-process counters without the Prometheus client.
+The route answers the Prometheus text exposition: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing time, the audit and journey counters, and the cache hits and misses. `METRICS_BACKEND` chooses the adapter - `prometheus` by default, `memory` for the in-process counters without the Prometheus client.
 
 A dashboard comes with the stack:
 

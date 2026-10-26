@@ -93,7 +93,7 @@ The route rules are in [`docs/API.md`](API.md) and in [`src/presentation/http/sp
 bun run verify:full
 ```
 
-The gate reads `.env` through `Environment`, checks that PostgreSQL, MongoDB, and LocalStack answer within two seconds, then runs the migrations, the integration suite, the audit store suite, the journey store suite, the concurrency suite, and the end-to-end suite. The first failure stops the run with exit code `1`.
+The gate reads `.env` through `Environment`, checks that PostgreSQL, MongoDB, Redis, and LocalStack answer within two seconds, then runs the migrations, the integration suite, the audit store suite, the journey store suite, the concurrency suite, and the end-to-end suite. The first failure stops the run with exit code `1`.
 
 The concurrency suite starts six independent application processes against the same database: the same bet 50 times becomes one debit, two bets of 80 on a balance of 100 leave one processed and one rejected, two rollbacks of one bet leave one processed, and the stored balance always equals the balance rebuilt from the ledger. The same suite carries the fault injection: a TCP proxy in front of PostgreSQL, `503` during the outage, and recovery without a restart.
 

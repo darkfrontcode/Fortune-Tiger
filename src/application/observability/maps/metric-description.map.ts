@@ -25,6 +25,8 @@ export class MetricDescriptionMap extends Map<string, string> {
       [metricNames.journeyFailure, 'Journey steps that could not be stored'],
       [metricNames.publishCount, 'Events sent to the outbound queue'],
       [metricNames.publishDuration, 'Outbound publish duration in milliseconds'],
+      [metricNames.cacheHit, 'Reads answered from the cache'],
+      [metricNames.cacheMiss, 'Reads that fell through to the source of truth'],
     ])
   }
 }

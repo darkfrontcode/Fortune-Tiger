@@ -18,5 +18,6 @@ An ADR records one decision, the context that forced it, and what it costs. The 
 | [0012](0012-journey-read-model-in-mongodb.md) | Keep the journey read model in MongoDB |
 | [0013](0013-alerting-with-alertmanager-and-email.md) | Alert with Alertmanager to email |
 | [0014](0014-mcp-semantic-search-in-mongodb.md) | Search events semantically through MCP over MongoDB Vector Search |
+| [0015](0015-redis-cache.md) | Cache wallet and wager reads in Redis |
 
 A reader who wants the rules rather than the reasoning reads [`ARCHITECTURE.md`](../../ARCHITECTURE.md) and the `spec.md` beside each folder.

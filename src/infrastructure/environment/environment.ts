@@ -4,6 +4,7 @@ const defaultCredential = 'test'
 const defaultMetricsBackend = 'prometheus'
 const defaultAuthMode = 'anonymous'
 const defaultMongoUrl = 'mongodb://127.0.0.1:27017/fortune_tiger_audit'
+const defaultRedisUrl = 'redis://127.0.0.1:6379'
 const defaultSearchMongoUrl = 'mongodb://127.0.0.1:27018/fortune_tiger_search?directConnection=true'
 const defaultEmbeddingProvider = 'ollama'
 const defaultOllamaBaseUrl = 'http://localhost:11434'
@@ -117,5 +118,9 @@ export class Environment {
 
   get oidcJwksUrl(): string | undefined {
     return process.env.OIDC_JWKS_URL
+  }
+
+  get redisUrl(): string {
+    return process.env.REDIS_URL ?? defaultRedisUrl
   }
 }

@@ -167,6 +167,10 @@ src/
       repositories/
       schemas/
       tests/
+    cache/
+      factories/tests/
+      readers/tests/
+      tests/
     journey/
       repositories/
       schemas/
@@ -240,7 +244,7 @@ Files follow the Nest name (`health.controller.ts`, `health.module.ts`, `message
 
 ## Composition
 
-A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, `audit.store.module.ts`, `journey.store.module.ts`, and `health.module.ts` build the adapters and the controller. `http.module.ts` provides wallet use cases alongside the HTTP controller and persistence ports. `wagers.module.ts`, `reconciliations.module.ts`, `references.module.ts`, `audits.module.ts`, and `journeys.module.ts` build their use cases.
+A Nest module sits inside the boundary it wires, and it is the only file that knows both sides of a port. `observability.module.ts`, `persistence.module.ts`, `messaging.module.ts`, `audit.store.module.ts`, `journey.store.module.ts`, and `health.module.ts` build the adapters and the controller. `cache.module.ts` builds the Redis client and binds `CACHE`. `http.module.ts` provides wallet use cases alongside the HTTP controller and persistence ports. `wagers.module.ts`, `reconciliations.module.ts`, `references.module.ts`, `audits.module.ts`, and `journeys.module.ts` build their use cases.
 
 A port is a protocol plus a token. The protocol is the contract and carries no runtime value. The token is one `Symbol` in `tokens/` under its owning module, one file each, named after the protocol without the suffix. Cross-cutting application tokens live with their `observability` or `time` contracts. The owning module binds the token with `useExisting`, so one instance answers to both names, and the consumer injects only the token.
 
@@ -261,7 +265,7 @@ A port arrives by its token, as `@Inject(WAGER_GATEWAY)`. A collaborator with on
 
 A use case or service with a collaborator is not built with `new`. `SubmitWagerUseCase`, `IdempotencyService`, the mediators, the writers, the readers, the workers, the publisher, the consumer, and the readiness probes arrive through the constructor.
 
-A factory provider stays for a value the container builds from `Environment` (`MikroORM`, `SQSClient`, `QUEUE_CONFIG`) and for the array the health module joins (`READINESS`). A pure collaborator used by two layers is provided by the module that consumes it, so the layer arrow does not become a module cycle.
+A factory provider stays for a value the container builds from `Environment` (`MikroORM`, `SQSClient`, `QUEUE_CONFIG`, `Redis`) and for the array the health module joins (`READINESS`). A pure collaborator used by two layers is provided by the module that consumes it, so the layer arrow does not become a module cycle.
 
 `Environment` is the only reader of `process.env`. `environment.module.ts` provides it and exports it, so every factory receives it instead of reading a variable. `main.ts` asks the container for the port.
 
@@ -295,23 +299,31 @@ The stages are recorded by the code that owns the step: `ROUTE` by `JourneyInter
 
 `JourneyStoreProtocol` and `JOURNEY_STORE` are owned by `application/journeys`; the Mongoose adapter lives only in `infrastructure/journey`, and the connection is `MongoConnection` in `infrastructure/mongo`, shared with the audit store.
 
+## Cache
+
+The wallet and the wager are read more often than they change. `application/cache` owns `CacheProtocol` and the `CACHE` token: `get` returns the stored text or nothing, and `set` stores text for a TTL. `infrastructure/cache` holds the adapter — `RedisFactory` reads `Environment.redisUrl` and builds an `ioredis` client with `lazyConnect`, and `RedisCache` answers `get` and `set` — and the cached readers.
+
+The cache-aside lives at the read tokens: `PersistenceModule` binds `WALLET_READER` to `CachedWalletReader` and `WAGER_READER` to `CachedWagerReader`, each wrapping the SQL reader in `persistence/readers`. A hit parses and rehydrates the domain object and counts `cache_hits_total`; a miss or a value that does not parse counts `cache_misses_total`, reads through the SQL reader, and stores it with a TTL — 30 seconds for a wallet, 60 for a wager. An absent row stores nothing.
+
+The adapter is fail-open in every direction: a Redis error, a malformed value, or a rehydration failure logs a warning and falls through to the SQL reader, so a cached read never changes the answer a provider receives. The write path is untouched — `WAGER_GATEWAY`, `WALLET_OPENING`, and the writers never pass through the cache, the ledger page and the reconciliation stay out on purpose, and Redis is not part of `/health/ready`.
+
 ## Observability
 
 `LoggerProtocol` writes one line per event, JSON by default and text under `LOG_PRETTY`, with `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId` attached through `child`. An amount and a wager body never enter a log line.
 
-`MetricProtocol` carries counters and observations. `PrometheusMetric` is the default adapter and answers `GET /metrics` with the Prometheus text exposition; `SimpleMetric` serves `METRICS_BACKEND=memory` and the unit tests. The names live in `application/observability/data` and the help text lives in its `maps`, so no adapter invents a name. The instrumented families are transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing latency, the audit persisted, duplicate, and failure counters, and the journey recorded and failure counters.
+`MetricProtocol` carries counters and observations. `PrometheusMetric` is the default adapter and answers `GET /metrics` with the Prometheus text exposition; `SimpleMetric` serves `METRICS_BACKEND=memory` and the unit tests. The names live in `application/observability/data` and the help text lives in its `maps`, so no adapter invents a name. The instrumented families are transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing latency, the audit persisted, duplicate, and failure counters, the journey recorded and failure counters, and the cache hits and misses that the cached readers count.
 
-`GET /health/live` reads the process, and `GET /health/ready` asks PostgreSQL and SQS at the same time with a two-second abort, so a dead dependency answers `503` instead of hanging the check. MongoDB stays out of readiness: the audit timeline and the journey are not on the financial path.
+`GET /health/live` reads the process, and `GET /health/ready` asks PostgreSQL and SQS at the same time with a two-second abort, so a dead dependency answers `503` instead of hanging the check. MongoDB and Redis stay out of readiness: the read models and the cache are not on the financial path.
 
 ## Kubernetes
 
 The delivery also runs on a real cluster: `kind` starts one control plane and two workers as Docker containers, and `scripts/cluster.ts` is the only entry. `bun run cluster:up` resolves `kind` and `kubectl` (downloading the pinned releases into `.tools/bin` when they are missing), starts Docker when it is not answering, builds and loads the image, applies the Kustomize tree, runs the migration Job, and waits for both replicas before it checks `/health/ready`.
 
-`kubernetes/base` holds the namespace, the ConfigMaps, the secret, the two PostgreSQL statefulsets with their headless services, LocalStack, Mongo, the migration Job, the API Deployment, its services, and its PodDisruptionBudget. `kubernetes/overlays/local` is the delivery and turns the `api` Service into a `NodePort` on `30080`; `kubernetes/overlays/observability` adds Prometheus and Grafana. The cluster definition lives in `kubernetes/kind`, and every folder explains its own rule in its `spec.md`.
+`kubernetes/base` holds the namespace, the ConfigMaps, the secret, the two PostgreSQL statefulsets with their headless services, LocalStack, Mongo, Redis, the migration Job, the API Deployment, its services, and its PodDisruptionBudget. `kubernetes/overlays/local` is the delivery and turns the `api` Service into a `NodePort` on `30080`; `kubernetes/overlays/observability` adds Prometheus and Grafana. The cluster definition lives in `kubernetes/kind`, and every folder explains its own rule in its `spec.md`.
 
-Six pods run at rest. Two `api` replicas sit behind the Service, which is the load balancer: kube-proxy spreads connections across both endpoints, and the balance is per connection, not per request. PostgreSQL runs a primary and a streaming standby on different workers, and the API writes only to the primary. LocalStack is the one workload with a single replica on purpose: it is the broker, and two replicas would hold two separate queue sets. `mongo` is the read model, a single replica: the audit timeline and the journey are observations, not financial state, and the API keeps working while the store is down.
+Seven pods run at rest. Two `api` replicas sit behind the Service, which is the load balancer: kube-proxy spreads connections across both endpoints, and the balance is per connection, not per request. PostgreSQL runs a primary and a streaming standby on different workers, and the API writes only to the primary. LocalStack is the one workload with a single replica on purpose: it is the broker, and two replicas would hold two separate queue sets. `mongo` is the read model, a single replica: the audit timeline and the journey are observations, not financial state, and the API keeps working while the store is down. `redis` is the read cache, also a single replica: it accelerates wallet and wager reads and is fail-open, so one instance is plenty and a restart only clears a cache that rebuilds itself.
 
-`bun run cluster:verify` reads the shape instead of assuming it: nodes, endpoints, replication, the migration, the financial flow with a replay, the MongoDB collections of the datalake, and a per-pod counter after a burst of requests. The `CI` workflow runs `cluster:up` and then `cluster:verify`, so the manifests are proven on a real cluster on every push to `main` or `staging` and every pull request.
+`bun run cluster:verify` reads the shape instead of assuming it: nodes, endpoints, replication, the migration, the financial flow with a replay, the MongoDB collections of the datalake, the Redis cache hit counter after reading the same wallet twice, and a per-pod counter after a burst of requests. The `CI` workflow runs `cluster:up` and then `cluster:verify`, so the manifests are proven on a real cluster on every push to `main` or `staging` and every pull request.
 
 ## Limits
 
@@ -323,13 +335,14 @@ Stated here so the delivery is read for what it is:
 - A wallet holds one currency, and a reversal is all-or-nothing: partial reversal is out.
 - The `anonymous` auth mode trusts the caller, because a local run and the CI should not need an identity provider. `AUTH_MODE=jwt` is the mode that verifies a token.
 - The audit timeline and the journey are eventually consistent. They are read models in MongoDB — the audit fed by the outbox, the journey recorded stage by stage — not transactional records; a MongoDB outage delays them and never rolls back a wager. OpenTelemetry and a dashboard stay out. The Prometheus exposition is in.
+- The cache is a best-effort accelerator. A wallet or wager read may serve a value up to its TTL — 30 seconds for a wallet, 60 for a wager — and Redis is fail-open, so an outage costs a warm-up, never a balance. The cache never holds an inbox, an outbox, or a ledger page.
 - The load script measures the running API on one machine. It is not a CI gate, it has no RPS target, and its numbers are not a capacity claim.
 - The cluster runs on one machine. Three nodes share a kernel and a disk, the standby has no automatic failover, and no autoscaler is provisioned.
 - The queue runs as one LocalStack pod. A managed SQS brings its own redundancy; two LocalStack replicas would hold two separate queue sets, so the broker stays single and readiness reports it when it is gone.
 
 ## Decisions
 
-Fourteen records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, the split between inbound and outbound queues, the local cluster, the polyglot audit store, the journey read model in MongoDB, the Alertmanager email alert set, and the MCP semantic search over MongoDB Vector Search. A decision that changes gets a new record; the old one keeps its number.
+Fifteen records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, the split between inbound and outbound queues, the local cluster, the polyglot audit store, the journey read model in MongoDB, the Alertmanager email alert set, the MCP semantic search over MongoDB Vector Search, and the Redis read cache. A decision that changes gets a new record; the old one keeps its number.
 
 ## Stack
 
@@ -340,6 +353,7 @@ Fourteen records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape
 | Framework | NestJS |
 | Database | PostgreSQL 16 |
 | Read models | MongoDB 7 with Mongoose — the audit timeline and the journey |
+| Read cache | Redis 7 — the wallet and wager read cache |
 | Queue | LocalStack. The statement also allows MiniStack. |
 | ORM | MikroORM |
 | Local cluster | kind 0.33 with Kustomize, on Kubernetes 1.32 |
