@@ -19,6 +19,9 @@ lerna-debug.log*
 .env.test
 .env.production
 
+# alerting smtp credentials
+/docker/alerting/smtp-password
+
 # temp directory
 .temp
 .tmp

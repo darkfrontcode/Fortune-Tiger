@@ -141,6 +141,10 @@ src/
       protocols/
       tokens/
       use-cases/tests/
+    searches/
+      protocols/
+      tokens/
+      use-cases/tests/
     time/
       tokens/
     wallets/
@@ -162,6 +166,8 @@ src/
     journey/
       tests/
     mongo/
+    search/
+    mcp/
     environment/tests/
     messaging/
       consumers/enums/
@@ -210,7 +216,7 @@ src/
 
 `main.ts` is the Nest entry, at `src/main.ts`. There is no `src/main/` folder. `app.module.ts` imports the layer modules, and `runtime.service.ts` starts the outbox worker, the reference worker, the request consumer, and the audit consumer on boot and closes them on shutdown. There is no `src/modules` folder. There is no `shared` folder.
 
-Beside `src`, the repository keeps `docs/` for the statement, the plan, the API and its checked-in OpenAPI document, the ADRs, the delivery path, testing, and the load note; `scripts/` for `verify`, `verify:full`, `demo`, `load`, `auth`, `openapi`, and `cluster`; `docker/` for the queue bootstrap, the optional Keycloak realm, and the Prometheus and Grafana provisioning; `kubernetes/` for the cluster, the Kustomize tree, and the overlay that adds the observability pair; and `test/` for the end-to-end setup file and the audit channel used by the timeline suite. `EVIDENCE.md` records the last local run, and `EVALUATION.md` is the section 14 checklist against the code.
+Beside `src`, the repository keeps `docs/` for the statement, the plan, the API and its checked-in OpenAPI document, the ADRs, the delivery path, testing, and the load note; `scripts/` for `verify`, `verify:full`, `demo`, `load`, `auth`, `openapi`, `cluster`, `mcp`, and `search:seed`; `docker/` for the queue bootstrap, the optional Keycloak realm, the Prometheus and Grafana provisioning, and the optional alerting and search profiles; `kubernetes/` for the cluster, the Kustomize tree, and the overlay that adds the observability pair; and `test/` for the end-to-end setup file and the audit channel used by the timeline suite. `EVIDENCE.md` records the last local run, and `EVALUATION.md` is the section 14 checklist against the code.
 
 Files follow the Nest name (`health.controller.ts`, `health.module.ts`, `messages.data.ts`, `failure-code.enum.ts`). Classes stay PascalCase (`HealthController`). A folder that exposes its files reexports them from `index.ts` with `export *`. Callers import the folder. `src/domain/index.ts` reexports the four concepts. Inside a concept, `data/` holds `messages.data.ts`, `enums/` holds one `{subject}.enum.ts` per enum, `maps/` holds a class that extends `Map`, `patterns/` holds concrete rule classes, and `guards/` holds one class per rule with its own `spec.md`. Application ports live in the consuming capability's `protocols/` folder; adapter-internal contracts and presentation-specific extension contracts stay with their consumer. A port token lives in a `tokens/` folder under the owning module, with one `Symbol` per file and an `index.ts` barrel. Unit tests live in `tests/` next to the module they cover. The file is `{subject}.test.ts`. Production barrels do not reexport tests.
 
@@ -305,7 +311,7 @@ Stated here so the delivery is read for what it is:
 
 ## Decisions
 
-Twelve records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, the split between inbound and outbound queues, the local cluster, the polyglot audit store, and the journey read model in MongoDB. A decision that changes gets a new record; the old one keeps its number.
+Fourteen records in [`docs/adr/`](docs/adr/) hold the reasoning behind the shape: the four layers and their ports, PostgreSQL with the pessimistic lock, the rich domain, at-least-once delivery with the inbox and the outbox, idempotency as a stored fact, the two auth modes, the observability choice, the split between inbound and outbound queues, the local cluster, the polyglot audit store, the journey read model in MongoDB, the Alertmanager email alert set, and the MCP semantic search over MongoDB Vector Search. A decision that changes gets a new record; the old one keeps its number.
 
 ## Stack
 

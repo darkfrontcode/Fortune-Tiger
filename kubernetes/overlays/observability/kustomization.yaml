@@ -7,10 +7,19 @@ resources:
   - prometheus/prometheus.service.yaml
   - grafana/grafana.deployment.yaml
   - grafana/grafana.service.yaml
+  - alertmanager/alertmanager.deployment.yaml
+  - alertmanager/alertmanager.service.yaml
+  - alertmanager/alertmanager.smtp.secret.yaml
 configMapGenerator:
   - name: prometheus-config
     files:
       - prometheus/prometheus.yml
+  - name: prometheus-rules
+    files:
+      - ../../../docker/alerting/rules/fortune-tiger.rules.yml
+  - name: alertmanager-config
+    files:
+      - ../../../docker/alerting/alertmanager.yml
   - name: grafana-datasource
     files:
       - ../../../docker/grafana/provisioning/datasources/prometheus.yml

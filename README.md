@@ -20,6 +20,7 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
   <img alt="SQS on LocalStack" src="https://img.shields.io/badge/SQS-LocalStack%203-FF9900?style=for-the-badge&logo=amazonsqs&logoColor=white" />
   <img alt="Prometheus" src="https://img.shields.io/badge/Prometheus-2.55.1-E6522C?style=for-the-badge&logo=prometheus&logoColor=white" />
   <img alt="Grafana" src="https://img.shields.io/badge/Grafana-11.2.2-F46800?style=for-the-badge&logo=grafana&logoColor=white" />
+  <img alt="Alertmanager" src="https://img.shields.io/badge/Alertmanager-0.28.1-E6522C?style=for-the-badge&logo=prometheus&logoColor=white" />
   <img alt="Keycloak" src="https://img.shields.io/badge/Keycloak-26.0-4D4D4D?style=for-the-badge&logo=keycloak&logoColor=white" />
 </p>
 
@@ -70,11 +71,12 @@ The application is the coordinator. It gives the same wager rules to requests fr
 The behind-the-scenes layer keeps the service dependable:
 
 - 🐘 **PostgreSQL** stores wallets, wagers, and the ledger together.
-- 🧾 **MongoDB** stores the append-only audit timeline and the per-caller journey. Both are read models, never the source of a balance.
+- 🧾 **MongoDB** stores the append-only audit timeline, the per-caller journey, and the `searchable_events` read model. All are read models, never the source of a balance.
 - 📬 **Inbox and outbox** help the service handle repeated messages and publish events after a successful save.
 - ☁️ **LocalStack SQS** lets the queue run locally, including retries and dead-letter queues.
 - 🔎 **Logs and metrics** help explain what happened without putting financial payloads in the logs.
 - 📊 **Prometheus metrics** answer `GET /metrics`, so a scrape sees transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, processing time, and the audit and journey counters.
+- 📨 **Alertmanager** evaluates the Prometheus rules and emails `darkfrontcode@gmail.com` when the API is down, memory is high, or a metric signals trouble - dead letters, outbox lag, store failures, or a reconciliation divergence.
 
 </details>
 
@@ -88,7 +90,7 @@ The cluster lives in [`kubernetes/`](kubernetes/) and starts with one command. I
 - ⚙️ two API replicas behind one service, spread across the workers, with a disruption budget and a zero-downtime rollout;
 - 📨 one LocalStack pod, with the queues created by the same script compose uses;
 - 🧾 one migration Job, recreated on every apply, waited on before the run reports success;
-- 📈 an optional Prometheus and Grafana overlay that scrapes each replica through the headless service.
+- 📈 an optional Prometheus, Grafana, and Alertmanager overlay that scrapes each replica through the headless service and emails the operator when a rule fires.
 
 Two replicas are safe because the guarantees already exist: the wallet row lock, `FOR UPDATE SKIP LOCKED` on the outbox, and the inbox row. A repeated bet still produces one debit, whichever pod answers.
 
@@ -97,7 +99,7 @@ bun run cluster:up
 bun run cluster:verify
 ```
 
-The topology, the failure drills, and the limits are in [`docs/kubernetes.md`](docs/kubernetes.md). The manifests are Kustomize: `overlays/local` for the cluster, `overlays/observability` for the dashboards. The `CI` workflow raises this same cluster on a runner and runs `cluster:verify` after it, so the pull request is green on the real cluster, not on the manifest only.
+The topology, the failure drills, and the limits are in [`docs/kubernetes.md`](docs/kubernetes.md). The manifests are Kustomize: `overlays/local` for the cluster, `overlays/observability` for the dashboards and the alerting pair. The `CI` workflow raises this same cluster on a runner and runs `cluster:verify` after it, so the pull request is green on the real cluster, not on the manifest only.
 
 </details>
 
@@ -204,6 +206,18 @@ The application contract lives in [`src/application/journeys/spec.md`](src/appli
 </details>
 
 <details>
+<summary>🔎 Semantic search — find similar events over MCP</summary>
+
+An AI agent, through the Model Context Protocol, can ask for past events and failures similar to a description — for example, "a bet rejected because the balance ran out". Fortune Tiger exposes one stdio tool, `search_similar_events`, that answers with similar events from a semantic index. The financial truth stays in PostgreSQL and the timeline in `audit_events`; neither is touched.
+
+- 🧾 A `searchable_events` collection on the atlas-local instance holds one non-financial summary per audit event, with an embedding. It is a read model seeded by `bun run search:seed`; the application never writes it at request time, and re-seeding never duplicates.
+- 🗣️ `OllamaEmbedding` turns a query into a vector through `POST /api/embed`; `MongoVectorSearch` runs the `$vectorSearch` pipeline and projects only safe read fields — never an embedding, the summary text, a provider id, an amount, or a balance.
+- 🧩 The capability lives in [`src/application/searches/spec.md`](src/application/searches/spec.md), the adapters in [`src/infrastructure/search/spec.md`](src/infrastructure/search/spec.md), the MCP wiring in [`src/infrastructure/mcp/spec.md`](src/infrastructure/mcp/spec.md), and the decision in [`docs/adr/0014-mcp-semantic-search-in-mongodb.md`](docs/adr/0014-mcp-semantic-search-in-mongodb.md).
+- ⚙️ The pipeline runs it: `VECTOR_SEARCH_ENABLED=true` activates the search, the `search` compose profile runs the atlas-local instance and Ollama locally, and the CI workflow brings both up on every main and staging run — it pulls the Ollama embedding model, runs the seed, and proves a real search with `bun run search:check`. The application code never downloads a model itself.
+
+</details>
+
+<details>
 <summary>🧭 Architecture — the ideas behind the code</summary>
 
 Three ideas guide how this project is built:
@@ -231,7 +245,7 @@ The domain is the rulebook. Application is the coordinator. Presentation is the 
 
 Cross-layer imports use the `@application/*`, `@domain/*`, `@infrastructure/*`, and `@presentation/*` TypeScript aliases.
 
-The reasoning behind the shape is in [`docs/adr/`](docs/adr/): eleven short records, one per decision, each with the alternative that lost and the cost it carries.
+The reasoning behind the shape is in [`docs/adr/`](docs/adr/): fourteen short records, one per decision, each with the alternative that lost and the cost it carries.
 
 </details>
 
@@ -270,10 +284,13 @@ These are the coding assistants and model names used to build Fortune Tiger:
 - 🧾 **MongoDB 7** keeps the append-only audit timeline.
 - 🧩 **MikroORM** connects the code to the database.
 - 📚 **Mongoose** connects the audit adapter to MongoDB.
+- 🔎 **mongodb-atlas-local** brings `mongot`, so `$vectorSearch` answers; the CI pipeline starts it on every main and staging run.
+- 🗣️ **Ollama** produces embeddings; the seed and the MCP tool use it, and the CI pipeline starts it and pulls the model on every main and staging run.
+- 🧩 **MCP SDK** exposes the single `search_similar_events` tool over stdio.
 - 📨 **SQS on LocalStack** provides a queue that works on a developer's machine.
 - 🐳 **Docker Compose** runs the local databases, queue, API, authentication, and observability profiles.
 - ☸️ **Kubernetes on kind** runs the same image on three nodes, with two API replicas and two PostgreSQL instances, declared as Kustomize manifests.
-- 📈 **Prometheus and Grafana** expose and visualize the application's metrics through the optional observability profile.
+- 📈 **Prometheus and Grafana** expose and visualize the application's metrics through the optional observability profile, and **Alertmanager** emails the operator when a rule fires.
 - 🔐 **Keycloak** provides the optional JWT identity provider through the auth profile.
 - 📘 **Swagger** publishes the HTTP contract at `/docs`.
 
@@ -321,7 +338,7 @@ bun run cluster:status
 bun run cluster:down
 ```
 
-`cluster:up` builds the image, creates the kind cluster when it is absent, starts it again after a Docker restart, loads the image into the nodes, applies the manifests, waits for PostgreSQL, LocalStack, the migration, and both API replicas, and checks `/health/ready`. The API answers on `http://127.0.0.1:30080`, Prometheus on `30090`, and Grafana on `30030`. It needs Docker only: `kind` and `kubectl` are reused from `PATH` or downloaded into `.tools/bin`, and on Windows Docker Desktop starts by itself. The versions and the troubleshooting are in [`docs/kubernetes.md`](docs/kubernetes.md).
+`cluster:up` builds the image, creates the kind cluster when it is absent, starts it again after a Docker restart, loads the image into the nodes, applies the manifests, waits for PostgreSQL, LocalStack, the migration, and both API replicas, and checks `/health/ready`. The API answers on `http://127.0.0.1:30080`, Prometheus on `30090`, Grafana on `30030`, and Alertmanager on `30093`. It needs Docker only: `kind` and `kubectl` are reused from `PATH` or downloaded into `.tools/bin`, and on Windows Docker Desktop starts by itself. The versions and the troubleshooting are in [`docs/kubernetes.md`](docs/kubernetes.md).
 
 `cluster:render` renders every overlay without a cluster, and the pipeline runs it, so a broken manifest fails before a cluster exists. `cluster:verify` proves the running shape — nodes, endpoints, replication, the migration, the financial flow with a replay, and both replicas serving a burst — which is the second step of the `cluster` CI job on every push to `main` or `staging` and every pull request.
 
@@ -375,7 +392,7 @@ A dashboard comes with the stack:
 docker compose --profile app --profile observability up -d
 ```
 
-Prometheus scrapes the API on `http://localhost:9090`, and Grafana answers `http://localhost:3001` with the provisioned `Fortune Tiger` dashboard: transactions by status, replays, retries, dead letters, processing latency, outbox lag, and lock conflicts. Anonymous viewing is on in that profile; the panel queries read the same names the application publishes.
+Prometheus scrapes the API on `http://localhost:9090`, Grafana answers `http://localhost:3001` with the provisioned `Fortune Tiger` dashboard: transactions by status, replays, retries, dead letters, processing latency, outbox lag, and lock conflicts. Alertmanager answers `http://localhost:9093` and emails `darkfrontcode@gmail.com` when a rule in `docker/alerting` fires. Anonymous viewing is on in that profile; the panel queries read the same names the application publishes. Add a Gmail App Password to `docker/alerting/smtp-password` before relying on the email.
 
 ### Require a token (optional)
 
@@ -392,6 +409,26 @@ bun run auth:smoke
 ```
 
 It asks Keycloak for a token, boots the API in `jwt` mode, and asserts the refusals and the identity: `401` without a token, a wallet still open with `201`, a bet accepted with the token, the provider read from the token even when the header and the body name another one, `404` under that other provider, and `401` for a forged token.
+
+### Search for similar events
+
+The semantic search uses Ollama (the default embedding provider) and the `atlas-local` vector engine, two containers plus a model. Start them, then enable the feature. The seed and the MCP server do not need the HTTP API, and locally they need the stack up:
+
+```bash
+docker compose --profile search up -d
+# pull an embedding model, for example:
+docker exec -it fortune-tiger-ollama ollama pull embeddinggemma
+```
+
+Set `VECTOR_SEARCH_ENABLED=true` and the `SEARCH_*` values from `.env.example`. Seed the read model from the existing audit timeline, prove the search answers, then serve queries through a stdio MCP server:
+
+```bash
+bun run search:seed
+bun run search:check
+bun run mcp
+```
+
+`search:seed` reads `audit_events`, embeds a non-financial summary per event through Ollama, upserts `searchable_events` (keyed on the source `eventId`, so re-seeding never duplicates), and creates the vector index when it is missing. `search:check` runs a real query against the seeded index and exits `0` when the search answers. `mcp` connects an `McpServer` to a `StdioServerTransport` and exposes the single `search_similar_events` tool. The scripts refuse to start when `VECTOR_SEARCH_ENABLED` is false. The CI pipeline for main and staging starts the search stack, pulls the model, seeds, and exercises a real search on every run; a plain local `bun run verify` does not require the extra containers.
 
 </details>
 

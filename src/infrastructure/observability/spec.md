@@ -12,6 +12,8 @@ A line carries `time`, `level`, `message`, and the context of the child. JSON is
 
 `PrometheusMetric` is the default adapter. It implements `MetricProtocol`, holds one private `Registry`, and creates a `Counter` on the first `increment` and a `Summary` on the first `observe`, with the help text from `MetricDescriptionMap` in `application/observability/maps`. `render` returns `registry.metrics()`, the text Prometheus scrapes. The counters stay in the process, so a scrape reads the instance that served the request.
 
+The constructor also registers the default process metrics through `collectDefaultMetrics`, so the exposition carries `process_resident_memory_bytes` and the other standard Node metrics. They are library-named, not invented by the adapter, and they answer the operational questions an alert set asks: how much memory the process uses and whether it is still up.
+
 `SimpleMetric` is the memory adapter, chosen by `METRICS_BACKEND=memory`. `increment` counts one name, `count` reads it, `observe` sums one name, and `render` writes the same exposition shape without the percentiles. It serves unit tests and a run with no Prometheus client.
 
 The names come from `application/observability/data`: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing latency. No adapter invents a name.

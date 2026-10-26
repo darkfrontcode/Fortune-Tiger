@@ -1,0 +1,74 @@
+groups:
+  - name: fortune-tiger
+    rules:
+      - alert: FortuneTigerApiDown
+        expr: up{job="fortune-tiger"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'The Fortune Tiger API is down'
+          description: 'Prometheus cannot scrape the API for more than a minute.'
+
+      - alert: FortuneTigerMemoryHigh
+        expr: process_resident_memory_bytes{job="fortune-tiger"} > 300 * 1024 * 1024
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'The Fortune Tiger API is using a lot of memory'
+          description: 'Resident memory is above 300 MiB for more than five minutes, close to the 384 MiB container limit.'
+
+      - alert: FortuneTigerDeadLetters
+        expr: increase(consumer_dead_letters_total{job="fortune-tiger"}[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Queue messages reached the dead-letter queue'
+          description: 'A message could not be processed and went to the dead-letter queue.'
+
+      - alert: FortuneTigerRetryStorm
+        expr: increase(consumer_retries_total{job="fortune-tiger"}[5m]) > 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'The consumer is retrying too often'
+          description: 'More than ten retries were scheduled in five minutes.'
+
+      - alert: FortuneTigerOutboxLag
+        expr: outbox_lag_milliseconds{job="fortune-tiger", quantile="0.9"} > 60000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'The outbox is falling behind'
+          description: 'The p90 outbox latency is above a minute for more than ten minutes.'
+
+      - alert: FortuneTigerAuditStoreFailure
+        expr: increase(audit_events_failures_total{job="fortune-tiger"}[10m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'The audit store cannot persist events'
+          description: 'Events keep failing to reach the MongoDB audit timeline.'
+
+      - alert: FortuneTigerJourneyStoreFailure
+        expr: increase(journey_events_failures_total{job="fortune-tiger"}[10m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'The journey store cannot record steps'
+          description: 'Journey steps keep failing to reach MongoDB.'
+
+      - alert: FortuneTigerReconciliationDivergence
+        expr: reconciliation_divergence{job="fortune-tiger"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'A wallet balance diverges from its ledger'
+          description: 'A reconciliation found a stored balance different from the ledger.'

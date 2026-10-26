@@ -37,6 +37,20 @@ services:
       timeout: 5s
       retries: 10
 
+  mongodb-atlas-local:
+    image: mongodb/mongodb-atlas-local
+    profiles: ['search']
+    ports:
+      - '27018:27017'
+
+  ollama:
+    image: ollama/ollama
+    profiles: ['search']
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama:/root/.ollama
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     profiles: ['auth']
@@ -114,9 +128,23 @@ services:
       - --storage.tsdb.retention.time=1d
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/alerting/rules:/etc/prometheus/rules:ro
       - prometheus:/prometheus
     ports:
       - '9090:9090'
+
+  alertmanager:
+    profiles: ['observability']
+    image: prom/alertmanager:v0.28.1
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./docker/alerting/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./docker/alerting/smtp-password:/etc/alertmanager/smtp-password:ro
+      - alertmanager:/alertmanager
+    ports:
+      - '9093:9093'
 
   grafana:
     profiles: ['observability']
@@ -135,7 +163,10 @@ services:
       - '3001:3000'
     depends_on:
       - prometheus
+      - alertmanager
 
 volumes:
   grafana:
   prometheus:
+  alertmanager:
+  ollama:
