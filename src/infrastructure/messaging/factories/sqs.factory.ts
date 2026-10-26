@@ -1,6 +1,6 @@
 import { SQSClient } from '@aws-sdk/client-sqs'
 import { Injectable } from '@nestjs/common'
-import type { Environment } from '../../environment'
+import { Environment } from '../../environment'
 import type { FactoryProtocol } from '../../protocols'
 
 const maxAttempts = 1

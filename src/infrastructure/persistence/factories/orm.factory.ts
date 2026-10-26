@@ -2,7 +2,7 @@ import 'reflect-metadata'
 import { MikroORM } from '@mikro-orm/postgresql'
 import { Injectable } from '@nestjs/common'
 import config from '../../../../mikro-orm.config'
-import type { Environment } from '../../environment'
+import { Environment } from '../../environment'
 import type { FactoryProtocol } from '../../protocols'
 import { DATABASE_URL_REQUIRED_MESSAGE } from '../data'
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import type { Environment } from '../../environment'
+import { Environment } from '../../environment'
 import type { FactoryProtocol } from '../../protocols'
 import type { PublisherType } from '../publishers'
 import type { ConsumerType } from '../queues'
