@@ -17,5 +17,6 @@ An ADR records one decision, the context that forced it, and what it costs. The 
 | [0011](0011-polyglot-audit-store-with-mongodb.md) | Keep the audit timeline in MongoDB |
 | [0012](0012-journey-read-model-in-mongodb.md) | Keep the journey read model in MongoDB |
 | [0013](0013-alerting-with-alertmanager-and-email.md) | Alert with Alertmanager to email |
+| [0014](0014-mcp-semantic-search-in-mongodb.md) | Search events semantically through MCP over MongoDB Vector Search |
 
 A reader who wants the rules rather than the reasoning reads [`ARCHITECTURE.md`](../../ARCHITECTURE.md) and the `spec.md` beside each folder.

@@ -335,7 +335,7 @@ Detailed comparison between the original challenge (`docs/challenge-original.md`
 **Delivery docs:**
 - `docs/DELIVERY.md` — the reviewer's path: commands, expected output, reading map, and limits
 - `docs/API.md` and `docs/api/openapi.json` — routes, headers, status table, error bodies, failure codes, and the checked-in machine-readable contract
-- `docs/adr/` — ten records, one per decision, each with the alternative that lost and the cost it carries
+- `docs/adr/` — fourteen records, one per decision, each with the alternative that lost and the cost it carries
 - `docs/testing.md` — what each suite covers: lint, coverage, properties, concurrency, fault injection, auth, and why the load test stays out of CI
 - `docs/load.md` — the load method, the waves, the results, and the bottleneck
 - `docs/kubernetes.md` — the kind cluster: topology, commands, failure drills, and limits

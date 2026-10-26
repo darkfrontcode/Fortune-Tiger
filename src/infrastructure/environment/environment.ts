@@ -4,6 +4,14 @@ const defaultCredential = 'test'
 const defaultMetricsBackend = 'prometheus'
 const defaultAuthMode = 'anonymous'
 const defaultMongoUrl = 'mongodb://127.0.0.1:27017/fortune_tiger_audit'
+const defaultSearchMongoUrl = 'mongodb://127.0.0.1:27018/fortune_tiger_search?directConnection=true'
+const defaultEmbeddingProvider = 'ollama'
+const defaultOllamaBaseUrl = 'http://localhost:11434'
+const defaultOllamaEmbeddingModel = 'embeddinggemma'
+const defaultSearchCollection = 'searchable_events'
+const defaultSearchIndex = 'events_vector_index'
+const defaultTopK = 5
+const defaultMaxTextLength = 4000
 const empty = String()
 
 export class Environment {
@@ -57,6 +65,42 @@ export class Environment {
 
   get mongoUrl(): string {
     return process.env.MONGODB_URL ?? defaultMongoUrl
+  }
+
+  get vectorSearch(): boolean {
+    return process.env.VECTOR_SEARCH_ENABLED === 'true'
+  }
+
+  get searchMongoUrl(): string {
+    return process.env.SEARCH_MONGODB_URL ?? defaultSearchMongoUrl
+  }
+
+  get embeddingProvider(): string {
+    return process.env.EMBEDDING_PROVIDER ?? defaultEmbeddingProvider
+  }
+
+  get ollamaBaseUrl(): string {
+    return process.env.OLLAMA_BASE_URL ?? defaultOllamaBaseUrl
+  }
+
+  get ollamaEmbeddingModel(): string {
+    return process.env.OLLAMA_EMBEDDING_MODEL ?? defaultOllamaEmbeddingModel
+  }
+
+  get searchEventsCollection(): string {
+    return process.env.MONGODB_EVENTS_COLLECTION ?? defaultSearchCollection
+  }
+
+  get searchVectorIndex(): string {
+    return process.env.MONGODB_VECTOR_INDEX ?? defaultSearchIndex
+  }
+
+  get vectorSearchTopK(): number {
+    return Number(process.env.VECTOR_SEARCH_TOP_K ?? defaultTopK)
+  }
+
+  get vectorSearchMaxTextLength(): number {
+    return Number(process.env.VECTOR_SEARCH_MAX_TEXT_LENGTH ?? defaultMaxTextLength)
   }
 
   get authMode(): string {

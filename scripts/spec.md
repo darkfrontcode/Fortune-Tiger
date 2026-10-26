@@ -57,6 +57,24 @@ The boot needs the same `.env`, PostgreSQL, LocalStack, and applied migrations a
 
 The boot needs PostgreSQL, LocalStack, the applied migrations, and the `auth` profile. When Keycloak does not answer, the script stops with the `docker compose --profile auth up -d` hint. The token is never printed, and the script writes no file.
 
+## search:seed
+
+`scripts/search.ts` seeds the semantic search read model. It is the pipeline step: it reads the append-only audit events from the shared `MONGODB_URL`, builds one searchable document per event, embeds each summary through Ollama, upserts the documents into `searchable_events` on the atlas-local instance (`SEARCH_MONGODB_URL`), and creates the `MONGODB_VECTOR_INDEX` vector index when it does not exist. It then waits until the index reports `queryable`, so the `search:check` step that runs right after it never races an index that is still building. `bun run search:seed` is the entry.
+
+The summary is non-financial: the event type, the kind, the status, and the direction when present. No amount, balance, player name, or token enters it, matching `src/infrastructure/search/spec.md`. `id` is the source `eventId` and the upsert is keyed on it, so re-seeding never duplicates a document.
+
+The script reads `Environment`, never `process.env`. When `VECTOR_SEARCH_ENABLED` is not true, or Ollama does not answer, it stops with the `docker compose --profile search up -d` hint and the model pull command. The application code is not the one downloading the model: the operator, or the CI pipeline, pulls `OLLAMA_EMBEDDING_MODEL` (default `embeddinggemma`) into the container. The script writes only to the search collection and takes no argument. It is not run by `bun run verify`; the CI pipeline runs it after the integration and E2E suites, so `audit_events` has rows to embed.
+
+## search:check
+
+`scripts/search-check.ts` proves the semantic search answers end to end. It creates a Nest context over `SearchesModule` only, refuses when `VECTOR_SEARCH_ENABLED` is false or Ollama is gone, obtains `SearchSimilarEventsUseCase` from the container, and runs a real query against the seeded atlas-local index. It prints the number of matches and each match's safe projection fields, then exits `0`. A failure leaves a non-zero exit. `bun run search:check` is the entry. The CI pipeline runs it after the seed, so the search is exercised against the real index on every main and staging run; locally an operator runs it the same way after `bun run search:seed`.
+
+## mcp
+
+`scripts/mcp.ts` runs the standalone MCP server over stdio. `bun run mcp` is the entry. It creates a Nest application context over `SearchesModule` only, refuses when `VECTOR_SEARCH_ENABLED` is false or Ollama is gone, obtains `SearchSimilarEventsUseCase` from the container, builds the `McpServer` with the SDK, registers `search_similar_events` through `registerSearchTool`, connects a `StdioServerTransport`, and waits. `SIGINT` and `SIGTERM` close the transport and the context.
+
+The script is not run by `bun run verify`; the CI pipeline for main and staging exercises the same tool path through `bun run search:check`. An AI client (Claude, a coding agent, a CLI) launches the command and calls the tool to find events and failures similar to a description. Config and the tool behavior live in `src/infrastructure/mcp/spec.md` and `src/application/searches/spec.md`. The script boots no HTTP listener and starts no worker.
+
 ## openapi:export
 
 `scripts/openapi.ts` turns the route metadata into the contract a client reads without booting the stack. It boots `AppModule` with the same validation pipe as `src/main.ts`, builds the document through `createDocument`, and writes `docs/api/openapi.json` with two-space indentation and a trailing newline.

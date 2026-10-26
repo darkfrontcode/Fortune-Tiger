@@ -21,6 +21,15 @@ jobs:
       SQS_EVENTS_QUEUE_URL: http://localhost:4566/000000000000/wager-events.fifo
       SQS_EVENTS_DEAD_LETTER_QUEUE_URL: http://localhost:4566/000000000000/wager-events-dlq.fifo
       MONGODB_URL: mongodb://localhost:27017/fortune_tiger_audit
+      VECTOR_SEARCH_ENABLED: "true"
+      SEARCH_MONGODB_URL: mongodb://localhost:27018/fortune_tiger_search?directConnection=true
+      EMBEDDING_PROVIDER: ollama
+      OLLAMA_BASE_URL: http://localhost:11434
+      OLLAMA_EMBEDDING_MODEL: embeddinggemma
+      MONGODB_EVENTS_COLLECTION: searchable_events
+      MONGODB_VECTOR_INDEX: events_vector_index
+      VECTOR_SEARCH_TOP_K: 5
+      VECTOR_SEARCH_MAX_TEXT_LENGTH: 4000
 
     services:
       postgres:
@@ -58,6 +67,22 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+
+      mongodb-atlas-local:
+        image: mongodb/mongodb-atlas-local
+        ports:
+          - 27018:27017
+
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+        options: >-
+          --health-cmd "ollama list"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+          --health-start-period 20s
 
     steps:
       - name: Checkout
@@ -121,6 +146,19 @@ jobs:
 
       - name: Run E2E tests
         run: bun run test:e2e
+
+      - name: Pull the Ollama embedding model
+        run: |
+          curl --fail --silent --show-error \
+            -X POST http://127.0.0.1:11434/api/pull \
+            -H 'content-type: application/json' \
+            -d '{"name":"embeddinggemma","stream":false}'
+
+      - name: Seed the semantic search read model
+        run: bun run search:seed
+
+      - name: Exercise a real semantic search
+        run: bun run search:check
 
       - name: Check the OpenAPI document
         run: bun run openapi:export --check
