@@ -6,8 +6,8 @@ import { Money } from '@domain/money/money'
 import { Wallet } from '@domain/wallet/wallet'
 import { WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
 import { WagerTransaction } from '@domain/wager/wager'
-import { WagerTransactionRepository } from '../wager/wager-transaction.repository'
-import { WalletRepository } from '../wallet/wallet.repository'
+import { WagerTransactionRepository } from '../repositories/wager-transaction.repository'
+import { WalletRepository } from '../repositories/wallet.repository'
 import { PersistenceHarness } from './persistence.harness'
 
 const currency = {

@@ -3,7 +3,7 @@ import type { ReadinessProtocol } from '../../protocols'
 import { HealthStatus } from '../../enums'
 import { CheckHealthLivenessUseCase } from '../check-health-liveness.use-case'
 import { CheckHealthReadinessUseCase } from '../check-health-readiness.use-case'
-import { HealthReadinessError } from '../health-readiness.error'
+import { HealthReadinessError } from '../../errors'
 
 describe('Health use cases', () => {
   test('reports liveness without checking dependencies', () => {

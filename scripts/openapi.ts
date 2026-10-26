@@ -2,7 +2,7 @@ import 'reflect-metadata'
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from '../src/app.module'
-import { createDocument } from '../src/presentation/http/factories'
+import { SwaggerFactory } from '../src/presentation/http/factories'
 
 const outputPath = 'docs/api/openapi.json'
 const checkFlag = '--check'
@@ -33,7 +33,7 @@ const serialized = async (): Promise<string> => {
   app.useGlobalPipes(new ValidationPipe(validation))
 
   try {
-    const document = createDocument(app)
+    const document = new SwaggerFactory().createDocument(app)
 
     return `${JSON.stringify(document, undefined, indent)}\n`
   } finally {

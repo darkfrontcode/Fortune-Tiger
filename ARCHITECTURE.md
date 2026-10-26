@@ -36,7 +36,7 @@ interface MapperProtocol<Input, Output> {
 }
 ```
 
-`MapperProtocol` defines the mapping contract for adapters in presentation and messaging (`mappers/mapper.protocol.ts`). Application ports live in the `protocols/` folder of the capability that consumes them, with a local `index.ts` and `spec.md`. The clock belongs to application `time`; logger and metric belong to application `observability`; readiness belongs to application `health`. Provider identity belongs beside the presentation HTTP provider, and publisher belongs beside its infrastructure messaging consumer. Domain guards and patterns are concrete rules, not application protocols.
+`MapperProtocol` defines the mapping contract for adapters in presentation and messaging (`mappers/mapper.protocol.ts`). `FactoryProtocol` defines the factory contract in infrastructure (`protocols/factory.protocol.ts`): one `create()` method returns the built value, a factory may add named methods for a second value, and the class receives `Environment` through the constructor. Application ports live in the `protocols/` folder of the capability that consumes them, with a local `index.ts` and `spec.md`. The clock belongs to application `time`; logger and metric belong to application `observability`; readiness belongs to application `health`. Provider identity belongs beside the presentation HTTP provider, and publisher belongs beside its infrastructure messaging consumer. Domain guards and patterns are concrete rules, not application protocols.
 
 The domain is only `money`, `wallet`, `ledger`, and `wager`. Inbox, outbox, and the event envelope are sections of `messaging/spec.md`.
 
@@ -151,40 +151,58 @@ src/
       data/
       mediators/tests/
       protocols/
-      strategies/
+      services/tests/
+      strategies/options/
+      strategies/tests/
       tokens/
       use-cases/tests/
   infrastructure/
     AGENTS.md
     protocols/
     audit/
+      repositories/
+      schemas/
       tests/
     journey/
+      repositories/
+      schemas/
       tests/
     mongo/
+      connections/
     environment/tests/
     messaging/
-      consumers/enums/
       consumers/tests/
+      enums/
       events/wager/
       events/wallet/
-      factories/
+      factories/tests/
       mappers/tests/
       messages/data/
       messages/tests/
+      projections/
+      protocols/
       publishers/tests/
+      queues/tests/
       tokens/
-    observability/tests/
+      workers/tests/
+    observability/
+      clocks/tests/
+      loggers/tests/
+      metrics/tests/
+      services/tests/
     persistence/
       data/
-      inbox/
-      ledger/
+      entities/
+      factories/
+      mappers/
       migrations/
-      outbox/queries/
-      reconciliation/
+      queries/
+      readers/
+      readiness/
+      repositories/
       tests/
-      wager/
-      wallet/
+      workers/
+      writers/
   presentation/
     AGENTS.md
     http/
@@ -233,7 +251,7 @@ A port arrives by its token, as `@Inject(WAGER_GATEWAY)`. A collaborator with on
 - a factory that builds its own type: `Money.from`, `WagerRequest.from`, `SimpleLogger.open`, the event `enqueue` and `from`;
 - a pure helper with no I/O and no configuration, held by its owner: `WalletMapper` inside its repository, `PayloadHashPattern` inside `IdempotencyService`;
 - a repository tied to the transaction `EntityManager`: `new WalletRepository(manager)` is the Unit of Work;
-- a third-party client at the edge: `createOrm` and `createSqsClient` in a factory.
+- a third-party client at the edge: `OrmFactory.create` and `SqsFactory.create` in a factory.
 
 A use case or service with a collaborator is not built with `new`. `SubmitWagerUseCase`, `IdempotencyService`, the mediators, the writers, the readers, the workers, the publisher, the consumer, and the readiness probes arrive through the constructor.
 

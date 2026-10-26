@@ -16,4 +16,6 @@ export const metricNames = {
   auditFailure: 'audit_events_failures_total',
   journeyRecorded: 'journey_events_recorded_total',
   journeyFailure: 'journey_events_failures_total',
+  publishCount: 'events_published_total',
+  publishDuration: 'events_publish_milliseconds',
 }

@@ -3,30 +3,21 @@ import { Module } from '@nestjs/common'
 import { WagersModule } from '@application/wagers'
 import { JourneysModule } from '@application/journeys'
 import { AuditStoreModule } from '../audit'
-import { Environment, EnvironmentModule } from '../environment'
+import { EnvironmentModule } from '../environment'
 import { ObservabilityModule } from '../observability'
 import { PersistenceModule } from '../persistence'
 import {
   AuditConsumer,
-  AuditQueue,
   AuditSqsConsumer,
-  CONSUMER_NAME,
-  QueueReadiness,
   SqsConsumer,
-  SqsQueue,
   WagerConsumer,
 } from './consumers'
-import {
-  AUDIT_QUEUE_CONFIG,
-  QUEUE_CONFIG,
-  createAuditQueueConfig,
-  createPublishConfig,
-  createQueueConfig,
-  createSqsClient,
-} from './factories'
+import { QueueFactory, SqsFactory } from './factories'
 import { AuditEventMapper, WagerRequestMapper } from './mappers'
-import { OutboxPublisher, OutboxWorker, SqsPublisher } from './publishers'
-import { PUBLISHER, PUBLISH_CONFIG } from './tokens'
+import { OutboxPublisher, MeasuredPublisher, SqsPublisher } from './publishers'
+import { AuditQueue, QueueReadiness, SqsQueue } from './queues'
+import { OutboxWorker } from './workers'
+import { AUDIT_QUEUE_CONFIG, CONSUMER_NAME, PUBLISHER, PUBLISH_CONFIG, QUEUE_CONFIG } from './tokens'
 
 const consumerName = 'wager'
 
@@ -39,20 +30,22 @@ const moduleImports = [
   JourneysModule,
 ]
 const moduleExports = [OutboxWorker, SqsConsumer, AuditSqsConsumer, QueueReadiness]
-const clientDependencies = [Environment]
 
 @Module({
   imports: moduleImports,
   providers: [
     WagerRequestMapper,
     AuditEventMapper,
-    { provide: SQSClient, useFactory: createSqsClient, inject: clientDependencies },
-    { provide: QUEUE_CONFIG, useFactory: createQueueConfig, inject: clientDependencies },
-    { provide: PUBLISH_CONFIG, useFactory: createPublishConfig, inject: clientDependencies },
-    { provide: AUDIT_QUEUE_CONFIG, useFactory: createAuditQueueConfig, inject: clientDependencies },
+    SqsFactory,
+    QueueFactory,
+    { provide: SQSClient, useFactory: (factory: SqsFactory) => factory.create(), inject: [SqsFactory] },
+    { provide: QUEUE_CONFIG, useFactory: (factory: QueueFactory) => factory.create(), inject: [QueueFactory] },
+    { provide: PUBLISH_CONFIG, useFactory: (factory: QueueFactory) => factory.publish(), inject: [QueueFactory] },
+    { provide: AUDIT_QUEUE_CONFIG, useFactory: (factory: QueueFactory) => factory.audit(), inject: [QueueFactory] },
     { provide: CONSUMER_NAME, useValue: consumerName },
     SqsPublisher,
-    { provide: PUBLISHER, useExisting: SqsPublisher },
+    { provide: PUBLISHER, useExisting: MeasuredPublisher },
+    MeasuredPublisher,
     OutboxPublisher,
     OutboxWorker,
     SqsQueue,

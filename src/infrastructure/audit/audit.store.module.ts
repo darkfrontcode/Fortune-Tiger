@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { AUDIT_STORE } from '@application/audits/tokens'
 import { MongoModule } from '../mongo'
-import { AuditEventRepository } from './audit-event.repository'
+import { AuditEventRepository } from './repositories/audit-event.repository'
 
 const moduleImports = [MongoModule]
 const moduleProviders = [

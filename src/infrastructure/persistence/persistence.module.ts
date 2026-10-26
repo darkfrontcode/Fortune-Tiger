@@ -8,21 +8,21 @@ import { WAGER_GATEWAY, WAGER_READER } from '@application/wagers/tokens'
 import { LEDGER_READER, WALLET_OPENING, WALLET_READER } from '@application/wallets/tokens'
 import { ReferenceMediator } from '@application/wagers/mediators'
 import { WagerMediator } from '@application/wagers/mediators'
-import { Environment, EnvironmentModule } from '../environment'
+import { WagerMovesService, WagerReferencesService } from '@application/wagers/services'
+import { WagerStrategy } from '@application/wagers/strategies'
+import { EnvironmentModule } from '../environment'
 import { ObservabilityModule } from '../observability'
 import { WagerEventsMapper } from '../messaging/mappers'
-import { DatabaseReadiness } from './database.readiness'
-import { LedgerReader } from './ledger/ledger.reader'
-import { createOrm } from './orm.factory'
-import { ReconciliationReader } from './reconciliation/reconciliation.reader'
-import { ReferenceReader } from './wager/reference.reader'
-import { ReferenceRetryWriter } from './wager/reference.retry.writer'
-import { WagerSubmitWriter } from './wager/wager-submit.writer'
-import { WagerReader } from './wager/wager.reader'
-import { WalletOpeningWriter } from './wallet/wallet-opening.writer'
-import { WalletReader } from './wallet/wallet.reader'
-
-const openOrm = (environment: Environment) => createOrm(environment.databaseUrl)
+import { DatabaseReadiness } from './readiness'
+import { LedgerReader } from './readers/ledger.reader'
+import { OrmFactory } from './factories'
+import { ReconciliationReader } from './readers/reconciliation.reader'
+import { ReferenceReader } from './readers/reference.reader'
+import { ReferenceRetryWriter } from './writers/reference.retry.writer'
+import { WagerSubmitWriter } from './writers/wager-submit.writer'
+import { WagerReader } from './readers/wager.reader'
+import { WalletOpeningWriter } from './writers/wallet-opening.writer'
+import { WalletReader } from './readers/wallet.reader'
 
 const moduleImports = [EnvironmentModule, IdempotenciesModule, ObservabilityModule, JourneysModule]
 
@@ -43,8 +43,12 @@ const moduleExports = [
 @Module({
   imports: moduleImports,
   providers: [
-    { provide: MikroORM, useFactory: openOrm, inject: [Environment] },
+    OrmFactory,
+    { provide: MikroORM, useFactory: (factory: OrmFactory) => factory.create(), inject: [OrmFactory] },
     WagerEventsMapper,
+    WagerMovesService,
+    WagerReferencesService,
+    WagerStrategy,
     WagerMediator,
     ReferenceMediator,
     DatabaseReadiness,

@@ -7,10 +7,12 @@ import { WagerMediator } from '@application/wagers/mediators'
 import { SubmitWagerUseCase } from '@application/wagers/use-cases'
 import { WagerEventsMapper, WagerRequestMapper } from '../../messaging/mappers'
 import { SimpleMetric, SystemClock } from '../../observability'
-import { SqsConsumer, SqsQueue, WagerConsumer } from '../../messaging/consumers'
-import type { ConsumerType } from '../../messaging/consumers'
-import { createOrm } from '..'
-import { WagerSubmitWriter } from '../wager'
+import { SqsConsumer, WagerConsumer } from '../../messaging/consumers'
+import { SqsQueue } from '../../messaging/queues'
+import type { ConsumerType } from '../../messaging/queues'
+import { Environment } from '../../environment'
+import { OrmFactory } from '..'
+import { WagerSubmitWriter } from '../writers'
 
 const empty = String()
 const region = 'us-east-1'
@@ -62,7 +64,7 @@ const run = async (): Promise<void> => {
   }
 
   const receiveCount = Number(receiveCountValue)
-  const orm = await createOrm(undefined, true)
+  const orm = await new OrmFactory(new Environment()).isolated()
   const idempotency = new IdempotencyService()
   const writer = new WagerSubmitWriter(
     orm,

@@ -9,9 +9,9 @@ import type { LoggerProtocol, MetricProtocol } from '@application/observability'
 import { LOGGER, METRIC } from '@application/observability'
 import { AuditEventMapper } from '../mappers'
 import { AUDIT_STORE_FAILURE_MESSAGE, INVALID_AUDIT_EVENT_MESSAGE } from '../messages'
-import type { ConsumerProtocol } from './consumer.protocol'
-import { ConsumerOutcome } from './enums'
-import type { ConsumerType } from './types'
+import type { ConsumerProtocol } from '../protocols'
+import { ConsumerOutcome } from '../enums'
+import type { ConsumerType } from '../queues'
 
 const maxAttempts = 5
 

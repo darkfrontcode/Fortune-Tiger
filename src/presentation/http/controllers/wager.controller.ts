@@ -37,8 +37,8 @@ import {
   FindWagerByProviderUseCase,
   FindWagerUseCase,
   SubmitWagerUseCase,
-  WagerNotFoundError,
 } from '@application/wagers/use-cases'
+import { WagerNotFoundError } from '@application/wagers/errors'
 import { CLOCK } from '@application/time'
 import { AuthGuard } from '../guards'
 import { JourneyInterceptor } from '../interceptors'

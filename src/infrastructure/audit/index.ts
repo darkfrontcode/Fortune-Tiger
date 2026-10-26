@@ -1,3 +1,3 @@
-export * from './audit-event.repository'
-export * from './audit-event.schema'
+export * from './repositories'
+export * from './schemas'
 export * from './audit.store.module'

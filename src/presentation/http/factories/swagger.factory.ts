@@ -18,27 +18,27 @@ const bearerDescription = 'Required in the `jwt` auth mode. Ignored in the defau
 const walletDescription = 'Open a wallet, read it, page its ledger, and compare it with the ledger.'
 const wagerDescription = 'Submit a wager, read it by transaction or by provider pair.'
 
-const createDocument = (app: INestApplication): OpenAPIObject => {
-  const config = new DocumentBuilder()
-    .setTitle(title)
-    .setDescription(description)
-    .setVersion(version)
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: bearerDescription },
-      bearerScheme,
-    )
-    .addTag(walletTag, walletDescription)
-    .addTag(wagerTag, wagerDescription)
-    .build()
+export class SwaggerFactory {
+  createDocument(app: INestApplication): OpenAPIObject {
+    const config = new DocumentBuilder()
+      .setTitle(title)
+      .setDescription(description)
+      .setVersion(version)
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: bearerDescription },
+        bearerScheme,
+      )
+      .addTag(walletTag, walletDescription)
+      .addTag(wagerTag, wagerDescription)
+      .build()
 
-  return SwaggerModule.createDocument(app, config)
+    return SwaggerModule.createDocument(app, config)
+  }
+
+  mountDocs(app: INestApplication): void {
+    const document = this.createDocument(app)
+    const options = { jsonDocumentUrl: jsonDocumentPath }
+
+    SwaggerModule.setup(documentationPath, app, document, options)
+  }
 }
-
-const mountDocs = (app: INestApplication): void => {
-  const document = createDocument(app)
-  const options = { jsonDocumentUrl: jsonDocumentPath }
-
-  SwaggerModule.setup(documentationPath, app, document, options)
-}
-
-export { createDocument, mountDocs }

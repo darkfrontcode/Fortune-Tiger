@@ -1,29 +1,36 @@
+import { Injectable } from '@nestjs/common'
 import type { Environment } from '../../environment'
-import type { ConsumerType } from '../consumers'
+import type { FactoryProtocol } from '../../protocols'
 import type { PublisherType } from '../publishers'
+import type { ConsumerType } from '../queues'
 
 const maxMessages = 10
 const waitTimeSeconds = 20
 const visibilityTimeout = 30
 
-export const QUEUE_CONFIG = Symbol('QueueConfig')
+@Injectable()
+export class QueueFactory implements FactoryProtocol<ConsumerType.Config> {
+  constructor(private readonly environment: Environment) {}
 
-export const AUDIT_QUEUE_CONFIG = Symbol('AuditQueueConfig')
+  create(): ConsumerType.Config {
+    return this.config(this.environment.queueUrl, this.environment.deadLetterQueueUrl)
+  }
 
-const consumerConfig = (queueUrl: string, deadLetterQueueUrl: string): ConsumerType.Config => ({
-  queueUrl,
-  deadLetterQueueUrl,
-  maxMessages,
-  waitTimeSeconds,
-  visibilityTimeout,
-})
+  audit(): ConsumerType.Config {
+    return this.config(this.environment.eventsQueueUrl, this.environment.eventsDeadLetterQueueUrl)
+  }
 
-export const createQueueConfig = (environment: Environment): ConsumerType.Config =>
-  consumerConfig(environment.queueUrl, environment.deadLetterQueueUrl)
+  publish(): PublisherType.Config {
+    return { eventsQueueUrl: this.environment.eventsQueueUrl }
+  }
 
-export const createAuditQueueConfig = (environment: Environment): ConsumerType.Config =>
-  consumerConfig(environment.eventsQueueUrl, environment.eventsDeadLetterQueueUrl)
-
-export const createPublishConfig = (environment: Environment): PublisherType.Config => ({
-  eventsQueueUrl: environment.eventsQueueUrl,
-})
+  private config(queueUrl: string, deadLetterQueueUrl: string): ConsumerType.Config {
+    return {
+      queueUrl,
+      deadLetterQueueUrl,
+      maxMessages,
+      waitTimeSeconds,
+      visibilityTimeout,
+    }
+  }
+}

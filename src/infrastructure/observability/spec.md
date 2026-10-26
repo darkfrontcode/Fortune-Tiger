@@ -1,20 +1,24 @@
 # Observability
 
-`ClockProtocol` is the injectable clock. The file is `clock.protocol.ts`. A plug-in contract ends with `Protocol`. `SystemClock` is `@Injectable()` and implements it with the system time; `observability.module.ts` binds it to `CLOCK`.
+## Layout
 
-`SimpleLogger` is the application log API. It implements `LoggerProtocol`. `open` receives the clock and `pretty`. The Nest adapter reads `LOG_PRETTY` and passes `pretty`; the adapter arrives with the boot. Pretty output when the value is true. JSON when the variable is missing or false. `child` attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. `warn` writes one line to the standard output. `amount`, `money`, and the wager body never enter the log. No full financial payload.
+One subfolder per kind: `clocks/` holds `SystemClock`, `loggers/` holds `SimpleLogger`, `metrics/` holds `PrometheusMetric` and `SimpleMetric`, and `services/` holds `LoggerService`. `observability.module.ts`, `index.ts`, `types.ts`, and `spec.md` stay at the root. Each subfolder has its own `index.ts` barrel, and the root barrel reexports the four.
+
+`ClockProtocol` is the injectable clock. The file is `clock.protocol.ts` in `application/time/protocols/`. `SystemClock` is `@Injectable()` and implements it with the system time; `observability.module.ts` binds it to `CLOCK`.
+
+`SimpleLogger` is the application log API. It implements `LoggerProtocol`. `open` receives the clock and `pretty`. The file is `loggers/simple-logger.ts`. The Nest adapter reads `LOG_PRETTY` and passes `pretty`; the adapter arrives with the boot. Pretty output when the value is true. JSON when the variable is missing or false. `child` attaches `correlationId`, `messageId`, `transactionId`, `walletId`, and `providerId`. `warn` writes one line to the standard output. `amount`, `money`, and the wager body never enter the log. No full financial payload.
 
 A line carries `time`, `level`, `message`, and the context of the child. JSON is one object per line. Pretty is one text line with `key=value` pairs. An absent field is not written. `child` returns another logger and does not change the parent.
 
-`LoggerService` is the Nest adapter: `log`, `error`, `warn`, `debug`, `verbose`, and `fatal` write one `SimpleLogger` line with the matching level. The message starts with `[FortuneTiger]:` and the emoji of the level: `💬` log, `❌` error, `⚠️` warn, `🐞` debug, `🔎` verbose, and `💀` fatal. `src/main.ts` hands it to `useLogger`, so Nest writes through the same logger as the application.
+`LoggerService` is the Nest adapter, in `services/logger.service.ts`: `log`, `error`, `warn`, `debug`, `verbose`, and `fatal` write one `SimpleLogger` line with the matching level. The message starts with `[FortuneTiger]:` and the emoji of the level: `💬` log, `❌` error, `⚠️` warn, `🐞` debug, `🔎` verbose, and `💀` fatal. `src/main.ts` hands it to `useLogger`, so Nest writes through the same logger as the application.
 
 ## Metric
 
-`PrometheusMetric` is the default adapter. It implements `MetricProtocol`, holds one private `Registry`, and creates a `Counter` on the first `increment` and a `Summary` on the first `observe`, with the help text from `MetricDescriptionMap` in `application/observability/maps`. `render` returns `registry.metrics()`, the text Prometheus scrapes. The counters stay in the process, so a scrape reads the instance that served the request.
+`PrometheusMetric` is the default adapter, in `metrics/prometheus.metric.ts`. It implements `MetricProtocol`, holds one private `Registry`, and creates a `Counter` on the first `increment` and a `Summary` on the first `observe`, with the help text from `MetricDescriptionMap` in `application/observability/maps`. `render` returns `registry.metrics()`, the text Prometheus scrapes. The counters stay in the process, so a scrape reads the instance that served the request.
 
 The constructor also registers the default process metrics through `collectDefaultMetrics`, so the exposition carries `process_resident_memory_bytes` and the other standard Node metrics. They are library-named, not invented by the adapter, and they answer the operational questions an alert set asks: how much memory the process uses and whether it is still up.
 
-`SimpleMetric` is the memory adapter, chosen by `METRICS_BACKEND=memory`. `increment` counts one name, `count` reads it, `observe` sums one name, and `render` writes the same exposition shape without the percentiles. It serves unit tests and a run with no Prometheus client.
+`SimpleMetric` is the memory adapter, in `metrics/simple.metric.ts`, chosen by `METRICS_BACKEND=memory`. `increment` counts one name, `count` reads it, `observe` sums one name, and `render` writes the same exposition shape without the percentiles. It serves unit tests and a run with no Prometheus client.
 
 The names come from `application/observability/data`: transactions by status, duplicates, retries, dead letters, lock conflicts, outbox lag, and processing latency. No adapter invents a name.
 
