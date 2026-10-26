@@ -18,6 +18,15 @@ const variables = [
   'OIDC_ISSUER',
   'OIDC_AUDIENCE',
   'OIDC_JWKS_URL',
+  'VECTOR_SEARCH_ENABLED',
+  'SEARCH_MONGODB_URL',
+  'EMBEDDING_PROVIDER',
+  'OLLAMA_BASE_URL',
+  'OLLAMA_EMBEDDING_MODEL',
+  'MONGODB_EVENTS_COLLECTION',
+  'MONGODB_VECTOR_INDEX',
+  'VECTOR_SEARCH_TOP_K',
+  'VECTOR_SEARCH_MAX_TEXT_LENGTH',
 ]
 
 const original: NodeJS.ProcessEnv = { ...process.env }
@@ -66,6 +75,15 @@ describe('Environment', () => {
     expect(environment.oidcIssuer).toBeUndefined()
     expect(environment.oidcAudience).toBeUndefined()
     expect(environment.oidcJwksUrl).toBeUndefined()
+    expect(environment.vectorSearch).toBe(false)
+    expect(environment.searchMongoUrl).toBe('mongodb://127.0.0.1:27018/fortune_tiger_search?directConnection=true')
+    expect(environment.embeddingProvider).toBe('ollama')
+    expect(environment.ollamaBaseUrl).toBe('http://localhost:11434')
+    expect(environment.ollamaEmbeddingModel).toBe('embeddinggemma')
+    expect(environment.searchEventsCollection).toBe('searchable_events')
+    expect(environment.searchVectorIndex).toBe('events_vector_index')
+    expect(environment.vectorSearchTopK).toBe(5)
+    expect(environment.vectorSearchMaxTextLength).toBe(4000)
   })
 
   test('WHEN a variable is set SHOULD answer it', () => {
@@ -82,6 +100,15 @@ describe('Environment', () => {
     process.env.AWS_SECRET_ACCESS_KEY = 'secret-key'
     process.env.METRICS_BACKEND = 'memory'
     process.env.DATABASE_URL = 'postgresql://database'
+    process.env.VECTOR_SEARCH_ENABLED = 'true'
+    process.env.SEARCH_MONGODB_URL = 'mongodb://search:27018/search'
+    process.env.EMBEDDING_PROVIDER = 'ollama'
+    process.env.OLLAMA_BASE_URL = 'http://ollama:11434'
+    process.env.OLLAMA_EMBEDDING_MODEL = 'embeddinggemma'
+    process.env.MONGODB_EVENTS_COLLECTION = 'searchable_events'
+    process.env.MONGODB_VECTOR_INDEX = 'events_vector_index'
+    process.env.VECTOR_SEARCH_TOP_K = '10'
+    process.env.VECTOR_SEARCH_MAX_TEXT_LENGTH = '6000'
 
     const environment = new Environment()
 
@@ -98,6 +125,15 @@ describe('Environment', () => {
     expect(environment.eventsDeadLetterQueueUrl).toBe('http://events-dead-letter')
     expect(environment.mongoUrl).toBe('mongodb://database:27017/audit')
     expect(environment.databaseUrl).toBe('postgresql://database')
+    expect(environment.vectorSearch).toBe(true)
+    expect(environment.searchMongoUrl).toBe('mongodb://search:27018/search')
+    expect(environment.embeddingProvider).toBe('ollama')
+    expect(environment.ollamaBaseUrl).toBe('http://ollama:11434')
+    expect(environment.ollamaEmbeddingModel).toBe('embeddinggemma')
+    expect(environment.searchEventsCollection).toBe('searchable_events')
+    expect(environment.searchVectorIndex).toBe('events_vector_index')
+    expect(environment.vectorSearchTopK).toBe(10)
+    expect(environment.vectorSearchMaxTextLength).toBe(6000)
   })
 
   test('WHEN the identity provider variables are set SHOULD answer them', () => {

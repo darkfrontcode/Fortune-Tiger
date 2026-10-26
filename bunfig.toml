@@ -6,6 +6,7 @@ coveragePathIgnorePatterns = [
   "**/infrastructure/audit/**",
   "**/infrastructure/journey/**",
   "src/infrastructure/mongo/**",
+  "src/infrastructure/search/search.connection.ts",
   "src/**/factories/swagger.factory.ts",
   "src/**/factories/sqs.factory.ts",
   "src/**/consumers/sqs.consumer.ts",

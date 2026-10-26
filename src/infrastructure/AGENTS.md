@@ -14,6 +14,8 @@ History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request
 - `audit` — the Mongoose adapter for the append-only audit timeline. `AuditStoreModule` binds `AUDIT_STORE`; the application contract is owned by `application/audits`.
 - `journey` — the Mongoose adapter for the per-caller journey. `JourneyStoreModule` binds `JOURNEY_STORE`; the application contract is owned by `application/journeys`.
 - `mongo` — `MongoConnection`, the Mongoose connection shared by the audit adapter and the journey adapter.
+- `search` — `OllamaEmbedding`, `MongoVectorSearch`, `SearchConnection`, and the `searchable_events` schema. The adapters satisfy `application/searches`; `SearchStoreModule` binds `EMBEDDING` and `VECTOR_SEARCH`. Read-only and never on the financial path. The CI pipeline for main and staging starts this stack (`atlas-local` plus Ollama), pulls the model, seeds, and exercises a real search on every run.
+- `mcp` — `registerSearchTool`, the stdio Model Context Protocol wiring that exposes `search_similar_events` over `scripts/mcp.ts`. It runs out of the CI pipeline through `scripts/search-check.ts` on every main and staging run. Not part of a Nest HTTP module; not on the financial path.
 - `messaging` — one spec: queue, consumer, inbox, outbox, and the event envelope
 - `observability` — `SimpleLogger`, the application clock adapter, and metrics. The logger and metric contracts are owned by application `observability`; the clock contract is owned by application `time`.
 - `environment` — the only reader of `process.env`. One getter per variable, no business rule.

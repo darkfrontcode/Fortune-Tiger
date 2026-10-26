@@ -105,7 +105,7 @@ The OpenAPI document is checked in; `bun run openapi:export --check` rebuilds it
 - [`ARCHITECTURE.md`](../ARCHITECTURE.md) — the layer rules and the composition.
 - [`docs/API.md`](API.md) — routes, headers, status, error bodies, and failure codes.
 - [`docs/api/openapi.json`](api/openapi.json) — the same contract, machine-readable and checked in.
-- [`docs/adr/`](adr/) — ten records, one per decision, with the alternative that lost.
+- [`docs/adr/`](adr/) — fourteen records, one per decision, with the alternative that lost.
 - [`docs/testing.md`](testing.md) — what each suite covers and why.
 - [`docs/load.md`](load.md) — the load method, the measured waves, and the honest limit.
 - [`docs/kubernetes.md`](kubernetes.md) — the cluster, the drills, and the limits.
