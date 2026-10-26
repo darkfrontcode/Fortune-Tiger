@@ -1,2 +1,2 @@
-export * from './clock.protocol'
+export * from './protocols'
 export * from './tokens'

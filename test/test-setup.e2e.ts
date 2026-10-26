@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { AppModule } from '../src/app.module'
-import { mountDocs } from '../src/presentation/http/factories'
+import { SwaggerFactory } from '../src/presentation/http/factories'
 
 const createApp = async (): Promise<INestApplication> => {
   const module = await Test.createTestingModule({
@@ -10,7 +10,7 @@ const createApp = async (): Promise<INestApplication> => {
 
   const app = module.createNestApplication()
 
-  mountDocs(app)
+  new SwaggerFactory().mountDocs(app)
 
   await app.init()
 

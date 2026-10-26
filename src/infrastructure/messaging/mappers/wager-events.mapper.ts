@@ -1,60 +1,31 @@
 import { Injectable } from '@nestjs/common'
-import type { Ledger } from '@domain/ledger/ledger'
-import type { Wallet } from '@domain/wallet/wallet'
 import { WagerTransactionStatus } from '@domain/wager/enums'
-import type { WagerTransaction } from '@domain/wager/wager'
 import {
-  WagerTransactionPendingReference,
-  WagerTransactionProcessed,
-  WagerTransactionRejected,
-  WalletBalanceChanged,
-} from '../events'
-import type { IntegrationEventType } from '../events'
-import { OutboxMessage } from '../messages'
+  EmptyProjection,
+  PendingReferenceProjection,
+  ProcessedProjection,
+  RejectedProjection,
+  WagerProjectionProtocol,
+  WagerProjectionType,
+} from '../projections'
 import type { MapperProtocol } from './mapper.protocol'
 
-type Context = IntegrationEventType.Context
+type Input = WagerProjectionType.Input
+type Output = WagerProjectionType.Output
 
-type Input = {
-  wager: WagerTransaction
-  wallet: Wallet
-  ledger: Ledger | undefined
-  context: Context
-}
-
-type Output = Array<OutboxMessage>
+const projections = new Map<WagerTransactionStatus, WagerProjectionProtocol>([
+  [WagerTransactionStatus.REJECTED, new RejectedProjection()],
+  [WagerTransactionStatus.PENDING_REFERENCE, new PendingReferenceProjection()],
+  [WagerTransactionStatus.PROCESSED, new ProcessedProjection()],
+])
 
 @Injectable()
 export class WagerEventsMapper implements MapperProtocol<Input, Output> {
   map(input: Input): Output {
-    const { wager, wallet, ledger, context } = input
-    const status = wager.status
+    const projection = projections.get(input.wager.status)
 
-    if (status === WagerTransactionStatus.REJECTED) {
-      const rejected = WagerTransactionRejected.from(wager, context)
-      const message = OutboxMessage.enqueue(rejected)
+    if (projection === undefined) { return new EmptyProjection().project(input) }
 
-      return [message]
-    }
-
-    if (status === WagerTransactionStatus.PENDING_REFERENCE) {
-      const pending = WagerTransactionPendingReference.from(wager, context)
-      const message = OutboxMessage.enqueue(pending)
-
-      return [message]
-    }
-
-    if (status !== WagerTransactionStatus.PROCESSED) { return [] }
-
-    const processed = WagerTransactionProcessed.from(wager, context)
-    const processedMessage = OutboxMessage.enqueue(processed)
-    const messages = [processedMessage]
-
-    if (ledger === undefined) { return messages }
-
-    const changed = WalletBalanceChanged.from(wallet, ledger, context)
-    const changedMessage = OutboxMessage.enqueue(changed)
-
-    return messages.concat(changedMessage)
+    return projection.project(input)
   }
 }

@@ -2,10 +2,10 @@ import { Inject, Injectable } from '@nestjs/common'
 import { SubmitWagerUseCase } from '@application/wagers/use-cases'
 import { WagerRequestMapper } from '../mappers'
 import { WagerRequest } from '../messages'
-import { CONSUMER_NAME } from './consumer-name.token'
-import type { ConsumerProtocol } from './consumer.protocol'
-import { ConsumerOutcome } from './enums'
-import type { ConsumerType } from './types'
+import type { ConsumerProtocol } from '../protocols'
+import { CONSUMER_NAME } from '../tokens'
+import { ConsumerOutcome } from '../enums'
+import type { ConsumerType } from '../queues'
 
 const maxAttempts = 5
 

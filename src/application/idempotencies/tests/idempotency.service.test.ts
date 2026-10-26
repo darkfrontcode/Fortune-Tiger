@@ -5,7 +5,7 @@ import { FailureCode, WagerTransactionKind, WagerTransactionStatus } from '@doma
 import { WagerType } from '@domain/wager/types'
 import { WagerTransaction } from '@domain/wager/wager'
 import { IdempotencyOutcome } from '../enums'
-import { IdempotencyService } from '../idempotency.service'
+import { IdempotencyService } from '../services'
 import { IdempotencyType } from '../types'
 
 interface IdempotencyTheory<TParams> extends Theory<TParams> {

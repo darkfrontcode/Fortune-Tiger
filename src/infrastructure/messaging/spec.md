@@ -11,7 +11,7 @@ The two directions do not share a queue. A deployment can scale the consumer and
 
 ## Layout
 
-`messaging` has six folders. `events/` holds the integration event contract in `integration-event.ts` and `types.ts`, plus one folder per concept that records an event: `events/wager` and `events/wallet`. Each concept folder holds its events, its `types.ts` with `{Concept}EventType`, and an `index.ts`. `messages/` holds the inbox row, the outbox row, the inbound wager request, its guard, the audit event guard, and the error text. `mappers/` holds the projection from a wager to outbox rows, the projection from a wager request to a transaction input, and the projection from an event envelope to an audit event. `publishers/` holds the outbox publisher, the SQS adapter, and the worker. `consumers/` holds the SQS queue adapter, the poll loop, the SQS consumer, the wager consumer, the audit queue, the audit consumer, the audit SQS consumer, its outcome enum, its types, and the queue readiness probe. `factories/` builds the SQS client and the `ConsumerType.Config` from the environment. A namespace lives in the `types.ts` of the concept that owns it. `index.ts` reexports the child folders with `export *`.
+`messaging` has one folder per kind. `consumers/` holds `WagerConsumer`, `SqsConsumer`, `AuditConsumer`, and `AuditSqsConsumer`; `queues/` holds `SqsQueue`, `AuditQueue`, `QueueLoop`, `QueueReadiness`, and the `ConsumerType` shapes; `events/` holds the integration event contract in `integration-event.ts` and `types.ts`, plus `events/wager` and `events/wallet`; `messages/` holds the inbox row, the outbox row, the inbound wager request, its guard, the audit event guard, and the error text; `mappers/` holds the wager request mapper and the audit event mapper; `projections/` holds the projection from a wager to outbox rows; `publishers/` holds `OutboxPublisher`, `MeasuredPublisher`, and `SqsPublisher`; `workers/` holds `OutboxWorker`; `factories/` holds `SqsFactory` and `QueueFactory`; `protocols/` holds `ConsumerProtocol` and `PublisherProtocol`; `enums/` holds `ConsumerOutcome`; and `tokens/` holds the messaging tokens. A namespace lives in the `types.ts` of the concept that owns it. `index.ts` reexports the child folders with `export *`.
 
 ## Inbox
 
@@ -37,13 +37,13 @@ The row is inserted in the same SQL transaction as the business change. Publishi
 
 `publishers/outbox.publisher.ts` holds `OutboxPublisher`. `publish` receives `at` and `limit`, opens one SQL transaction, and claims due rows with `SELECT ... FOR UPDATE SKIP LOCKED`. A row is due when `publishedAt` is absent and `nextAttemptAt` is absent or not after `at`. Rows are ordered by `occurredAt` and limited by the caller. The batch stays inside the transaction, and the limit keeps the lock window small.
 
-Each row is published through the infrastructure-owned `PublisherProtocol` in `publishers/`. `publishers/sqs.publisher.ts` holds `SqsPublisher`, which sends the envelope to `wager-events.fifo`. `MessageGroupId` is `aggregateId`, so one aggregate keeps its order. `MessageDeduplicationId` is the event id. The publisher reads that URL from `PublisherType.Config`, built by `createPublishConfig` from `SQS_EVENTS_QUEUE_URL`.
+Each row is published through the infrastructure-owned `PublisherProtocol` in `publishers/`. `publishers/sqs.publisher.ts` holds `SqsPublisher`, which sends the envelope to `wager-events.fifo`. `MessageGroupId` is `aggregateId`, so one aggregate keeps its order. `MessageDeduplicationId` is the event id. The publisher reads that URL from `PublisherType.Config`, built by `QueueFactory.publish()` from `SQS_EVENTS_QUEUE_URL`.
 
 A published row calls `markPublished(at)`. A failed publish calls `scheduleRetry(at)`, and the batch continues. The transaction commits the published and the retry state together. A process that dies before the commit leaves the rows pending for another publisher. A process that dies after the send and before the commit republishes; the consumer inbox deduplicates.
 
 A published row observes `outbox_lag_milliseconds`, the age of the row when it is published, so a growing backlog is visible before it becomes a delay.
 
-`publishers/outbox.worker.ts` holds `OutboxWorker`. It ticks every 2 seconds and calls `OutboxPublisher.publish` with `limit` 20. `open` starts one timer; `close` stops it. A tick that is still publishing is skipped so broker latency does not stack overlapping batches. A failed batch goes to the logger as a warning.
+`workers/outbox.worker.ts` holds `OutboxWorker`. It ticks every 2 seconds and calls `OutboxPublisher.publish` with `limit` 20. `open` starts one timer; `close` stops it. A tick that is still publishing is skipped so broker latency does not stack overlapping batches. A failed batch goes to the logger as a warning.
 
 There is no outbox dead-letter. A failed row keeps retrying with the `1s × 2^(attempts - 1)` backoff capped at 60 seconds. `attempts` and `nextAttemptAt` are the control.
 
@@ -64,9 +64,9 @@ A processed `LOSS` publishes `WagerTransactionProcessed` and does not publish `W
 
 ## Consumer
 
-`consumers/sqs.queue.ts` holds `SqsQueue`, the SQS adapter. `receive` long-polls `wager-transactions.fifo` with `WaitTimeSeconds` 20, `MaxNumberOfMessages` 10, and `VisibilityTimeout` 30. It returns `ConsumerType.QueueMessage`: `sqsMessageId`, `receiptHandle`, `body`, and `receiveCount` from `ApproximateReceiveCount`. `delete` acks. `changeVisibility` sets the retry delay. `deadLetter` sends the original body to `wager-transactions-dlq.fifo` with `MessageGroupId` and `MessageDeduplicationId` equal to the envelope `messageId`.
+`queues/sqs.queue.ts` holds `SqsQueue`, the SQS adapter. `receive` long-polls `wager-transactions.fifo` with `WaitTimeSeconds` 20, `MaxNumberOfMessages` 10, and `VisibilityTimeout` 30. It returns `ConsumerType.QueueMessage`: `sqsMessageId`, `receiptHandle`, `body`, and `receiveCount` from `ApproximateReceiveCount`. `delete` acks. `changeVisibility` sets the retry delay. `deadLetter` sends the original body to `wager-transactions-dlq.fifo` with `MessageGroupId` and `MessageDeduplicationId` equal to the envelope `messageId`.
 
-`consumers/wager.consumer.ts` holds `WagerConsumer`. `consume` receives one queue message and the receive time. It parses the body through `WagerRequest`, maps through `WagerRequestMapper`, and calls `SubmitWagerUseCase.execute` with the inbox envelope. A body that is not a request is acked. A parse failure is permanent and goes to the DLQ. A use case failure retries until the limit. `ConsumerOutcome` lives in `consumers/enums/consumer-outcome.enum.ts` and holds `ACK`, `RETRY`, and `DEAD_LETTER`.
+`consumers/wager.consumer.ts` holds `WagerConsumer`. `consume` receives one queue message and the receive time. It parses the body through `WagerRequest`, maps through `WagerRequestMapper`, and calls `SubmitWagerUseCase.execute` with the inbox envelope. A body that is not a request is acked. A parse failure is permanent and goes to the DLQ. A use case failure retries until the limit. `ConsumerOutcome` lives in `enums/consumer-outcome.enum.ts` and holds `ACK`, `RETRY`, and `DEAD_LETTER`.
 
 `messages/wager-request.ts` holds `WagerRequest`. `from` receives the body. It parses the JSON, returns nothing for an integration event, and returns a `WagerRequest` otherwise. `WagerRequestGuard` checks `messageId`, `type`, `occurredAt`, `data`, kind, money, and reference. Malformed JSON, a missing field, an unknown kind, an invalid money, and a missing reference for `REFUND` or `ROLLBACK` throw `Error` with `INVALID_WAGER_REQUEST_MESSAGE` from `messages/data/messages.data.ts`. Its types live in `messages/types.ts`, in `WagerRequestType`.
 
@@ -96,29 +96,29 @@ Events are not published before the financial commit.
 
 ## Audit consumer
 
-`consumers/audit.queue.ts` holds `AuditQueue`, which extends `SqsQueue` and reads `AUDIT_QUEUE_CONFIG`: it long-polls `wager-events.fifo` and dead-letters to `wager-events-dlq.fifo`.
+`queues/audit.queue.ts` holds `AuditQueue`, which extends `SqsQueue` and reads `AUDIT_QUEUE_CONFIG`: it long-polls `wager-events.fifo` and dead-letters to `wager-events-dlq.fifo`.
 
 `consumers/audit.consumer.ts` holds `AuditConsumer`. It maps the envelope through `AuditEventMapper` and `AuditEventGuard` and records it through `AUDIT_STORE`. A stored event counts `audit_events_persisted_total` and is acked. A duplicate `eventId` counts `audit_events_duplicates_total` and is acked as a successful duplicate. A body the guard refuses is dead-lettered immediately with `INVALID_AUDIT_EVENT_MESSAGE`. A store failure counts `audit_events_failures_total`, logs `AUDIT_STORE_FAILURE_MESSAGE`, and retries with the same backoff; the fifth receive dead-letters. The ack happens after the document exists, never before.
 
-`consumers/queue.loop.ts` holds `QueueLoop`, the poll loop the two consumers share: `open`, `close` with the aborted long poll, the sequential batch, the settle, and the retry and dead-letter metrics. `SqsConsumer` and `AuditSqsConsumer` extend it with their own queue and consumer.
+`queues/queue.loop.ts` holds `QueueLoop`, the poll loop the two consumers share: `open`, `close` with the aborted long poll, the sequential batch, the settle, and the retry and dead-letter metrics. `SqsConsumer` and `AuditSqsConsumer` extend it with their own queue and consumer.
 
 The audit consumer is the only reader of `wager-events.fifo`, and it acks each event once the document exists. A second reader of that channel needs its own queue or a fan-out, which this delivery does not build.
 
 ## Module
 
-`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `WagersModule`, `AuditStoreModule`, and `ObservabilityModule`, and it provides the whole channel. `SQSClient`, `QUEUE_CONFIG`, `PUBLISH_CONFIG`, and `AUDIT_QUEUE_CONFIG` are built once from `Environment`; the tokens live in `tokens/` and `factories/`, and `factories/queue.factory.ts` holds `createQueueConfig`, `createPublishConfig`, and `createAuditQueueConfig`.
+`messaging.module.ts` imports `EnvironmentModule`, `PersistenceModule`, `WagersModule`, `AuditStoreModule`, and `ObservabilityModule`, and it provides the whole channel. `SQSClient`, `QUEUE_CONFIG`, `PUBLISH_CONFIG`, and `AUDIT_QUEUE_CONFIG` are built once from `Environment`; the tokens live in `tokens/`, and the factories are classes that implement `FactoryProtocol` with `create()`: `SqsFactory.create()` builds the client, `QueueFactory.create()` builds the inbound config, `QueueFactory.audit()` builds the events config, and `QueueFactory.publish()` builds the outbound config.
 
 `SqsQueue`, `AuditQueue`, `SqsPublisher`, `QueueReadiness`, `OutboxPublisher`, `OutboxWorker`, `WagerConsumer`, `SqsConsumer`, `AuditConsumer`, and `AuditSqsConsumer` are `@Injectable()`. They receive `SQSClient` and `MikroORM` by class token, `CLOCK`, `LOGGER`, `METRIC`, `AUDIT_STORE`, and `PUBLISHER` by their tokens, `QUEUE_CONFIG` for the inbound queue, `AUDIT_QUEUE_CONFIG` for the events queue, and `PUBLISH_CONFIG` for publishing. `SqsPublisher` is bound to `PUBLISHER` with `useExisting`.
 
 `PUBLISHER` and `PublisherProtocol` are owned by messaging; the token lives in `tokens/` and the protocol stays beside the publisher consumer. `CLOCK` lives in `application/time/tokens`; `LOGGER` lives in `application/observability/tokens`.
 
-The consumer name is `wager`. It is the `CONSUMER_NAME` token in `consumers/consumer-name.token.ts`, bound with `useValue`, and `WagerConsumer` receives it in the constructor.
+The consumer name is `wager`. It is the `CONSUMER_NAME` token in `tokens/consumer-name.token.ts`, bound with `useValue`, and `WagerConsumer` receives it in the constructor.
 
 `OutboxWorker`, `SqsConsumer`, `AuditSqsConsumer`, and `QueueReadiness` are exported. `RuntimeService` is not: the root provides it, because it starts all the workers.
 
 ## Environment
 
-`Environment` is the only reader of the variables below. `AWS_REGION` defaults to `us-east-1`, and `AWS_ENDPOINT_URL` points to LocalStack. `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`, `SQS_EVENTS_QUEUE_URL`, and `SQS_EVENTS_DEAD_LETTER_QUEUE_URL` carry the absolute queue URLs. The consumer name is `wager`. `factories/sqs.factory.ts` builds the client with `maxAttempts` 1, and `factories/queue.factory.ts` builds all three configs: `ConsumerType.Config` for the inbound channel and for the events channel, each with `maxMessages` 10, `waitTimeSeconds` 20, and `visibilityTimeout` 30, and `PublisherType.Config` for the outbound channel. `QUEUE_CONFIG`, `AUDIT_QUEUE_CONFIG`, and `PUBLISH_CONFIG` are the tokens.
+`Environment` is the only reader of the variables below. `AWS_REGION` defaults to `us-east-1`, and `AWS_ENDPOINT_URL` points to LocalStack. `SQS_QUEUE_URL`, `SQS_DEAD_LETTER_QUEUE_URL`, `SQS_EVENTS_QUEUE_URL`, and `SQS_EVENTS_DEAD_LETTER_QUEUE_URL` carry the absolute queue URLs. The consumer name is `wager`. `factories/sqs.factory.ts` holds `SqsFactory`, which builds the client with `maxAttempts` 1 through `create()`, and `factories/queue.factory.ts` holds `QueueFactory`, which builds all three configs through `create()`, `audit()`, and `publish()`: `ConsumerType.Config` for the inbound channel and for the events channel, each with `maxMessages` 10, `waitTimeSeconds` 20, and `visibilityTimeout` 30, and `PublisherType.Config` for the outbound channel. `QUEUE_CONFIG`, `AUDIT_QUEUE_CONFIG`, and `PUBLISH_CONFIG` are the tokens.
 
 Compose starts Postgres 16, MongoDB, and LocalStack, and the ready script in `docker/localstack` creates `wager-transactions.fifo`, `wager-transactions-dlq.fifo`, `wager-events.fifo`, and `wager-events-dlq.fifo`. Every queue is FIFO, and the deduplication id is the event id.
 

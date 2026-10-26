@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { JOURNEY_STORE } from '@application/journeys/tokens'
 import { MongoModule } from '../mongo'
-import { JourneyRepository } from './journey.repository'
+import { JourneyRepository } from './repositories/journey.repository'
 
 const moduleImports = [MongoModule]
 const moduleProviders = [

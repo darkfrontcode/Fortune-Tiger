@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common'
-import { IdempotencyService } from './idempotency.service'
+import { IdempotencyService } from './services'
 
 @Module({
   providers: [IdempotencyService],

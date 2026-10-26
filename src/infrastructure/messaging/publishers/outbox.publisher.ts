@@ -5,9 +5,9 @@ import type { MetricProtocol } from '@application/observability'
 import { JourneyOutcome, JourneyService, JourneyStage } from '@application/journeys'
 import type { ClockProtocol } from '@application/time'
 import { CLOCK } from '@application/time'
-import type { PublisherProtocol } from '@infrastructure/messaging/publishers'
+import type { PublisherProtocol } from '@infrastructure/messaging/protocols'
 import { PUBLISHER } from '../tokens'
-import { OutboxMessageRepository } from '../../persistence/outbox'
+import { OutboxMessageRepository } from '../../persistence/repositories'
 import type { OutboxMessage } from '../messages'
 
 type Input = {

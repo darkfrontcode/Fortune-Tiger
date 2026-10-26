@@ -3,7 +3,7 @@ import type { LedgerReaderProtocol, WalletReaderProtocol } from '@application/wa
 import type { LedgerPage } from '@application/wallets'
 import { Money } from '@domain/money/money'
 import { Wallet } from '@domain/wallet/wallet'
-import { WalletNotFoundError } from '../../wallet-not-found.error'
+import { WalletNotFoundError } from '../../errors'
 import { ListWalletLedgerUseCase } from '../list-wallet-ledger.use-case'
 
 const walletId = 'wallet-1'

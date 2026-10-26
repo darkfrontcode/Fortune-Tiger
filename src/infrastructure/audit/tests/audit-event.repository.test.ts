@@ -3,7 +3,7 @@ import type { Connection } from 'mongoose'
 import { uuidv7 } from 'uuidv7'
 import { AuditOutcome } from '@application/audits'
 import type { AuditType } from '@application/audits'
-import { auditCollection } from '../audit-event.schema'
+import { auditCollection } from '../schemas/audit-event.schema'
 import { AuditHarness } from './audit.harness'
 
 const recordedAt = new Date('2026-07-29T15:00:05.000Z')

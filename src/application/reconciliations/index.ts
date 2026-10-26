@@ -1,6 +1,7 @@
 export * from './tokens'
 export * from './protocols'
 export * from './patterns'
+export * from './errors'
 export * from './use-cases'
 export * from './reconciliations.module'
 export * from './types'

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { Environment } from '../../../environment'
-import { createAuditQueueConfig, createPublishConfig, createQueueConfig } from '../queue.factory'
+import { QueueFactory } from '../queue.factory'
 
 const variables = [
   'SQS_QUEUE_URL',
@@ -23,7 +23,7 @@ const restore = (name: string) => {
   process.env[name] = value
 }
 
-describe('queue factory', () => {
+describe('QueueFactory', () => {
   afterEach(() => {
     variables.forEach(restore)
   })
@@ -32,8 +32,8 @@ describe('queue factory', () => {
     process.env.SQS_QUEUE_URL = 'http://queue'
     process.env.SQS_DEAD_LETTER_QUEUE_URL = 'http://dead'
 
-    const environment = new Environment()
-    const config = createQueueConfig(environment)
+    const factory = new QueueFactory(new Environment())
+    const config = factory.create()
 
     expect(config).toEqual({
       queueUrl: 'http://queue',
@@ -49,7 +49,7 @@ describe('queue factory', () => {
     process.env.SQS_EVENTS_QUEUE_URL = 'http://events'
 
     const environment = new Environment()
-    const config = createPublishConfig(environment)
+    const config = new QueueFactory(environment).publish()
 
     expect(config).toEqual({ eventsQueueUrl: 'http://events' })
     expect(config.eventsQueueUrl).not.toBe(environment.queueUrl)
@@ -59,8 +59,8 @@ describe('queue factory', () => {
     process.env.SQS_EVENTS_QUEUE_URL = 'http://events'
     process.env.SQS_EVENTS_DEAD_LETTER_QUEUE_URL = 'http://events-dead'
 
-    const environment = new Environment()
-    const config = createAuditQueueConfig(environment)
+    const factory = new QueueFactory(new Environment())
+    const config = factory.audit()
 
     expect(config).toEqual({
       queueUrl: 'http://events',

@@ -7,8 +7,8 @@ import { metricNames } from '@application/observability'
 import { AuditEventMapper } from '../../mappers'
 import { AUDIT_STORE_FAILURE_MESSAGE, INVALID_AUDIT_EVENT_MESSAGE } from '../../messages'
 import { AuditConsumer } from '../audit.consumer'
-import { ConsumerOutcome } from '../enums'
-import type { ConsumerType } from '../types'
+import type { ConsumerType } from '../../queues'
+import { ConsumerOutcome } from '../../enums'
 
 const receivedAt = new Date('2026-07-29T15:00:05.000Z')
 

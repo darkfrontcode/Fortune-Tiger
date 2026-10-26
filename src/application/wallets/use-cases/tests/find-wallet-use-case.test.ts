@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { WalletReaderProtocol } from '@application/wallets'
 import { Money } from '@domain/money/money'
 import { Wallet } from '@domain/wallet/wallet'
-import { WalletNotFoundError } from '../../wallet-not-found.error'
+import { WalletNotFoundError } from '../../errors'
 import { FindWalletUseCase } from '../find-wallet.use-case'
 
 const identity = {

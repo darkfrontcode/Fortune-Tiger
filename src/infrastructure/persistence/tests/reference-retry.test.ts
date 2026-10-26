@@ -13,12 +13,12 @@ import {
 import { WagerType } from '@domain/wager/types'
 import { WagerTransaction } from '@domain/wager/wager'
 import { WagerEventsMapper } from '../../messaging/mappers'
-import { OutboxMessageEntity } from '../outbox/outbox-message.entity'
-import { WalletLedgerEntity } from '../ledger/wallet-ledger.entity'
-import { ReferenceReader } from '../wager/reference.reader'
-import { ReferenceRetryWriter } from '../wager/reference.retry.writer'
-import { WagerTransactionRepository } from '../wager/wager-transaction.repository'
-import { WalletRepository } from '../wallet/wallet.repository'
+import { OutboxMessageEntity } from '../entities/outbox-message.entity'
+import { WalletLedgerEntity } from '../entities/wallet-ledger.entity'
+import { ReferenceReader } from '../readers/reference.reader'
+import { ReferenceRetryWriter } from '../writers/reference.retry.writer'
+import { WagerTransactionRepository } from '../repositories/wager-transaction.repository'
+import { WalletRepository } from '../repositories/wallet.repository'
 import { PersistenceHarness } from './persistence.harness'
 
 type Schema = WagerType.Schema

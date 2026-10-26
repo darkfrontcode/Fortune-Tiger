@@ -10,10 +10,10 @@ coveragePathIgnorePatterns = [
   "src/**/factories/swagger.factory.ts",
   "src/**/factories/sqs.factory.ts",
   "src/**/consumers/sqs.consumer.ts",
-  "src/**/consumers/queue.loop.ts",
+  "src/**/queues/queue.loop.ts",
   "src/**/observability/observability.module.ts",
   "src/**/publishers/outbox.publisher.ts",
-  "src/**/publishers/outbox.worker.ts",
+  "src/**/workers/outbox.worker.ts",
 ]
 coverageThreshold = { lines = 1.0, functions = 0.0 }
 coverageReporter = ["text", "lcov"]

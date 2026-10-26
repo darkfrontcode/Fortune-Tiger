@@ -1,4 +1,5 @@
+export * from './audit-queue-config.token'
+export * from './consumer-name.token'
+export * from './publish-config.token'
 export * from './publisher.token'
-export * from './publish-config.token'
-export * from './publish-config.token'
-
+export * from './queue-config.token'

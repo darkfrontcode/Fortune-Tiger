@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import fc from 'fast-check'
 import { Money } from '@domain/money'
 import { WagerTransactionKind } from '@domain/wager/enums'
-import { IdempotencyService } from '../idempotency.service'
+import { IdempotencyService } from '../services'
 import type { IdempotencyType } from '../types'
 
 type Payload = IdempotencyType.Payload

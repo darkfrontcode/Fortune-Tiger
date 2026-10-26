@@ -7,9 +7,9 @@ import type { Ledger } from '@domain/ledger/ledger'
 import { WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enums'
 import type { WagerTransaction } from '@domain/wager/wager'
 import { PersistenceHarness } from './persistence.harness'
-import { WalletRepository } from '../wallet/wallet.repository'
-import { WalletLedgerRepository } from '../ledger/wallet-ledger.repository'
-import { WagerTransactionRepository } from '../wager/wager-transaction.repository'
+import { WalletRepository } from '../repositories/wallet.repository'
+import { WalletLedgerRepository } from '../repositories/wallet-ledger.repository'
+import { WagerTransactionRepository } from '../repositories/wager-transaction.repository'
 
 type Wallet = {
   id: string

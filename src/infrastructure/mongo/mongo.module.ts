@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { EnvironmentModule } from '../environment'
 import { ObservabilityModule } from '../observability'
-import { MongoConnection } from './mongo.connection'
+import { MongoConnection } from './connections'
 
 const moduleImports = [EnvironmentModule, ObservabilityModule]
 const moduleProviders = [MongoConnection]
