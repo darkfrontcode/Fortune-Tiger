@@ -82,7 +82,7 @@ The deployment mounts a ConfigMap generated from `docker/localstack/01-queues.sh
 
 ## Mongo
 
-`mongo` runs the same `mongo:7` image as compose and answers on the `mongo` Service at `mongodb://mongo:27017/fortune_tiger_audit`. The API ConfigMap carries `MONGODB_URL`, so both API replicas write the audit timeline and the journey store to the one database. Mongo is a read model, not a financial dependency: the acquisition is lazy, an unreachable store never blocks the boot or a transaction, and it stays out of `/health/ready`. `cluster:verify` proves the datalake by listing `audit_events` and `journey_steps` after the financial flow, so a manifest that forgets the store fails the job.
+`mongo` runs the same `mongo:7` image as compose and answers on the `mongo` Service at `mongodb://mongo:27017/fortune_tiger_audit`. The API ConfigMap carries `MONGODB_URL`, so both API replicas write the audit timeline and the journey store to the one database. Mongo is a read model, not a financial dependency: the acquisition is lazy, an unreachable store never blocks the boot or a transaction, and it stays out of `/health/ready`. `cluster:verify` proves the datalake by listing `audit_events` and `journey_steps` after the financial flow, so a manifest that forgets the store fails the job. The write is asynchronous — a wager is committed in Postgres, then its events leave through the outbox and are consumed with a long poll of up to twenty seconds before they reach Mongo — so the datalake check gives that pipeline a budget (`datalakeRetries`, forty seconds) instead of assuming the collections exist the instant the financial flow returns, which keeps the job green on a slow machine or under a busy consumer.
 
 ## Observability
 
