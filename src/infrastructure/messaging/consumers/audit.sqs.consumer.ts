@@ -4,8 +4,8 @@ import { CLOCK } from '@application/time'
 import type { LoggerProtocol, MetricProtocol } from '@application/observability'
 import { LOGGER, METRIC } from '@application/observability'
 import { AuditConsumer } from './audit.consumer'
-import { AuditQueue } from './audit.queue'
-import { QueueLoop } from './queue.loop'
+import { AuditQueue } from '../queues/audit.queue'
+import { QueueLoop } from '../queues/queue.loop'
 
 @Injectable()
 export class AuditSqsConsumer extends QueueLoop {

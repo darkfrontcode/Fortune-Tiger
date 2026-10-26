@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { HttpStatus } from '@nestjs/common'
+import { HttpException, HttpStatus } from '@nestjs/common'
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host'
 import type { LoggerProtocol } from '@application/observability'
 import { HealthReadinessError, HealthStatus } from '@application/health'
+import { WalletConflictError } from '@application/wallets'
 import { WalletNotFoundError } from '@application/wallets'
 import { WalletReconciliationNotFoundError } from '@application/reconciliations'
 import { WagerNotFoundError } from '@application/wagers'
@@ -119,6 +120,35 @@ describe('HttpFailureFilter', () => {
 
     expect(response.statusCode).toBe(HttpStatus.UNAUTHORIZED)
     expect(response.body).toBe(INVALID_CREDENTIAL_MESSAGE)
+    expect(logger.warnings).toHaveLength(0)
+  })
+
+  test('wallet conflict - WHEN a duplicate wallet open is attempted SHOULD answer 409', () => {
+    const response = new Response()
+    const host = new ExecutionContextHost([undefined, response, undefined])
+    const logger = new Logger()
+    const filter = new HttpFailureFilter(logger)
+    const error = new WalletConflictError()
+
+    filter.catch(error, host)
+
+    expect(response.statusCode).toBe(HttpStatus.CONFLICT)
+    expect(response.body).toEqual({ message: error.message })
+    expect(logger.warnings).toHaveLength(0)
+  })
+
+  test('http exception - WHEN a Nest HttpException is thrown SHOULD keep its status and body', () => {
+    const response = new Response()
+    const host = new ExecutionContextHost([undefined, response, undefined])
+    const logger = new Logger()
+    const filter = new HttpFailureFilter(logger)
+    const body = { message: 'Malformed payload.' }
+    const error = new HttpException(body, HttpStatus.BAD_REQUEST)
+
+    filter.catch(error, host)
+
+    expect(response.statusCode).toBe(HttpStatus.BAD_REQUEST)
+    expect(response.body).toBe(body)
     expect(logger.warnings).toHaveLength(0)
   })
 

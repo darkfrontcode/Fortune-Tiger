@@ -1,2 +1,2 @@
-export * from './mongo.connection'
+export * from './connections'
 export * from './mongo.module'

@@ -1,7 +1,7 @@
 import { createConnection } from 'mongoose'
 import type { Connection, Schema } from 'mongoose'
-import { AuditEventRepository } from '../audit-event.repository'
-import { auditCollection, auditEventSchema, auditModelName } from '../audit-event.schema'
+import { AuditEventRepository } from '../repositories/audit-event.repository'
+import { auditCollection, auditEventSchema, auditModelName } from '../schemas/audit-event.schema'
 import type { MongoConnection } from '../../mongo'
 
 const defaultUrl = 'mongodb://127.0.0.1:27017/fortune_tiger_audit'

@@ -1,14 +1,14 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { MikroORM } from '@mikro-orm/postgresql'
 import { uuidv7 } from 'uuidv7'
-import type { Published, PublisherProtocol } from '@infrastructure/messaging/publishers'
+import type { Published, PublisherProtocol } from '@infrastructure/messaging/protocols'
 import type { ClockProtocol } from '@application/time'
 import { JourneyService } from '@application/journeys'
 import { SimpleMetric } from '../../observability'
 import { OutboxMessage } from '../../messaging/messages'
 import { OutboxPublisher } from '../../messaging/publishers/outbox.publisher'
-import { OutboxMessageEntity } from '../outbox'
-import { OutboxMessageRepository } from '../outbox'
+import { OutboxMessageEntity } from '../entities'
+import { OutboxMessageRepository } from '../repositories'
 import { PersistenceHarness } from './persistence.harness'
 
 const instant = {

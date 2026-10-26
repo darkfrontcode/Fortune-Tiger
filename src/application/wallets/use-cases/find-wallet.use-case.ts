@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { Wallet } from '@domain/wallet/wallet'
 import type { WalletReaderProtocol } from '@application/wallets'
-import { WalletNotFoundError } from '../wallet-not-found.error'
+import { WalletNotFoundError } from '../errors'
 import { WALLET_READER } from '../tokens'
 
 type Input = { walletId: string }

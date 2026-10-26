@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { IdempotencyService } from '@application/idempotencies/idempotency.service'
+import { IdempotencyService } from '@application/idempotencies/services'
 import type { WagerGatewayProtocol } from '@application/wagers'
 import { SubmitWagerUseCase } from '@application/wagers/use-cases'
 import type { WagersType } from '@application/wagers'
@@ -8,9 +8,9 @@ import { WagerTransactionKind, WagerTransactionStatus } from '@domain/wager/enum
 import type { WagerTransaction } from '@domain/wager/wager'
 import { SimpleMetric, SystemClock } from '@infrastructure/observability'
 import { WagerRequestMapper } from '../../mappers'
-import { ConsumerOutcome } from '../enums'
-import type { ConsumerType } from '../types'
 import { WagerConsumer } from '../wager.consumer'
+import type { ConsumerType } from '../../queues'
+import { ConsumerOutcome } from '../../enums'
 
 type SubmitOutput = WagersType.SubmitOutput
 type QueueInbox = WagersType.QueueInbox

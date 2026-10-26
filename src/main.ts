@@ -4,7 +4,7 @@ import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import { Environment } from '@infrastructure/environment'
 import { LoggerService } from '@infrastructure/observability'
-import { mountDocs } from '@presentation/http/factories'
+import { SwaggerFactory } from '@presentation/http/factories'
 
 const bootstrap = async (): Promise<void> => {
   const app = await NestFactory.create(AppModule, { bufferLogs: true })
@@ -14,7 +14,7 @@ const bootstrap = async (): Promise<void> => {
   app.useLogger(logger)
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   app.enableShutdownHooks()
-  mountDocs(app)
+  new SwaggerFactory().mountDocs(app)
 
   await app.listen(environment.port)
 }

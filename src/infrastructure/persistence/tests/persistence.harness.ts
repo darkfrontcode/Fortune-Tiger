@@ -1,5 +1,6 @@
 import type { MikroORM } from '@mikro-orm/postgresql'
-import { createOrm } from '../orm.factory'
+import { Environment } from '../../environment'
+import { OrmFactory } from '../factories/orm.factory'
 
 const tables = [
   'inbox_messages',
@@ -11,7 +12,7 @@ const tables = [
 
 export class PersistenceHarness {
   static async open(): Promise<MikroORM> {
-    const orm = await createOrm(undefined, true)
+    const orm = await new OrmFactory(new Environment()).isolated()
     const migrator = orm.getMigrator()
 
     await migrator.up()

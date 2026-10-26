@@ -5,7 +5,7 @@ import { Ledger } from '@domain/ledger/ledger'
 import type { LoggerProtocol, MetricProtocol } from '@application/observability'
 import type { ReconciliationGatewayProtocol } from '../../protocols'
 import { ReconcileWalletUseCase } from '../reconcile-wallet.use-case'
-import { WalletReconciliationNotFoundError } from '../wallet-reconciliation-not-found.error'
+import { WalletReconciliationNotFoundError } from '../../errors'
 import { ReconciliationsType } from '../../types'
 
 type Snapshot = ReconciliationsType.Snapshot

@@ -7,7 +7,7 @@ import { RECONCILIATION_GATEWAY } from '../tokens'
 import { RECONCILIATION_DIVERGENCE_MESSAGE } from '../data'
 import { LedgerBalancePattern } from '../patterns'
 import { ReconciliationsType } from '../types'
-import { WalletReconciliationNotFoundError } from './wallet-reconciliation-not-found.error'
+import { WalletReconciliationNotFoundError } from '../errors'
 
 type Snapshot = ReconciliationsType.Snapshot
 type CompareOutput = ReconciliationsType.CompareOutput

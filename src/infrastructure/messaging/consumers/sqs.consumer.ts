@@ -3,8 +3,8 @@ import type { ClockProtocol } from '@application/time'
 import { CLOCK } from '@application/time'
 import type { LoggerProtocol, MetricProtocol } from '@application/observability'
 import { LOGGER, METRIC } from '@application/observability'
-import { QueueLoop } from './queue.loop'
-import { SqsQueue } from './sqs.queue'
+import { QueueLoop } from '../queues/queue.loop'
+import { SqsQueue } from '../queues/sqs.queue'
 import { WagerConsumer } from './wager.consumer'
 
 @Injectable()

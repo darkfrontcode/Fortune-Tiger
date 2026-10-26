@@ -22,16 +22,20 @@ import { SimpleMetric, SystemClock } from '../../observability'
 import { JourneyService } from '@application/journeys'
 import { OutboxMessage } from '../../messaging/messages'
 import { OutboxPublisher } from '../../messaging/publishers/outbox.publisher'
-import type { Published, PublisherProtocol } from '../../messaging/publishers'
-import { SqsConsumer, SqsQueue, WagerConsumer } from '../../messaging/consumers'
-import type { ConsumerType } from '../../messaging/consumers'
+import type { Published, PublisherProtocol } from '../../messaging/protocols'
+import { SqsConsumer, WagerConsumer } from '../../messaging/consumers'
+import { SqsQueue } from '../../messaging/queues'
+import type { ConsumerType } from '../../messaging/queues'
 import { Environment } from '../../environment'
-import { createSqsClient } from '../../messaging/factories'
-import { InboxMessageRepository } from '../inbox'
-import { OutboxMessageRepository } from '../outbox'
-import { WalletLedgerRepository } from '../ledger'
-import { ReferenceRetryWriter, WagerSubmitWriter, WagerTransactionRepository } from '../wager'
-import { WalletRepository } from '../wallet'
+import { SqsFactory } from '../../messaging/factories'
+import {
+  InboxMessageRepository,
+  OutboxMessageRepository,
+  WalletLedgerRepository,
+  WagerTransactionRepository,
+  WalletRepository,
+} from '../repositories'
+import { ReferenceRetryWriter, WagerSubmitWriter } from '../writers'
 import { PersistenceHarness } from './persistence.harness'
 
 const clock: ClockProtocol = { now: () => new Date() }
@@ -136,7 +140,7 @@ const worker = join(
 )
 
 const environment = new Environment()
-const sqs = createSqsClient(environment)
+const sqs = new SqsFactory(environment).create()
 
 const persistence = (): MikroORM => {
   const orm = state.orm

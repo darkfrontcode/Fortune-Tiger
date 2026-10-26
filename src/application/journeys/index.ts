@@ -1,5 +1,6 @@
 export * from './data'
 export * from './enums'
+export * from './errors'
 export * from './protocols'
 export * from './services'
 export * from './tokens'

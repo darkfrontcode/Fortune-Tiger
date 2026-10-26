@@ -1,3 +1,3 @@
-export * from './journey.repository'
-export * from './journey-step.schema'
+export * from './repositories'
+export * from './schemas'
 export * from './journey.store.module'

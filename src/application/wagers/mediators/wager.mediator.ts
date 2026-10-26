@@ -3,15 +3,20 @@ import type { Ledger } from '@domain/ledger'
 import { FailureCode } from '@domain/wager/enums'
 import type { WagerTransaction } from '@domain/wager/wager'
 import { WagersType } from '../types'
-import { WagerReference } from '../wager.reference'
+import { WagerReferencesService } from '../services'
 import { WagerStrategy } from '../strategies'
 
 type Mediation = WagersType.Mediation
 
 @Injectable()
 export class WagerMediator {
+  constructor(
+    private readonly references: WagerReferencesService = new WagerReferencesService(),
+    private readonly strategies: WagerStrategy = new WagerStrategy(),
+  ) {}
+
   mediate(wager: WagerTransaction, mediation: Mediation): Ledger | undefined {
-    const owned = WagerReference.owner(wager, mediation.wallet)
+    const owned = this.references.owner(wager, mediation.wallet)
 
     if (!owned) {
       wager.reject(FailureCode.PLAYER_WALLET_MISMATCH)
@@ -19,7 +24,7 @@ export class WagerMediator {
       return undefined
     }
 
-    const aligned = WagerReference.currency(wager, mediation.wallet)
+    const aligned = this.references.currency(wager, mediation.wallet)
 
     if (!aligned) {
       wager.reject(FailureCode.CURRENCY_MISMATCH)
@@ -27,7 +32,7 @@ export class WagerMediator {
       return undefined
     }
 
-    const hold = WagerReference.hold(wager, mediation.reference, mediation.reversed)
+    const hold = this.references.hold(wager, mediation.reference, mediation.reversed)
 
     if (hold.waiting) {
       wager.markPendingReference()
@@ -43,7 +48,7 @@ export class WagerMediator {
       return undefined
     }
 
-    const strategy = WagerStrategy.from(wager.kind)
+    const strategy = this.strategies.from(wager.kind)
 
     return strategy.execute(wager, mediation)
   }

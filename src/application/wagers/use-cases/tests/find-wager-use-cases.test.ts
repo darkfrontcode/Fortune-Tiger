@@ -5,7 +5,7 @@ import { WagerTransactionKind } from '@domain/wager/enums'
 import { WagerTransaction } from '@domain/wager/wager'
 import { FindWagerByProviderUseCase } from '../find-wager-by-provider.use-case'
 import { FindWagerUseCase } from '../find-wager.use-case'
-import { WagerNotFoundError } from '../wager-not-found.error'
+import { WagerNotFoundError } from '../../errors'
 
 const identity = {
   transaction: 'transaction-1',

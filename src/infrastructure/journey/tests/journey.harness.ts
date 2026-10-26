@@ -1,8 +1,8 @@
 import { createConnection } from 'mongoose'
 import type { Connection, Schema } from 'mongoose'
 import type { MongoConnection } from '../../mongo'
-import { JourneyRepository } from '../journey.repository'
-import { journeyCollection, journeyModelName, journeyStepSchema } from '../journey-step.schema'
+import { JourneyRepository } from '../repositories/journey.repository'
+import { journeyCollection, journeyModelName, journeyStepSchema } from '../schemas/journey-step.schema'
 
 const defaultUrl = 'mongodb://127.0.0.1:27017/fortune_tiger_audit'
 const unreachableUrl = 'mongodb://127.0.0.1:1/fortune_tiger_audit'
