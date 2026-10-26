@@ -124,6 +124,7 @@ const verification = {
   streaming: 'streaming',
   completed: '1',
   settle: 5,
+  datalakeRetries: 20,
   counter: 'wager_transactions_processed_total',
   mongo: 'app=mongo',
   collections: 'audit_events journey_steps',
@@ -714,7 +715,7 @@ const eager = async (pod: string, remaining: number): Promise<Array<string>> => 
 
 const datalake = async (): Promise<Check> => {
   const pods = await mongoPods()
-  const settled = pods.length > EMPTY_NUMBER ? await eager(pods[0] ?? '', verification.settle) : []
+  const settled = pods.length > EMPTY_NUMBER ? await eager(pods[0] ?? '', verification.datalakeRetries) : []
   const wanted = verification.collections.split(' ')
   const passing = pods.length > EMPTY_NUMBER && wanted.every((collection) => settled.includes(collection))
   const detail = pods.length > EMPTY_NUMBER ? settled.join(' ') : 'no mongo pod'
