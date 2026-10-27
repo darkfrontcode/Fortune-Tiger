@@ -8,6 +8,7 @@ The compose file runs the local dependencies, the image, the optional identity p
 | --- | --- | --- |
 | `postgres` | default | PostgreSQL 16, database `fortune_tiger`, healthcheck through `pg_isready` |
 | `mongo` | default | MongoDB 7, database `fortune_tiger_audit`, healthcheck through a `ping` command |
+| `redis` | default | Redis 7, the read cache, healthcheck through a `redis-cli ping` |
 | `localstack` | default | SQS, with the queues created by the ready hook in `docker/localstack` |
 | `keycloak` | `auth` | Keycloak 26 with the realm in `docker/keycloak`; needed only by `AUTH_MODE=jwt` |
 | `migrate` | `app` | one-shot service, runs `bun run migration:up`, exits `0` before the API starts |
@@ -16,7 +17,7 @@ The compose file runs the local dependencies, the image, the optional identity p
 | `alertmanager` | `observability` | receives the alerts Prometheus raises and emails `darkfrontcode@gmail.com` through SMTP |
 | `grafana` | `observability` | serves the provisioned `Fortune Tiger` dashboard on `3001`, with Prometheus as its datasource |
 
-`docker compose --profile app up --build --wait` builds the image once, applies the migrations, and starts the application on `3000`. The application waits for PostgreSQL, MongoDB, LocalStack, and the migration service, and it reports healthy only when `/health/live` answers.
+`docker compose --profile app up --build --wait` builds the image once, applies the migrations, and starts the application on `3000`. The application waits for PostgreSQL, MongoDB, Redis, LocalStack, and the migration service, and it reports healthy only when `/health/live` answers.
 
 ## Image
 

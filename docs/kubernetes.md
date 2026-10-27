@@ -43,7 +43,7 @@ flowchart TB
     prom -. "alerts" .-> am
 ```
 
-The control plane is tainted, so it runs no workload: the two API replicas and the two database instances split across the two workers, and the scheduler is free to place `localstack` and `mongo` on either. The picture is one healthy arrangement.
+The control plane is tainted, so it runs no workload: the two API replicas and the two database instances split across the two workers, and the scheduler is free to place `localstack`, `mongo`, and `redis` on either. The picture is one healthy arrangement.
 
 ## Shape
 
@@ -54,6 +54,7 @@ The control plane is tainted, so it runs no workload: the two API replicas and t
 | `postgres-replica` | 1 | streaming standby, scheduled on the node without a database pod |
 | `localstack` | 1 | it is the broker; two replicas would be two queue sets, and a message published to one would never be consumed from the other |
 | `mongo` | 1 | the read models live here; the audit timeline and the journey store are not financial state, so the API keeps working while it is down |
+| `redis` | 1 | the read cache; fail-open, so a single replica is plenty and a restart only clears a cache that rebuilds itself |
 | `migrate` | 1 | a Job that completes and stays as evidence |
 
 The API scales horizontally: `kubectl -n fortune-tiger scale deploy/api --replicas=3` adds a third endpoint, and the spread keeps the pods balanced across both workers. The database pair and the broker stay as they are, for the reasons above.

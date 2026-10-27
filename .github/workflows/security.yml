@@ -1,0 +1,146 @@
+name: Security
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main, staging]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fortune_tiger
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localhost:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      SQS_QUEUE_URL: http://localhost:4566/000000000000/wager-transactions.fifo
+      SQS_DEAD_LETTER_QUEUE_URL: http://localhost:4566/000000000000/wager-transactions-dlq.fifo
+      SQS_EVENTS_QUEUE_URL: http://localhost:4566/000000000000/wager-events.fifo
+      SQS_EVENTS_DEAD_LETTER_QUEUE_URL: http://localhost:4566/000000000000/wager-events-dlq.fifo
+      MONGODB_URL: mongodb://localhost:27017/fortune_tiger_audit
+      REDIS_URL: redis://localhost:6379
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fortune_tiger
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      localstack:
+        image: localstack/localstack:3
+        env:
+          SERVICES: sqs
+        ports:
+          - 4566:4566
+        options: >-
+          --health-cmd "awslocal sqs list-queues > /dev/null"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 1.4.3
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Create LocalStack SQS queues
+        run: |
+          aws --endpoint-url="$AWS_ENDPOINT_URL" sqs create-queue \
+            --queue-name wager-transactions.fifo \
+            --attributes FifoQueue=true
+          aws --endpoint-url="$AWS_ENDPOINT_URL" sqs create-queue \
+            --queue-name wager-transactions-dlq.fifo \
+            --attributes FifoQueue=true
+          aws --endpoint-url="$AWS_ENDPOINT_URL" sqs create-queue \
+            --queue-name wager-events.fifo \
+            --attributes FifoQueue=true
+          aws --endpoint-url="$AWS_ENDPOINT_URL" sqs create-queue \
+            --queue-name wager-events-dlq.fifo \
+            --attributes FifoQueue=true
+
+      - name: Run migrations
+        run: bun run migration:up
+
+      - name: Run the API security suite
+        run: |
+          set -o pipefail
+          bun run test:security 2>&1 | tee /tmp/security.log
+
+      - name: Upload the security suite log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-suite-log
+          path: /tmp/security.log
+          if-no-files-found: ignore
+
+      - name: Start the API for the passive scan
+        run: bun run start > /tmp/api.log 2>&1 &
+
+      - name: Wait for the API
+        run: |
+          for i in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3000/health/live > /dev/null; then
+              echo "API is live"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API did not answer /health/live"
+          cat /tmp/api.log
+          exit 1
+
+      - name: Run the ZAP passive scan
+        run: bun run security:zap
+
+      - name: Upload the ZAP passive report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-passive-report
+          path: security/reports/passive
+          if-no-files-found: ignore
+
+      - name: Print the API log when the scan failed
+        if: failure()
+        run: test -f /tmp/api.log && cat /tmp/api.log || echo "The API never started"

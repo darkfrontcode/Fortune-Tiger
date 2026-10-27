@@ -1,0 +1,3 @@
+[test]
+root = "./src/presentation/security"
+testMatch = ["**/tests/*.security.e2e.test.ts"]

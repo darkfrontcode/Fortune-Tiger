@@ -11,6 +11,8 @@ import { WagerMediator } from '@application/wagers/mediators'
 import { WagerMovesService, WagerReferencesService } from '@application/wagers/services'
 import { WagerStrategy } from '@application/wagers/strategies'
 import { EnvironmentModule } from '../environment'
+import { CacheModule } from '../cache'
+import { CachedWagerReader, CachedWalletReader } from '../cache/readers'
 import { ObservabilityModule } from '../observability'
 import { WagerEventsMapper } from '../messaging/mappers'
 import { DatabaseReadiness } from './readiness'
@@ -24,7 +26,13 @@ import { WagerReader } from './readers/wager.reader'
 import { WalletOpeningWriter } from './writers/wallet-opening.writer'
 import { WalletReader } from './readers/wallet.reader'
 
-const moduleImports = [EnvironmentModule, IdempotenciesModule, ObservabilityModule, JourneysModule]
+const moduleImports = [
+  EnvironmentModule,
+  IdempotenciesModule,
+  ObservabilityModule,
+  JourneysModule,
+  CacheModule,
+]
 
 const moduleExports = [
   MikroORM,
@@ -55,14 +63,16 @@ const moduleExports = [
     WagerSubmitWriter,
     WagerReader,
     WalletReader,
+    CachedWagerReader,
+    CachedWalletReader,
     LedgerReader,
     ReconciliationReader,
     ReferenceReader,
     ReferenceRetryWriter,
     WalletOpeningWriter,
     { provide: WAGER_GATEWAY, useExisting: WagerSubmitWriter },
-    { provide: WAGER_READER, useExisting: WagerReader },
-    { provide: WALLET_READER, useExisting: WalletReader },
+    { provide: WAGER_READER, useExisting: CachedWagerReader },
+    { provide: WALLET_READER, useExisting: CachedWalletReader },
     { provide: WALLET_OPENING, useExisting: WalletOpeningWriter },
     { provide: LEDGER_READER, useExisting: LedgerReader },
     { provide: RECONCILIATION_GATEWAY, useExisting: ReconciliationReader },

@@ -21,6 +21,7 @@ One file reads `process.env`. `environment.ts` holds `Environment`, a plain clas
 | `oidcIssuer` | `OIDC_ISSUER` | absent |
 | `oidcAudience` | `OIDC_AUDIENCE` | absent |
 | `oidcJwksUrl` | `OIDC_JWKS_URL` | absent |
+| `redisUrl` | `REDIS_URL` | `redis://127.0.0.1:6379` |
 
 `environment.module.ts` provides one `Environment` and exports it. Every infrastructure module imports that module. `main.ts` reads the port from the container, and `src/app.module.ts` no longer touches the variable. No other file reads `process.env`.
 

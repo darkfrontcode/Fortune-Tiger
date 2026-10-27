@@ -1,0 +1,20 @@
+env:
+  contexts:
+    - name: Fortune Tiger
+      urls:
+        - 'http://host.docker.internal:3000'
+
+jobs:
+  - type: spider
+    parameters:
+      context: Fortune Tiger
+      maxChildren: 10
+  - type: activeScan
+    parameters:
+      context: Fortune Tiger
+  - type: report
+    parameters:
+      reportDir: /zap/wrk/reports/active
+      reportTitle: 'Fortune Tiger — ZAP active scan'
+      template: traditional-html
+      displayReport: false

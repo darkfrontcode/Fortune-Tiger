@@ -1,0 +1,23 @@
+env:
+  contexts:
+    - name: Fortune Tiger
+      urls:
+        - 'http://host.docker.internal:3000'
+  parameters:
+    failOnError: true
+    failOnWarning: false
+
+jobs:
+  - type: openapi
+    parameters:
+      apiUrl: 'http://host.docker.internal:3000/docs-json'
+      targetUrl: 'http://host.docker.internal:3000'
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+  - type: report
+    parameters:
+      reportDir: /zap/wrk/reports/passive
+      reportTitle: 'Fortune Tiger — ZAP passive scan'
+      template: traditional-html
+      displayReport: false

@@ -37,6 +37,16 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   mongodb-atlas-local:
     image: mongodb/mongodb-atlas-local
     profiles: ['search']
@@ -98,6 +108,7 @@ services:
       SQS_EVENTS_QUEUE_URL: http://localstack:4566/000000000000/wager-events.fifo
       SQS_EVENTS_DEAD_LETTER_QUEUE_URL: http://localstack:4566/000000000000/wager-events-dlq.fifo
       MONGODB_URL: mongodb://mongo:27017/fortune_tiger_audit
+      REDIS_URL: redis://redis:6379
       AUTH_MODE: anonymous
     ports:
       - '3000:3000'
@@ -107,6 +118,8 @@ services:
       localstack:
         condition: service_healthy
       mongo:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
