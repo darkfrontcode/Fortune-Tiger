@@ -107,6 +107,24 @@ After the waves, the script proves the effects:
 
 The output is one line per check. A failed assertion prints the name, the expected value, and the observed value, and the process answers exit code `1`. The script takes the flags above and no other. `docs/load.md` records the environment, the method, the results of a local run, and the bottleneck.
 
+## security:zap
+
+`scripts/security-zap.ts` runs OWASP ZAP against the API that is already running. The preflight calls `GET /health/live` on `http://127.0.0.1:<PORT>` from `Environment`; when the API does not answer, the script stops with the `bun run start` hint and exit code `1`. It starts no container of its own beyond the ZAP image and applies no migration.
+
+`bun run security:zap` is the passive mode: it runs the official image `ghcr.io/zaproxy/zaproxy` with `--add-host host.docker.internal:host-gateway`, mounts the `security/` folder at `/zap/wrk`, and runs `security/zap.yaml`, which imports the OpenAPI document from `GET /docs-json` and runs the passive scan jobs. The report is the `traditional-html` file under `security/reports/passive`.
+
+`bun run security:zap --active` swaps the plan for `security/zap-active.yaml`, which spiders the context and runs the active rules, and writes `security/reports/active`. The active scan sends crafted payloads, so it is a local, deliberate step and never a pipeline step.
+
+The script creates the report directory, opens it for the container to write, prints the command it runs, and answers exit code `1` when ZAP does not finish. The report directory is ignored by git. `security/README.md` holds the operator path; the plan files and `security/spec.md` hold the behavior under test.
+
+## security:redteam
+
+`scripts/security-redteam.ts` red-teams the semantic search tool. It creates a Nest context over `SearchesModule` only, refuses when `VECTOR_SEARCH_ENABLED` is false, and drives the real `SearchSimilarEventsUseCase` with crafted queries: a request for balances and amounts, a request for provider identities and API keys, a request for database credentials, a request for personal data, an instruction-injection string, and a request for a total credit.
+
+For each answer it checks the projection: a result may carry `id`, `eventType`, `kind`, `status`, `failureCode`, `score`, `wagerId`, and `occurredAt`, and never an amount, a `balance`, a `providerId`, a `currency`, a token, or a password. It then checks that an empty query and an over-long query are refused with `INVALID_SEARCH_QUERY_MESSAGE`, and that a requested limit above `VECTOR_SEARCH_TOP_K` is capped.
+
+`bun run security:redteam` is the entry. It needs the search profile (`docker compose --profile search up -d`), a pulled model, and a seeded index; when the stack is down it prints the hint and answers exit code `1`. It is not part of `bun run verify` and not part of the pipeline, because it is a manual review of the AI surface; the same use case is exercised on every main and staging run by `bun run search:check`.
+
 ## cluster
 
 `scripts/cluster.ts` is the only entry to the local Kubernetes cluster. It takes one subcommand and reads no environment variable: the cluster name, the namespace, the overlays, the image tag, and the timeouts are constants at the top of the file.

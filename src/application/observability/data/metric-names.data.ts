@@ -18,4 +18,6 @@ export const metricNames = {
   journeyFailure: 'journey_events_failures_total',
   publishCount: 'events_published_total',
   publishDuration: 'events_publish_milliseconds',
+  cacheHit: 'cache_hits_total',
+  cacheMiss: 'cache_misses_total',
 }

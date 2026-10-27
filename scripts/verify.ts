@@ -111,6 +111,7 @@ const dependencies = (): Array<Dependency> => {
     { name: 'PostgreSQL', url: database },
     { name: 'LocalStack', url: endpoint },
     { name: 'MongoDB', url: environment.mongoUrl },
+    { name: 'Redis', url: environment.redisUrl },
   ]
 }
 

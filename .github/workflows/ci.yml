@@ -21,6 +21,7 @@ jobs:
       SQS_EVENTS_QUEUE_URL: http://localhost:4566/000000000000/wager-events.fifo
       SQS_EVENTS_DEAD_LETTER_QUEUE_URL: http://localhost:4566/000000000000/wager-events-dlq.fifo
       MONGODB_URL: mongodb://localhost:27017/fortune_tiger_audit
+      REDIS_URL: redis://localhost:6379
       VECTOR_SEARCH_ENABLED: "true"
       SEARCH_MONGODB_URL: mongodb://localhost:27018/fortune_tiger_search?directConnection=true
       EMBEDDING_PROVIDER: ollama
@@ -64,6 +65,16 @@ jobs:
           - 27017:27017
         options: >-
           --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10

@@ -22,6 +22,7 @@ History: branch `<type>/<area>/<subject>`, one Conventional Commit, pull request
 - `reconciliations` — `use-cases/reconcile-wallet.use-case.ts`. Compares the balance with the ledger. Does not repair it.
 - `references` — `use-cases/retry-references.use-case.ts`. The scheduled worker calls the operation.
 - `idempotencies` — `idempotency.service.ts`. Key, hash, and replay.
+- `cache` — `protocols/cache.protocol.ts` (`CacheProtocol`: `get`, `set` with a TTL) and `tokens/cache.token.ts` (`CACHE`). The capability owns the contract; the Redis adapter lives in infrastructure and binds `CACHE` with `useExisting`.
 - `wallets/use-cases` — one explicit application operation per wallet route. `WalletNotFoundError` is an application error and does not depend on HTTP.
 - `health` — liveness and readiness use cases. Readiness composes probes through `READINESS`; the HTTP layer translates `HealthReadinessError`.
 - `audits` — `use-cases/find-wager-audit.use-case.ts`. Reads the append-only timeline through `AUDIT_STORE`; the Mongoose adapter lives in infrastructure and the domain has no Mongo type.

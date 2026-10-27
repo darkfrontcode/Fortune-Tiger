@@ -16,6 +16,8 @@ resources:
   - localstack/localstack.service.yaml
   - mongo/mongo.deployment.yaml
   - mongo/mongo.service.yaml
+  - redis/redis.deployment.yaml
+  - redis/redis.service.yaml
   - api/api.service.yaml
   - api/api.pdb.yaml
   - api/migrate.job.yaml

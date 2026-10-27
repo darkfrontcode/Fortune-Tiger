@@ -36,3 +36,6 @@ lerna-debug.log*
 
 # coverage report
 /coverage
+
+# ZAP generated reports
+/security/reports

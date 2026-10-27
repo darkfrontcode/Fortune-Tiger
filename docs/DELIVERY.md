@@ -93,11 +93,29 @@ The route rules are in [`docs/API.md`](API.md) and in [`src/presentation/http/sp
 bun run verify:full
 ```
 
-The gate reads `.env` through `Environment`, checks that PostgreSQL, MongoDB, and LocalStack answer within two seconds, then runs the migrations, the integration suite, the audit store suite, the journey store suite, the concurrency suite, and the end-to-end suite. The first failure stops the run with exit code `1`.
+The gate reads `.env` through `Environment`, checks that PostgreSQL, MongoDB, Redis, and LocalStack answer within two seconds, then runs the migrations, the integration suite, the audit store suite, the journey store suite, the concurrency suite, and the end-to-end suite. The first failure stops the run with exit code `1`.
 
 The concurrency suite starts six independent application processes against the same database: the same bet 50 times becomes one debit, two bets of 80 on a balance of 100 leave one processed and one rejected, two rollbacks of one bet leave one processed, and the stored balance always equals the balance rebuilt from the ledger. The same suite carries the fault injection: a TCP proxy in front of PostgreSQL, `503` during the outage, and recovery without a restart.
 
 The OpenAPI document is checked in; `bun run openapi:export --check` rebuilds it from the code and fails when the file is stale, and the pipeline runs that check after the end-to-end suite.
+
+## The security gate
+
+```bash
+bun run test:security
+```
+
+Runs the API security suite over the real `AppModule`, with the same validation pipe as `src/main.ts`. It sends the calls a hostile provider would: malformed money, an insufficient bet, two simultaneous bets against one balance, a refund pointing at the wrong kind, a reversal twice, a duplicate idempotency key with a different payload, and a foreign provider reading someone else's audit or journey. Every answer matches the status table the API already promises — `400`, `409`, `422`, `404`, or one `PROCESSED`.
+
+The suite carries the `*.security.e2e.test.ts` suffix, so the 100% line coverage gate is unchanged. `.github/workflows/security.yml` runs it on `main`, `staging`, and every pull request, with the same services as `CI`.
+
+```bash
+bun run security:zap
+```
+
+Runs the OWASP ZAP passive scan against a running API: `bun run start` first, then the scan imports `GET /docs-json` and writes the HTML report to `security/reports/passive`. `bun run security:zap --active` runs the active scan locally, never in the pipeline. `bun run security:redteam` drives the real semantic search tool with crafted queries and proves it never projects an amount, a balance, a provider id, a currency, or a secret; it needs the `search` profile and a seeded index.
+
+The behavior under test, the scope, and the acceptance criteria are in [`security/spec.md`](../security/spec.md); the operator path is in [`security/README.md`](../security/README.md); the reasoning is in [`docs/adr/0016-security-testing.md`](adr/0016-security-testing.md).
 
 ## Where to read
 
@@ -105,8 +123,9 @@ The OpenAPI document is checked in; `bun run openapi:export --check` rebuilds it
 - [`ARCHITECTURE.md`](../ARCHITECTURE.md) — the layer rules and the composition.
 - [`docs/API.md`](API.md) — routes, headers, status, error bodies, and failure codes.
 - [`docs/api/openapi.json`](api/openapi.json) — the same contract, machine-readable and checked in.
-- [`docs/adr/`](adr/) — fourteen records, one per decision, with the alternative that lost.
+- [`docs/adr/`](adr/) — sixteen records, one per decision, with the alternative that lost.
 - [`docs/testing.md`](testing.md) — what each suite covers and why.
+- [`security/spec.md`](../security/spec.md) — the security baseline, the DAST plans, and the red-team.
 - [`docs/load.md`](load.md) — the load method, the measured waves, and the honest limit.
 - [`docs/kubernetes.md`](kubernetes.md) — the cluster, the drills, and the limits.
 - [`EVIDENCE.md`](../EVIDENCE.md) — the last local run: counts, constraints, and the honest limits.

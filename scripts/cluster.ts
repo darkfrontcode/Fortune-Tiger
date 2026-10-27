@@ -126,6 +126,7 @@ const verification = {
   settle: 5,
   datalakeRetries: 20,
   counter: 'wager_transactions_processed_total',
+  cacheCounter: 'cache_hits_total',
   mongo: 'app=mongo',
   collections: 'audit_events journey_steps',
 }
@@ -142,6 +143,7 @@ const check = {
   ledger: 'The ledger holds one entry per change',
   reconciliation: 'The stored balance matches the ledger',
   datalake: 'MongoDB answers and the datalake writes',
+  caching: 'The read cache answers',
   balancing: 'Both replicas process requests',
 }
 
@@ -550,6 +552,7 @@ const migrationState = async (): Promise<string> => {
 }
 
 const metricScript = `fetch('http://127.0.0.1:3000/metrics').then((response) => response.text()).then((text) => { const found = text.split('\\n').filter((line) => line.indexOf('${verification.counter}') === 0); console.log(found.length === 0 ? '${verification.counter} 0' : found[0]) })`
+const cacheMetricScript = `fetch('http://127.0.0.1:3000/metrics').then((response) => response.text()).then((text) => { const found = text.split('\\n').filter((line) => line.indexOf('${verification.cacheCounter}') === 0); console.log(found.length === 0 ? '${verification.cacheCounter} 0' : found[0]) })`
 
 const processed = async (pod: string): Promise<number> => {
   const text = await output([
@@ -566,6 +569,25 @@ const processed = async (pod: string): Promise<number> => {
     metricScript,
   ])
   const found = new RegExp(`${verification.counter} (\\d+)`).exec(text)
+
+  return found === null ? EMPTY_NUMBER : Number(found[1])
+}
+
+const cacheHits = async (pod: string): Promise<number> => {
+  const text = await output([
+    tools.kubectl,
+    '--namespace',
+    cluster.namespace,
+    'exec',
+    pod,
+    '--container',
+    'api',
+    '--',
+    'bun',
+    '-e',
+    cacheMetricScript,
+  ])
+  const found = new RegExp(`${verification.cacheCounter} (\\d+)`).exec(text)
 
   return found === null ? EMPTY_NUMBER : Number(found[1])
 }
@@ -729,6 +751,27 @@ const datalake = async (): Promise<Check> => {
 
 const datalakeCheck = async (): Promise<Array<Check>> => single(await datalake())
 
+const caching = async (): Promise<Check> => {
+  const playerId = `ci-${crypto.randomUUID()}`
+  const wallet = await post<WalletBody>('/wallets', {
+    playerId,
+    initialBalance: { amount: verification.opening, currency: verification.currency },
+  })
+  const reader = async (): Promise<WalletBody> => request<WalletBody>(`/wallets/${wallet.id}`)
+  const firstRead = await reader()
+  const pods = await apiPods()
+  const before = await Promise.all(pods.map(cacheHits))
+  const secondRead = await reader()
+  const after = await Promise.all(pods.map(cacheHits))
+  const hits = after.reduce((sum, value, index) => sum + Math.max(0, value - (before[index] ?? 0)), 0)
+  const passing = firstRead.id === wallet.id && secondRead.id === wallet.id && hits > 0
+  const detail = passing ? `${hits} hit across ${pods.length} pods` : `${hits} hits, cache was not used`
+
+  return { name: check.caching, detail, passing }
+}
+
+const cachingCheck = async (): Promise<Array<Check>> => single(await caching())
+
 const balancingCheck = async (): Promise<Array<Check>> => single(await balancing())
 
 const verify = async (): Promise<void> => {
@@ -750,6 +793,7 @@ const verify = async (): Promise<void> => {
     ...await guarded(check.migration, migrationCheck),
     ...await guarded(check.flow, financial),
     ...await guarded(check.datalake, datalakeCheck),
+    ...await guarded(check.caching, cachingCheck),
     ...await guarded(check.balancing, balancingCheck),
   ]
 
@@ -783,6 +827,7 @@ const up = async (): Promise<void> => {
   await rollout('statefulset/postgres-replica')
   await rollout('deployment/localstack')
   await rollout('deployment/mongo')
+  await rollout('deployment/redis')
   await migrate()
   await rollout('deployment/api')
   await smoke()

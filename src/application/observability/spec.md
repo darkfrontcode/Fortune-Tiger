@@ -18,6 +18,8 @@ This application capability owns the logger and metric contracts, their injectio
 | `reconciliationDivergence` | `reconciliation_divergence` | counter |
 | `outboxLag` | `outbox_lag_milliseconds` | observation |
 | `transactionLatency` | `wager_processing_milliseconds` | observation |
+| `cacheHit` | `cache_hits_total` | counter |
+| `cacheMiss` | `cache_misses_total` | counter |
 
 The wager use case counts the transaction by its final status, counts a replay, and observes the processing duration. The SQS consumer counts a retry and a dead letter. The persistence writer counts a lock conflict. The outbox publisher observes the age of the row it publishes. The reconciliation use case counts a divergence.
 
