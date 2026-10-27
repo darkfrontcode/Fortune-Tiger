@@ -5,6 +5,7 @@ Wager processor. Balance, ledger, and a repeated operation stay correct.
 <p>
   <strong>CI / Coverage</strong><br />
   <a href="https://github.com/darkfrontcode/Fortune-Tiger/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/darkfrontcode/Fortune-Tiger/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://github.com/darkfrontcode/Fortune-Tiger/actions/workflows/security.yml"><img alt="Security" src="https://github.com/darkfrontcode/Fortune-Tiger/actions/workflows/security.yml/badge.svg" /></a>
   <img alt="Unit coverage: 100% lines" src="https://img.shields.io/badge/unit%20coverage-100%25%20lines-brightgreen?style=for-the-badge" />
 </p>
 
@@ -262,6 +263,20 @@ See the happy path in one command with `bun run demo`, and the reviewer's path i
 </details>
 
 <details>
+<summary>🔐 Security — the baseline that runs on every push</summary>
+
+The security baseline lives in the repository and runs with the tools already here:
+
+- 🧪 **API security suite** — `bun run test:security` sends hostile calls into the real `AppModule`: malformed money, insufficient funds, a concurrent double bet, a refund that points at the wrong kind, a reversal twice, a duplicate idempotency key, and a foreign provider reading someone else's audit or journey. It answers `400`, `409`, `422`, `404`, or one `PROCESSED` — the status table the API already promises.
+- 🛡️ **OWASP ZAP** — `bun run security:zap` runs the passive scan from the live OpenAPI document (`GET /docs-json`) and writes the HTML report to `security/reports/passive`. `bun run security:zap --active` runs the active scan locally, never in the pipeline.
+- 🎯 **AI red-team** — `bun run security:redteam` drives the real semantic search tool with crafted queries and asserts it never projects an amount, a balance, a provider id, a currency, or a secret.
+- ⚙️ **One workflow** — `.github/workflows/security.yml` runs the suite and the passive scan on `main`, `staging`, and every pull request, with the same services as `CI`, and keeps the report as an artifact.
+
+The security tests inherit the existing `*.e2e.test.ts` coverage ignore, so the 100% line gate is unchanged. Details are in [`security/spec.md`](security/spec.md) and [`docs/testing.md`](docs/testing.md).
+
+</details>
+
+<details>
 <summary>🤖 AI co-builders — tools and models remembered so far</summary>
 
 These are the coding assistants and model names used to build Fortune Tiger:
@@ -358,10 +373,12 @@ bun run test:audit
 bun run test:journey
 bun run test:concurrency
 bun run test:e2e
+bun run test:security
+bun run security:zap
 bun run test:load
 ```
 
-`start:dev` restarts the app when files change. `demo` boots the app on a free port and walks the happy path — wallet, bet, replay, loss, ledger, reconciliation, metrics — asserting each result. `test:unit` checks the rules quickly. The integration and concurrency tests use the PostgreSQL and LocalStack services configured in `.env`; `test:audit` and `test:journey` use MongoDB and LocalStack. `test:e2e` runs HTTP endpoint tests with Supertest. `test:load` measures the running API under concurrency; start it with `bun run start` first, and read [`docs/load.md`](docs/load.md) for the method, the results, and the honest limit.
+`start:dev` restarts the app when files change. `demo` boots the app on a free port and walks the happy path — wallet, bet, replay, loss, ledger, reconciliation, metrics — asserting each result. `test:unit` checks the rules quickly. The integration and concurrency tests use the PostgreSQL and LocalStack services configured in `.env`; `test:audit` and `test:journey` use MongoDB and LocalStack. `test:e2e` runs HTTP endpoint tests with Supertest, and `test:security` runs the hostile-caller suite over the same app. `security:zap` scans a running API; start it with `bun run start` first. `test:load` measures the running API under concurrency; read [`docs/load.md`](docs/load.md) for the method, the results, and the honest limit.
 
 ### Try the API by hand
 

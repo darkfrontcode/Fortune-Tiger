@@ -19,5 +19,6 @@ An ADR records one decision, the context that forced it, and what it costs. The 
 | [0013](0013-alerting-with-alertmanager-and-email.md) | Alert with Alertmanager to email |
 | [0014](0014-mcp-semantic-search-in-mongodb.md) | Search events semantically through MCP over MongoDB Vector Search |
 | [0015](0015-redis-cache.md) | Cache wallet and wager reads in Redis |
+| [0016](0016-security-testing.md) | Test the security baseline in the repository |
 
 A reader who wants the rules rather than the reasoning reads [`ARCHITECTURE.md`](../../ARCHITECTURE.md) and the `spec.md` beside each folder.

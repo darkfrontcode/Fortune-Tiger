@@ -128,6 +128,27 @@ Status table in `src/presentation/http/spec.md`, invalid payload, and idempotent
 
 The signature check runs against the JWKS the realm publishes, so a token that Keycloak did not sign is refused for the real reason. The script is not part of CI: it needs the `auth` profile, so the pipeline stays free of an identity provider. `identity.test.ts` covers the guard and both providers with a stub identity, and the status table is in `src/presentation/http/spec.md`.
 
+## Security
+
+`bun run test:security` runs the API security suite over the real `AppModule`. The files live in `src/presentation/security/tests/` and carry the `*.security.e2e.test.ts` suffix, so the coverage gate in `bunfig.toml` already ignores them and the 100% line threshold measures the same scope as before. `createSecureApp` boots the same validation pipe and Swagger mount as `src/main.ts`, so the suite proves the input filter a provider reaches.
+
+- **Wallet** — malformed amounts and currencies answer `400`; an insufficient bet answers `422` with `INSUFFICIENT_FUNDS` and leaves the balance unchanged; the ledger stays consistent with the wallet; two simultaneous bets of `80.00` against `100.00` produce one `PROCESSED` and one `INSUFFICIENT_FUNDS`.
+- **Wager** — a `REFUND` or `ROLLBACK` without a reference answers `400`; a missing reference answers `202` `PENDING_REFERENCE`; a `REFUND` pointing at a `WIN` answers `422` `INVALID_REFERENCE_KIND`; a second reversal of the same reference answers `422` `REFERENCE_ALREADY_REVERSED`; no credit is fabricated.
+- **Idempotency** — the same key and payload returns the original result with `idempotentReplay: true` and one debit; the same key with a different payload answers `409` `IDEMPOTENCY_PAYLOAD_CONFLICT`; a replay of a rejected wager answers `200` with the stored `REJECTED`.
+- **Authorization** — the `X-Provider-Id` header wins over the body `providerId` in `anonymous` mode; the audit and journey routes answer `404` for a wager of another provider; the player journey answers `404` for another provider; the wager-by-id and provider-pair reads are keyed by the identifiers presented.
+
+The behavior under test and the acceptance criteria are in [`security/spec.md`](../security/spec.md); the operator path is in [`security/README.md`](../security/README.md).
+
+## Security — ZAP
+
+`bun run security:zap` runs the OWASP ZAP passive scan against a running API; it probes `GET /health/live`, imports `GET /docs-json`, and writes the HTML report to `security/reports/passive`. `bun run security:zap --active` runs the active scan locally, writes `security/reports/active`, and is never a pipeline step because it sends crafted payloads. Both run the official `ghcr.io/zaproxy/zaproxy` image with `host.docker.internal` mapped to the host gateway.
+
+`security/zap.yaml` is the passive plan and `security/zap-active.yaml` is the active one. `.github/workflows/security.yml` runs the suite and the passive scan on `main`, `staging`, and every pull request, starts the same services as `CI`, and uploads the report and the suite log.
+
+## Security — red-team
+
+`bun run security:redteam` drives the real `SearchSimilarEventsUseCase` with crafted queries and asserts the safe projection: every result carries only `id`, `eventType`, `kind`, `status`, `failureCode`, `score`, `wagerId`, and `occurredAt` — never an amount, balance, `providerId`, currency, token, or secret — the empty and the over-long query are refused with `INVALID_SEARCH_QUERY_MESSAGE`, and the requested `limit` is capped at `VECTOR_SEARCH_TOP_K`. It needs the `search` profile with a pulled model and a seeded index, and it exits with the hint when the stack is down. It is a manual review of the AI surface, not a pipeline step; `bun run search:check` exercises the same tool on every main and staging run.
+
 ## Load
 
 `bun run test:load` calls a running API, so the client and the server do not share an event loop. Start the API with `bun run start` first. The script runs two measured waves:
